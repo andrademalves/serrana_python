@@ -1,0 +1,169 @@
+{% extends 'base_with_sidebar.html' %}
+{% load static %}
+
+{% block title %}Nova Empresa - Sistema{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-building"></i> Cadastrar Nova Empresa</h2>
+        <a href="{% url 'usuarios:listar_empresas' %}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+    </div>
+
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        
+        <!-- Dados Básicos -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-info-circle"></i> Dados da Empresa</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="razao_social" class="form-label">Razão Social *</label>
+                        <input type="text" class="form-control" id="razao_social" name="razao_social" 
+                               value="{{ form_data.razao_social }}" required>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="nome_fantasia" class="form-label">Nome Fantasia *</label>
+                        <input type="text" class="form-control" id="nome_fantasia" name="nome_fantasia" 
+                               value="{{ form_data.nome_fantasia }}" required>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label for="cnpj" class="form-label">CNPJ *</label>
+                        <input type="text" class="form-control" id="cnpj" name="cnpj" 
+                               value="{{ form_data.cnpj }}" placeholder="00.000.000/0000-00" required>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="inscricao_estadual" class="form-label">Inscrição Estadual</label>
+                        <input type="text" class="form-control" id="inscricao_estadual" name="inscricao_estadual" 
+                               value="{{ form_data.inscricao_estadual }}">
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="inscricao_municipal" class="form-label">Inscrição Municipal</label>
+                        <input type="text" class="form-control" id="inscricao_municipal" name="inscricao_municipal" 
+                               value="{{ form_data.inscricao_municipal }}">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Endereço -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-geo-alt"></i> Endereço</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <label for="cep" class="form-label">CEP</label>
+                        <input type="text" class="form-control" id="cep" name="cep" 
+                               value="{{ form_data.cep }}" placeholder="00000-000">
+                    </div>
+                    <div class="col-md-7 mb-3">
+                        <label for="logradouro" class="form-label">Logradouro</label>
+                        <input type="text" class="form-control" id="logradouro" name="logradouro" 
+                               value="{{ form_data.logradouro }}">
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <label for="numero" class="form-label">Número</label>
+                        <input type="text" class="form-control" id="numero" name="numero" 
+                               value="{{ form_data.numero }}">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label for="complemento" class="form-label">Complemento</label>
+                        <input type="text" class="form-control" id="complemento" name="complemento" 
+                               value="{{ form_data.complemento }}">
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="bairro" class="form-label">Bairro</label>
+                        <input type="text" class="form-control" id="bairro" name="bairro" 
+                               value="{{ form_data.bairro }}">
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="cidade" class="form-label">Cidade</label>
+                        <input type="text" class="form-control" id="cidade" name="cidade" 
+                               value="{{ form_data.cidade }}">
+                    </div>
+                    <div class="col-md-1 mb-3">
+                        <label for="uf" class="form-label">UF</label>
+                        <input type="text" class="form-control" id="uf" name="uf" 
+                               value="{{ form_data.uf }}" maxlength="2" style="text-transform: uppercase;">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contato e Configurações -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-telephone"></i> Contato e Configurações</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label for="telefone" class="form-label">Telefone</label>
+                        <input type="text" class="form-control" id="telefone" name="telefone" 
+                               value="{{ form_data.telefone }}" placeholder="(00) 0000-0000">
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="email" class="form-label">E-mail</label>
+                        <input type="email" class="form-control" id="email" name="email" 
+                               value="{{ form_data.email }}">
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="website" class="form-label">Website</label>
+                        <input type="url" class="form-control" id="website" name="website" 
+                               value="{{ form_data.website }}" placeholder="https://">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label for="logo" class="form-label">Logo</label>
+                        <input type="file" class="form-control" id="logo" name="logo" accept="image/*">
+                        <small class="text-muted">Formatos aceitos: JPG, PNG, GIF</small>
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <label for="cor_primaria" class="form-label">Cor Primária</label>
+                        <input type="color" class="form-control form-control-color" id="cor_primaria" 
+                               name="cor_primaria" value="{{ form_data.cor_primaria|default:'#0066cc' }}">
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <label for="cor_secundaria" class="form-label">Cor Secundária</label>
+                        <input type="color" class="form-control form-control-color" id="cor_secundaria" 
+                               name="cor_secundaria" value="{{ form_data.cor_secundaria|default:'#333333' }}">
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <label class="form-label d-block">Status</label>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="ativa" name="ativa" checked>
+                            <label class="form-check-label" for="ativa">Ativa</label>
+                        </div>
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <label class="form-label d-block">Tipo</label>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="empresa_matriz" name="empresa_matriz">
+                            <label class="form-check-label" for="empresa_matriz">É Matriz</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-end gap-2">
+            <a href="{% url 'usuarios:listar_empresas' %}" class="btn btn-secondary">Cancelar</a>
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-check-circle"></i> Cadastrar Empresa
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

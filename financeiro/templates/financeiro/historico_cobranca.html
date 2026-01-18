@@ -1,0 +1,211 @@
+{% extends 'base_with_sidebar.html' %}
+{% load financeiro_tags %}
+
+{% block title %}Histórico de Cobrança{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Cabeçalho -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1"><i class="bi bi-clock-history"></i> Histórico de Cobrança</h2>
+            <p class="text-muted mb-0">
+                Cliente: <strong>{{ parcela.titulo.pessoa.nome }}</strong> - 
+                Título: <strong>{{ parcela.titulo.numero }}</strong> - 
+                Parcela: <strong>{{ parcela.numero_parcela }}</strong>
+            </p>
+        </div>
+        <a href="{% url 'financeiro:painel_cobranca' %}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+    </div>
+
+    <!-- Informações da Parcela -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3">
+                    <h6 class="text-muted small">Vencimento</h6>
+                    <p class="mb-0">{{ parcela.data_vencimento|date:"d/m/Y" }}</p>
+                </div>
+                <div class="col-md-3">
+                    <h6 class="text-muted small">Valor</h6>
+                    <p class="mb-0 fw-bold">{{ parcela.saldo_aberto|currency }}</p>
+                    {% if parcela.saldo_aberto != parcela.valor_original %}
+                    <small class="text-muted">(Original: {{ parcela.valor_original|currency }})</small>
+                    {% endif %}
+                </div>
+                <div class="col-md-3">
+                    <h6 class="text-muted small">Status</h6>
+                    <p class="mb-0">
+                        {% if parcela.status == 'QUITADO' %}
+                        <span class="badge bg-success">Quitado</span>
+                        {% elif parcela.status == 'CANCELADO' %}
+                        <span class="badge bg-dark">Cancelado</span>
+                        {% else %}
+                            {% if parcela.dias_atraso > 0 %}
+                            <span class="badge bg-danger">{{ parcela.dias_atraso }} dia{{ parcela.dias_atraso|pluralize }} em atraso</span>
+                            {% else %}
+                            <span class="badge bg-success">Em dia</span>
+                            {% endif %}
+                            <br>
+                            <small class="text-muted">
+                                Cobrança: 
+                                {% if parcela.status_cobranca == 'NORMAL' %}Normal
+                                {% elif parcela.status_cobranca == 'NEGOCIACAO' %}Negociação
+                                {% elif parcela.status_cobranca == 'PROMESSA' %}Promessa
+                                {% elif parcela.status_cobranca == 'INTENSA' %}Intensa
+                                {% elif parcela.status_cobranca == 'BLOQUEADA' %}Bloqueada
+                                {% endif %}
+                            </small>
+                        {% endif %}
+                    </p>
+                </div>
+                <div class="col-md-3">
+                    <h6 class="text-muted small">Régua</h6>
+                    <p class="mb-0">
+                        {% if parcela.regua %}
+                        {{ parcela.regua.nome }}
+                        {% if parcela.regua_ativa %}
+                        <i class="bi bi-check-circle text-success"></i>
+                        {% else %}
+                        <i class="bi bi-pause-circle text-warning"></i>
+                        {% endif %}
+                        {% else %}
+                        -
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+            
+            <!-- Promessa de Pagamento / Negociação -->
+            {% if parcela.status_cobranca == 'PROMESSA' and parcela.data_promessa_pagamento %}
+            <hr>
+            <div class="alert alert-info mb-0">
+                <h6 class="alert-heading">
+                    <i class="bi bi-calendar-check"></i> Promessa de Pagamento Registrada
+                </h6>
+                <p class="mb-1">
+                    <strong>Data Prometida:</strong> {{ parcela.data_promessa_pagamento|date:"d/m/Y" }}
+                </p>
+                {% if parcela.observacao_promessa %}
+                <p class="mb-0">
+                    <strong>Observação:</strong> {{ parcela.observacao_promessa }}
+                </p>
+                {% endif %}
+            </div>
+            {% elif parcela.status_cobranca == 'NEGOCIACAO' and parcela.observacao_promessa %}
+            <hr>
+            <div class="alert alert-success mb-0">
+                <h6 class="alert-heading">
+                    <i class="bi bi-chat-dots"></i> Em Negociação
+                </h6>
+                <p class="mb-0">
+                    <strong>Detalhes:</strong> {{ parcela.observacao_promessa }}
+                </p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Timeline de Logs -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white">
+            <h5 class="mb-0">Histórico de Envios ({{ logs.count }})</h5>
+        </div>
+        <div class="card-body">
+            {% if logs %}
+            <div class="timeline">
+                {% for log in logs %}
+                <div class="timeline-item mb-4 pb-4 {% if not forloop.last %}border-bottom{% endif %}">
+                    <div class="row">
+                        <div class="col-auto">
+                            <div class="timeline-badge 
+                                {% if log.status == 'ENVIADO' %}bg-success
+                                {% elif log.status == 'FALHA' %}bg-danger
+                                {% elif log.status == 'PROCESSANDO' %}bg-warning
+                                {% else %}bg-secondary{% endif %} 
+                                text-white rounded-circle d-flex align-items-center justify-content-center" 
+                                style="width: 50px; height: 50px;">
+                                {% if log.status == 'ENVIADO' %}
+                                <i class="bi bi-check-circle fs-5"></i>
+                                {% elif log.status == 'FALHA' %}
+                                <i class="bi bi-x-circle fs-5"></i>
+                                {% elif log.status == 'PROCESSANDO' %}
+                                <i class="bi bi-hourglass-split fs-5"></i>
+                                {% else %}
+                                <i class="bi bi-clock fs-5"></i>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-8">
+                                            <h6 class="mb-2">
+                                                <strong>{{ log.etapa.nome }}</strong>
+                                                <span class="badge 
+                                                    {% if log.status == 'ENVIADO' %}bg-success
+                                                    {% elif log.status == 'FALHA' %}bg-danger
+                                                    {% elif log.status == 'PROCESSANDO' %}bg-warning
+                                                    {% else %}bg-secondary{% endif %}">
+                                                    {{ log.get_status_display }}
+                                                </span>
+                                            </h6>
+                                            <p class="text-muted small mb-2">
+                                                <i class="bi bi-calendar"></i> 
+                                                Criado: {{ log.data_criacao|date:"d/m/Y H:i" }}
+                                                {% if log.data_envio %}
+                                                | <i class="bi bi-send"></i> Enviado: {{ log.data_envio|date:"d/m/Y H:i" }}
+                                                {% endif %}
+                                            </p>
+                                            <p class="mb-2">
+                                                <i class="bi bi-envelope"></i> <strong>Para:</strong> {{ log.destinatario }}
+                                            </p>
+                                            {% if log.assunto %}
+                                            <p class="mb-2">
+                                                <i class="bi bi-chat-quote"></i> <strong>Assunto:</strong> {{ log.assunto }}
+                                            </p>
+                                            {% endif %}
+                                            {% if log.mensagem %}
+                                            <div class="mt-3 p-3 bg-light rounded">
+                                                <strong>Mensagem:</strong>
+                                                <p class="mb-0 mt-2" style="white-space: pre-line;">{{ log.mensagem }}</p>
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                        <div class="col-md-4 text-end">
+                                            <p class="small mb-1">
+                                                <strong>Tentativas:</strong> {{ log.tentativas }}/{{ log.max_tentativas }}
+                                            </p>
+                                            <p class="small mb-1">
+                                                <strong>Canal:</strong> 
+                                                <span class="badge bg-info">{{ log.get_canal_display }}</span>
+                                            </p>
+                                            {% if log.erro %}
+                                            <div class="alert alert-danger mt-2 small mb-0">
+                                                <i class="bi bi-exclamation-triangle"></i> 
+                                                <strong>Erro:</strong><br>
+                                                {{ log.erro }}
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center text-muted py-5">
+                <i class="bi bi-inbox fs-1 d-block mb-3"></i>
+                Nenhuma cobrança disparada ainda para esta parcela
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,415 @@
+{% extends 'base_with_sidebar.html' %}
+{% load static %}
+{% load financeiro_tags %}
+
+{% block title %}DRE - Demonstração do Resultado - {{ mes_nome }}/{{ ano }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Cabeçalho -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="bi bi-file-earmark-bar-graph"></i> DRE - Demonstração do Resultado</h2>
+            <p class="text-muted mb-0">Receitas e despesas por centro de custo - {{ mes_nome }}/{{ ano }}</p>
+        </div>
+        <div>
+            <a href="{% url 'financeiro:dashboard' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Voltar
+            </a>
+        </div>
+    </div>
+
+    <!-- Filtro de Período -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label for="mes" class="form-label">Mês</label>
+                    <select name="mes" id="mes" class="form-select">
+                        {% for m in "123456789012"|make_list %}
+                            {% with mes_num=forloop.counter %}
+                            <option value="{{ mes_num }}" {% if mes_num == mes %}selected{% endif %}>
+                                {{ mes_num|stringformat:"02d" }}
+                            </option>
+                            {% endwith %}
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="ano" class="form-label">Ano</label>
+                    <input type="number" name="ano" id="ano" class="form-control" value="{{ ano }}" min="2020" max="2030">
+                </div>
+                <div class="col-md-6 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary me-2">
+                        <i class="bi bi-funnel"></i> Filtrar
+                    </button>
+                    <a href="{% url 'financeiro:relatorio_dre_pdf' %}?{{ request.GET.urlencode }}" class="btn btn-danger" target="_blank">
+                        <i class="bi bi-file-pdf"></i> Gerar PDF
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Cards de Resumo -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card border-success">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted mb-1">Receitas Totais</p>
+                            <h4 class="mb-0 text-success">{{ total_receitas|currency }}</h4>
+                        </div>
+                        <i class="bi bi-arrow-down-circle fs-1 text-success"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-danger">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted mb-1">Despesas Totais</p>
+                            <h4 class="mb-0 text-danger">{{ total_despesas|currency }}</h4>
+                        </div>
+                        <i class="bi bi-arrow-up-circle fs-1 text-danger"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-primary">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted mb-1">Resultado Líquido</p>
+                            <h4 class="mb-0 {% if resultado >= 0 %}text-primary{% else %}text-warning{% endif %}">
+                                {{ resultado|currency }}
+                            </h4>
+                        </div>
+                        <i class="bi bi-calculator fs-1 {% if resultado >= 0 %}text-primary{% else %}text-warning{% endif %}"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-info">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted mb-1">Margem Líquida</p>
+                            <h4 class="mb-0 text-info">{{ margem|floatformat:1 }}%</h4>
+                        </div>
+                        <i class="bi bi-percent fs-1 text-info"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- DRE Detalhada -->
+    <div class="row">
+        <!-- Receitas -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="bi bi-plus-circle"></i> Receitas</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Centro de Custo</th>
+                                    <th class="text-end">Valor</th>
+                                    <th class="text-end">%</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in receitas %}
+                                <tr>
+                                    <td>
+                                        {% if item.parcela__titulo__centro_custo__nome %}
+                                            {{ item.parcela__titulo__centro_custo__nome }}
+                                        {% else %}
+                                            <em class="text-muted">Sem classificação</em>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end text-success">
+                                        <strong>{{ item.total|currency }}</strong>
+                                    </td>
+                                    <td class="text-end">
+                                        <span class="badge bg-success">
+                                            {% if total_receitas > 0 %}
+                                                {% widthratio item.total total_receitas 100 %}%
+                                            {% else %}
+                                                0%
+                                            {% endif %}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="3" class="text-center text-muted py-4">
+                                        <i class="bi bi-inbox fs-3 d-block mb-2"></i>
+                                        Nenhuma receita no período
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            {% if receitas %}
+                            <tfoot class="table-light">
+                                <tr>
+                                    <th>TOTAL RECEITAS</th>
+                                    <th class="text-end text-success">{{ total_receitas|currency }}</th>
+                                    <th class="text-end">100%</th>
+                                </tr>
+                            </tfoot>
+                            {% endif %}
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Despesas -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0"><i class="bi bi-dash-circle"></i> Despesas</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Centro de Custo</th>
+                                    <th class="text-end">Valor</th>
+                                    <th class="text-end">%</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in despesas %}
+                                <tr>
+                                    <td>
+                                        {% if item.parcela__titulo__centro_custo__nome %}
+                                            {{ item.parcela__titulo__centro_custo__nome }}
+                                        {% else %}
+                                            <em class="text-muted">Sem classificação</em>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end text-danger">
+                                        <strong>{{ item.total|currency }}</strong>
+                                    </td>
+                                    <td class="text-end">
+                                        <span class="badge bg-danger">
+                                            {% if total_despesas > 0 %}
+                                                {% widthratio item.total total_despesas 100 %}%
+                                            {% else %}
+                                                0%
+                                            {% endif %}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="3" class="text-center text-muted py-4">
+                                        <i class="bi bi-inbox fs-3 d-block mb-2"></i>
+                                        Nenhuma despesa no período
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            {% if despesas %}
+                            <tfoot class="table-light">
+                                <tr>
+                                    <th>TOTAL DESPESAS</th>
+                                    <th class="text-end text-danger">{{ total_despesas|currency }}</th>
+                                    <th class="text-end">100%</th>
+                                </tr>
+                            </tfoot>
+                            {% endif %}
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Resultado Final -->
+    <div class="card">
+        <div class="card-header {% if resultado >= 0 %}bg-primary{% else %}bg-warning{% endif %} text-white">
+            <h5 class="mb-0"><i class="bi bi-trophy"></i> Demonstração do Resultado do Exercício</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered mb-0">
+                    <tbody>
+                        <tr>
+                            <td><strong>(+) Receita Bruta</strong></td>
+                            <td class="text-end text-success"><strong>{{ total_receitas|currency }}</strong></td>
+                        </tr>
+                        <tr>
+                            <td><strong>(-) Deduções e Abatimentos</strong></td>
+                            <td class="text-end text-muted">R$ 0,00</td>
+                        </tr>
+                        <tr class="table-light">
+                            <td><strong>(=) Receita Líquida</strong></td>
+                            <td class="text-end"><strong>{{ total_receitas|currency }}</strong></td>
+                        </tr>
+                        <tr>
+                            <td><strong>(-) Custos e Despesas</strong></td>
+                            <td class="text-end text-danger"><strong>{{ total_despesas|currency }}</strong></td>
+                        </tr>
+                        <tr class="{% if resultado >= 0 %}table-primary{% else %}table-warning{% endif %}">
+                            <td><strong>(=) RESULTADO LÍQUIDO DO PERÍODO</strong></td>
+                            <td class="text-end">
+                                <h4 class="mb-0 {% if resultado >= 0 %}text-primary{% else %}text-warning{% endif %}">
+                                    {{ resultado|currency }}
+                                </h4>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>Margem Líquida (%)</strong></td>
+                            <td class="text-end">
+                                <h5 class="mb-0 text-info">{{ margem|floatformat:1 }}%</h5>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráfico -->
+    <div class="card mt-4">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="bi bi-pie-chart"></i> Composição de Receitas e Despesas</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <canvas id="graficoReceitas" height="200"></canvas>
+                </div>
+                <div class="col-md-6">
+                    <canvas id="graficoDespesas" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Gráfico de Receitas
+    const ctxReceitas = document.getElementById('graficoReceitas');
+    const labelsReceitas = [{% for item in receitas %}'{{ item.parcela__titulo__centro_custo__nome|default:"Sem classificação"|truncatewords:3 }}'{% if not forloop.last %}, {% endif %}{% endfor %}];
+    const dataReceitas = [{% for item in receitas %}{{ item.total|default:0 }}{% if not forloop.last %}, {% endif %}{% endfor %}];
+    
+    new Chart(ctxReceitas, {
+        type: 'pie',
+        data: {
+            labels: labelsReceitas,
+            datasets: [{
+                data: dataReceitas,
+                backgroundColor: [
+                    'rgba(40, 167, 69, 0.8)',
+                    'rgba(23, 162, 184, 0.8)',
+                    'rgba(0, 123, 255, 0.8)',
+                    'rgba(108, 117, 125, 0.8)',
+                    'rgba(255, 193, 7, 0.8)',
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Receitas por Centro de Custo'
+                },
+                legend: {
+                    position: 'bottom'
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.label || '';
+                            if (label) {
+                                label += ': ';
+                            }
+                            label += 'R$ ' + context.parsed.toFixed(2).replace('.', ',');
+                            return label;
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // Gráfico de Despesas
+    const ctxDespesas = document.getElementById('graficoDespesas');
+    const labelsDespesas = [{% for item in despesas %}'{{ item.parcela__titulo__centro_custo__nome|default:"Sem classificação"|truncatewords:3 }}'{% if not forloop.last %}, {% endif %}{% endfor %}];
+    const dataDespesas = [{% for item in despesas %}{{ item.total|default:0 }}{% if not forloop.last %}, {% endif %}{% endfor %}];
+    
+    new Chart(ctxDespesas, {
+        type: 'pie',
+        data: {
+            labels: labelsDespesas,
+            datasets: [{
+                data: dataDespesas,
+                backgroundColor: [
+                    'rgba(220, 53, 69, 0.8)',
+                    'rgba(255, 193, 7, 0.8)',
+                    'rgba(253, 126, 20, 0.8)',
+                    'rgba(108, 117, 125, 0.8)',
+                    'rgba(233, 236, 239, 0.8)',
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Despesas por Centro de Custo'
+                },
+                legend: {
+                    position: 'bottom'
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.label || '';
+                            if (label) {
+                                label += ': ';
+                            }
+                            label += 'R$ ' + context.parsed.toFixed(2).replace('.', ',');
+                            return label;
+                        }
+                    }
+                }
+            }
+        }
+    });
+});
+</script>
+
+<style>
+.card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.table tbody tr:hover {
+    background-color: rgba(0, 123, 255, 0.05);
+}
+</style>
+{% endblock %}

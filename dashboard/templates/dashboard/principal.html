@@ -1,0 +1,609 @@
+{% extends 'base_with_sidebar.html' %}
+{% load static %}
+{% load financeiro_tags %}
+
+{% block title %}{{ titulo_pagina }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Dashboard Styles */
+    .kpi-card {
+        transition: transform 0.2s;
+        border-left: 4px solid #007bff;
+    }
+    
+    .kpi-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    
+    .kpi-card.estoque { border-left-color: #17a2b8; }
+    .kpi-card.obras { border-left-color: #ffc107; }
+    .kpi-card.financeiro { border-left-color: #28a745; }
+    .kpi-card.critico { border-left-color: #dc3545; }
+    
+    .kpi-valor {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #333;
+    }
+    
+    .kpi-label {
+        font-size: 0.875rem;
+        color: #6c757d;
+        text-transform: uppercase;
+    }
+    
+    .kpi-variacao {
+        font-size: 0.875rem;
+        font-weight: 600;
+    }
+    
+    .kpi-variacao.positivo { color: #28a745; }
+    .kpi-variacao.negativo { color: #dc3545; }
+    
+    .alerta-card {
+        border-left: 4px solid #ffc107;
+        margin-bottom: 0.5rem;
+    }
+    
+    .alerta-card.critico {
+        border-left-color: #dc3545;
+        background-color: #fff5f5;
+    }
+    
+    .chart-container {
+        position: relative;
+        height: 400px;
+        margin-bottom: 2rem;
+    }
+    
+    .filtros-dashboard {
+        background-color: #f8f9fa;
+        padding: 1rem;
+        border-radius: 0.25rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .loading-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(255, 255, 255, 0.8);
+        z-index: 9999;
+        justify-content: center;
+        align-items: center;
+    }
+    
+    .loading-overlay.active {
+        display: flex;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2>
+                <i class="bi bi-speedometer2"></i> {{ titulo_pagina }}
+            </h2>
+            <p class="text-muted">
+                Última atualização: <span id="ultima-atualizacao">{{ data_atualizacao|date:"d/m/Y H:i" }}</span>
+                <button class="btn btn-sm btn-outline-primary ms-2" id="btn-atualizar" onclick="atualizarDashboard()">
+                    <i class="bi bi-arrow-clockwise"></i> Atualizar
+                </button>
+            </p>
+        </div>
+    </div>
+    
+    <!-- Filtros -->
+    <div class="filtros-dashboard">
+        <form method="GET" id="form-filtros" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">Período</label>
+                <select name="periodo" class="form-select" onchange="aplicarFiltros()">
+                    <option value="7" {% if periodo_selecionado == '7' %}selected{% endif %}>Últimos 7 dias</option>
+                    <option value="30" {% if periodo_selecionado == '30' %}selected{% endif %}>Últimos 30 dias</option>
+                    <option value="90" {% if periodo_selecionado == '90' %}selected{% endif %}>Últimos 90 dias</option>
+                    <option value="365" {% if periodo_selecionado == '365' %}selected{% endif %}>Último ano</option>
+                </select>
+            </div>
+            
+            <div class="col-md-3">
+                <label class="form-label">Local Estoque</label>
+                <select name="local" class="form-select" onchange="aplicarFiltros()">
+                    <option value="">Todos os locais</option>
+                    <!-- Carregar via AJAX ou template tag -->
+                </select>
+            </div>
+            
+            <div class="col-md-3 d-flex align-items-end">
+                <button type="button" class="btn btn-outline-secondary" onclick="limparFiltros()">
+                    <i class="bi bi-x-circle"></i> Limpar
+                </button>
+            </div>
+            
+            <div class="col-md-3 d-flex align-items-end justify-content-end">
+                <div class="btn-group">
+                    <a href="{% url 'dashboard:exportar_pdf' %}" class="btn btn-outline-danger">
+                        <i class="bi bi-file-pdf"></i> PDF
+                    </a>
+                    <a href="{% url 'dashboard:exportar_excel' %}" class="btn btn-outline-success">
+                        <i class="bi bi-file-excel"></i> Excel
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+    
+    <!-- KPIs Principais -->
+    <div class="row mb-4">
+        <!-- Estoque -->
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="card kpi-card estoque">
+                <div class="card-body">
+                    <div class="kpi-label">
+                        <i class="bi bi-box-seam"></i> Valor Total Estoque
+                    </div>
+                    <div class="kpi-valor">
+                        {{ kpis.estoque.valor_total.valor_atual|currency }}
+                    </div>
+                    <div class="kpi-variacao {% if kpis.estoque.valor_total.variacao_mes_anterior >= 0 %}positivo{% else %}negativo{% endif %}">
+                        <i class="bi bi-arrow-{% if kpis.estoque.valor_total.variacao_mes_anterior >= 0 %}up{% else %}down{% endif %}"></i>
+                        {{ kpis.estoque.valor_total.percentual_variacao|floatformat:1 }}% vs mês anterior
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Itens Críticos -->
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="card kpi-card critico">
+                <div class="card-body">
+                    <div class="kpi-label">
+                        <i class="bi bi-exclamation-triangle"></i> Itens Abaixo do Mínimo
+                    </div>
+                    <div class="kpi-valor text-danger">
+                        {{ kpis.estoque.itens_criticos }}
+                    </div>
+                    <div class="kpi-variacao">
+                        <a href="{% url 'dashboard:estoque' %}" class="text-decoration-none">
+                            Ver detalhes <i class="bi bi-arrow-right"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Giro de Estoque -->
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="card kpi-card estoque">
+                <div class="card-body">
+                    <div class="kpi-label">
+                        <i class="bi bi-arrow-repeat"></i> Giro de Estoque
+                    </div>
+                    <div class="kpi-valor">
+                        {{ kpis.estoque.giro.giro|floatformat:2 }}
+                    </div>
+                    <div class="kpi-variacao">
+                        {{ kpis.estoque.giro.dias_cobertura }} dias de cobertura
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Saldo Caixa -->
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="card kpi-card financeiro">
+                <div class="card-body">
+                    <div class="kpi-label">
+                        <i class="bi bi-cash-stack"></i> Saldo Caixa
+                    </div>
+                    <div class="kpi-valor">
+                        {{ kpis.financeiro.caixa.saldo_atual|currency }}
+                    </div>
+                    <div class="kpi-variacao {% if kpis.financeiro.caixa.variacao_dia_anterior >= 0 %}positivo{% else %}negativo{% endif %}">
+                        <i class="bi bi-arrow-{% if kpis.financeiro.caixa.variacao_dia_anterior >= 0 %}up{% else %}down{% endif %}"></i>
+                        {{ kpis.financeiro.caixa.variacao_dia_anterior|currency }} (D-1)
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Alertas Críticos -->
+    {% if alertas %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="bi bi-bell"></i> Alertas Críticos
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% for alerta in alertas %}
+                    <div class="alert alerta-card {% if alerta.severidade == 'CRITICO' %}critico{% endif %}" role="alert">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <span class="me-2">{{ alerta.icone }}</span>
+                                <strong>{{ alerta.tipo }}:</strong> {{ alerta.mensagem }}
+                            </div>
+                            <a href="{{ alerta.acao_url }}" class="btn btn-sm btn-outline-primary">
+                                {{ alerta.acao_texto }} <i class="bi bi-arrow-right"></i>
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Gráficos -->
+    <div class="row">
+        <!-- Curva ABC (Pareto) -->
+        <div class="col-lg-6 mb-4">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="bi bi-bar-chart"></i> Curva ABC - Estoque
+                    </h5>
+                    <a href="{% url 'dashboard:estoque_detalhado' %}" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-zoom-in"></i> Ver Detalhes
+                    </a>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="chartCurvaABC"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Fluxo de Caixa -->
+        <div class="col-lg-6 mb-4">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="bi bi-graph-up"></i> Fluxo de Caixa Projetado (90 dias)
+                    </h5>
+                    <a href="{% url 'dashboard:financeiro_detalhado' %}" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-zoom-in"></i> Ver Detalhes
+                    </a>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="chartFluxoCaixa"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Status Obras -->
+        <div class="col-lg-4 mb-4">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="bi bi-pie-chart"></i> Obras por Status
+                    </h5>
+                    <a href="{% url 'dashboard:obras_detalhado' %}" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-zoom-in"></i> Ver Detalhes
+                    </a>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container" style="height: 300px;">
+                        <canvas id="chartObrasStatus"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- DRE Mensal -->
+        <div class="col-lg-8 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-bar-chart-line"></i> DRE Mensal (12 meses)
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="chartDREMensal"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Tabela: Produtos Críticos -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-table"></i> Produtos Críticos - Abaixo do Estoque Mínimo
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <table id="tabelaProdutosCriticos" class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>Código</th>
+                                <th>Descrição</th>
+                                <th>Saldo Atual</th>
+                                <th>Estoque Mínimo</th>
+                                <th>Falta</th>
+                                <th>Criticidade</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Carregado via DataTables AJAX -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+        <span class="visually-hidden">Carregando...</span>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+<!-- DataTables -->
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
+<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
+
+<script>
+// ============================================================================
+// CONFIGURAÇÃO GLOBAL
+// ============================================================================
+const DASHBOARD = {
+    charts: {},
+    tables: {},
+    config: {
+        periodo: {{ periodo_selecionado }},
+        local: '{{ local_selecionado|default:"" }}'
+    }
+};
+
+// ============================================================================
+// FUNÇÕES DE FILTRO
+// ============================================================================
+function aplicarFiltros() {
+    showLoading();
+    document.getElementById('form-filtros').submit();
+}
+
+function limparFiltros() {
+    window.location.href = '{% url "dashboard:principal" %}';
+}
+
+function showLoading() {
+    document.getElementById('loadingOverlay').classList.add('active');
+}
+
+function hideLoading() {
+    document.getElementById('loadingOverlay').classList.remove('active');
+}
+
+// ============================================================================
+// ATUALIZAÇÃO DE DADOS
+// ============================================================================
+async function atualizarDashboard() {
+    showLoading();
+    
+    try {
+        // Forçar limpeza de cache
+        await fetch('{% url "dashboard:atualizar_cache" %}', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}'
+            }
+        });
+        
+        // Recarregar página
+        location.reload();
+    } catch (error) {
+        console.error('Erro ao atualizar:', error);
+        alert('Erro ao atualizar dashboard');
+    } finally {
+        hideLoading();
+    }
+}
+
+// ============================================================================
+// INICIALIZAÇÃO DE GRÁFICOS
+// ============================================================================
+async function initCurvaABC() {
+    const response = await fetch('{% url "dashboard:api_curva_abc" %}?limite=20');
+    const data = await response.json();
+    
+    const ctx = document.getElementById('chartCurvaABC').getContext('2d');
+    DASHBOARD.charts.curvaABC = new Chart(ctx, {
+        type: 'bar',
+        data: data,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false
+            },
+            scales: {
+                y: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    title: { display: true, text: 'Valor (R$)' }
+                },
+                y1: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    title: { display: true, text: '% Acumulado' },
+                    min: 0,
+                    max: 100,
+                    grid: { drawOnChartArea: false }
+                }
+            },
+            plugins: {
+                legend: { display: true, position: 'top' },
+                tooltip: { enabled: true }
+            }
+        }
+    });
+}
+
+async function initFluxoCaixa() {
+    const response = await fetch('{% url "dashboard:api_fluxo_caixa" %}?dias=90');
+    const data = await response.json();
+    
+    const ctx = document.getElementById('chartFluxoCaixa').getContext('2d');
+    DASHBOARD.charts.fluxoCaixa = new Chart(ctx, {
+        type: 'line',
+        data: data,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            scales: {
+                y: { title: { display: true, text: 'Valor (R$)' } }
+            },
+            plugins: {
+                legend: { display: true, position: 'top' }
+            }
+        }
+    });
+}
+
+async function initObrasStatus() {
+    const response = await fetch('{% url "dashboard:api_obras_status" %}');
+    const data = await response.json();
+    
+    const ctx = document.getElementById('chartObrasStatus').getContext('2d');
+    DASHBOARD.charts.obrasStatus = new Chart(ctx, {
+        type: 'pie',
+        data: data,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: true, position: 'right' }
+            }
+        }
+    });
+}
+
+async function initDREMensal() {
+    const response = await fetch('{% url "dashboard:api_dre_mensal" %}?meses=12');
+    const data = await response.json();
+    
+    const ctx = document.getElementById('chartDREMensal').getContext('2d');
+    DASHBOARD.charts.dreMensal = new Chart(ctx, {
+        type: 'bar',
+        data: data,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            scales: {
+                y: { title: { display: true, text: 'Valor (R$)' } }
+            },
+            plugins: {
+                legend: { display: true, position: 'top' }
+            }
+        }
+    });
+}
+
+// ============================================================================
+// INICIALIZAÇÃO DE TABELAS
+// ============================================================================
+function initTabelaProdutosCriticos() {
+    DASHBOARD.tables.produtosCriticos = $('#tabelaProdutosCriticos').DataTable({
+        ajax: {
+            url: '{% url "dashboard:api_consumo_medio" %}?limite=20',
+            dataSrc: 'data'
+        },
+        columns: [
+            { data: 'codigo' },
+            { data: 'descricao' },
+            { data: 'saldo_atual', render: num => num.toFixed(2) },
+            { data: 'estoque_minimo', render: num => num.toFixed(2) },
+            { data: 'falta', render: num => num.toFixed(2) },
+            { 
+                data: 'criticidade',
+                render: (val) => {
+                    const color = val > 50 ? 'danger' : val > 30 ? 'warning' : 'info';
+                    return `<span class="badge bg-${color}">${val.toFixed(0)}%</span>`;
+                }
+            },
+            {
+                data: null,
+                render: (row) => `
+                    <button class="btn btn-sm btn-primary" onclick="abrirDetalheProduto(${row.produto_id})">
+                        <i class="bi bi-eye"></i> Ver
+                    </button>
+                `
+            }
+        ],
+        language: {
+            url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/pt-BR.json'
+        },
+        order: [[5, 'desc']],
+        pageLength: 10
+    });
+}
+
+function abrirDetalheProduto(produtoId) {
+    // Implementar modal ou redirecionamento
+    console.log('Abrir produto:', produtoId);
+}
+
+// ============================================================================
+// INICIALIZAÇÃO
+// ============================================================================
+document.addEventListener('DOMContentLoaded', async function() {
+    showLoading();
+    
+    try {
+        // Inicializar gráficos em paralelo
+        await Promise.all([
+            initCurvaABC(),
+            initFluxoCaixa(),
+            initObrasStatus(),
+            initDREMensal()
+        ]);
+        
+        // Inicializar tabelas
+        initTabelaProdutosCriticos();
+        
+    } catch (error) {
+        console.error('Erro ao inicializar dashboard:', error);
+        alert('Erro ao carregar dashboard. Verifique o console.');
+    } finally {
+        hideLoading();
+    }
+});
+</script>
+{% endblock %}

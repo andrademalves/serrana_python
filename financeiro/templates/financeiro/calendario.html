@@ -1,0 +1,271 @@
+{% extends 'base_with_sidebar.html' %}
+{% load static %}
+{% load financeiro_tags %}
+
+{% block title %}Calendário Financeiro - {{ mes_nome }}/{{ ano }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Cabeçalho -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="bi bi-calendar3"></i> Calendário Financeiro</h2>
+            <p class="text-muted mb-0">Vencimentos de contas a pagar e receber</p>
+        </div>
+        <div>
+            <a href="{% url 'financeiro:dashboard' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Voltar
+            </a>
+        </div>
+    </div>
+
+    <!-- Navegação de Meses -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center">
+                <a href="?mes={{ mes_anterior }}&ano={{ ano_anterior }}" class="btn btn-outline-primary">
+                    <i class="bi bi-chevron-left"></i> {{ mes_anterior|stringformat:"02d" }}/{{ ano_anterior }}
+                </a>
+                <h4 class="mb-0">{{ mes_nome }} {{ ano }}</h4>
+                <div>
+                    <a href="{% url 'financeiro:calendario_pdf' %}?{{ request.GET.urlencode }}" class="btn btn-danger me-2" target="_blank">
+                        <i class="bi bi-file-pdf"></i> Gerar PDF
+                    </a>
+                    <a href="?mes={{ mes_seguinte }}&ano={{ ano_seguinte }}" class="btn btn-outline-primary">
+                        {{ mes_seguinte|stringformat:"02d" }}/{{ ano_seguinte }} <i class="bi bi-chevron-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Legenda -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3">
+                    <span class="badge bg-danger me-2">■</span> Contas a Pagar
+                </div>
+                <div class="col-md-3">
+                    <span class="badge bg-success me-2">■</span> Contas a Receber
+                </div>
+                <div class="col-md-3">
+                    <span class="badge bg-warning me-2">■</span> Vencidas
+                </div>
+                <div class="col-md-3">
+                    <span class="badge bg-secondary me-2">■</span> Quitadas
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Calendário -->
+    <div class="card">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-bordered mb-0 calendario-financeiro">
+                    <thead>
+                        <tr class="table-light">
+                            {% for dia_semana in dias_semana %}
+                            <th class="text-center">{{ dia_semana }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for semana in calendario_com_eventos %}
+                        <tr>
+                            {% for dia_data in semana %}
+                            <td class="dia-celula {% if dia_data.dia == 0 %}vazio{% endif %} {% if dia_data.dia == hoje.day and mes == hoje.month and ano == hoje.year %}hoje{% endif %}">
+                                {% if dia_data.dia != 0 %}
+                                    <div class="dia-numero">{{ dia_data.dia }}</div>
+                                    
+                                    {% if dia_data.eventos %}
+                                        <div class="eventos-dia">
+                                            <!-- Contas a Pagar -->
+                                            {% if dia_data.eventos.a_pagar %}
+                                                <div class="evento-grupo mb-2">
+                                                    <div class="evento-header bg-danger text-white px-2 py-1">
+                                                        <small>
+                                                            <i class="bi bi-arrow-up-circle"></i> 
+                                                            A Pagar: {{ dia_data.eventos.total_pagar|currency }}
+                                                        </small>
+                                                    </div>
+                                                    {% for evento in dia_data.eventos.a_pagar %}
+                                                        <div class="evento-item {% if evento.status == 'QUITADO' %}quitado{% elif evento.vencida %}vencido{% endif %}">
+                                                            <small>
+                                                                <strong>{{ evento.pessoa.nome|truncatewords:2 }}</strong><br>
+                                                                {{ evento.valor|currency }}
+                                                                {% if evento.status == 'QUITADO' %}
+                                                                    <span class="badge bg-secondary badge-sm">✓</span>
+                                                                {% elif evento.vencida %}
+                                                                    <span class="badge bg-warning badge-sm">!</span>
+                                                                {% endif %}
+                                                            </small>
+                                                        </div>
+                                                    {% endfor %}
+                                                </div>
+                                            {% endif %}
+
+                                            <!-- Contas a Receber -->
+                                            {% if dia_data.eventos.a_receber %}
+                                                <div class="evento-grupo">
+                                                    <div class="evento-header bg-success text-white px-2 py-1">
+                                                        <small>
+                                                            <i class="bi bi-arrow-down-circle"></i> 
+                                                            A Receber: {{ dia_data.eventos.total_receber|currency }}
+                                                        </small>
+                                                    </div>
+                                                    {% for evento in dia_data.eventos.a_receber %}
+                                                        <div class="evento-item {% if evento.status == 'QUITADO' %}quitado{% elif evento.vencida %}vencido{% endif %}">
+                                                            <small>
+                                                                <strong>{{ evento.pessoa.nome|truncatewords:2 }}</strong><br>
+                                                                {{ evento.valor|currency }}
+                                                                {% if evento.status == 'QUITADO' %}
+                                                                    <span class="badge bg-secondary badge-sm">✓</span>
+                                                                {% elif evento.vencida %}
+                                                                    <span class="badge bg-warning badge-sm">!</span>
+                                                                {% endif %}
+                                                            </small>
+                                                        </div>
+                                                    {% endfor %}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    {% endif %}
+                                {% endif %}
+                            </td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.calendario-financeiro {
+    font-size: 0.85rem;
+}
+
+.calendario-financeiro thead th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    padding: 0.75rem;
+    border: 1px solid #dee2e6;
+}
+
+.dia-celula {
+    height: 150px;
+    vertical-align: top;
+    padding: 0.5rem;
+    position: relative;
+    border: 1px solid #dee2e6;
+}
+
+.dia-celula.vazio {
+    background-color: #f8f9fa;
+}
+
+.dia-celula.hoje {
+    background-color: #e7f3ff;
+    border: 2px solid #007bff;
+}
+
+.dia-numero {
+    font-weight: bold;
+    font-size: 1rem;
+    margin-bottom: 0.5rem;
+    color: #495057;
+}
+
+.eventos-dia {
+    overflow-y: auto;
+    max-height: 120px;
+}
+
+.evento-grupo {
+    margin-bottom: 0.5rem;
+}
+
+.evento-header {
+    border-radius: 3px 3px 0 0;
+    font-size: 0.75rem;
+}
+
+.evento-item {
+    background-color: #f8f9fa;
+    padding: 0.3rem;
+    margin-top: 2px;
+    border-left: 3px solid #dee2e6;
+}
+
+.evento-item.quitado {
+    opacity: 0.6;
+    text-decoration: line-through;
+}
+
+.evento-item.vencido {
+    border-left-color: #ffc107;
+    background-color: #fff3cd;
+}
+
+.badge-sm {
+    font-size: 0.65rem;
+    padding: 0.15rem 0.3rem;
+}
+
+.card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+/* Scrollbar customizado */
+.eventos-dia::-webkit-scrollbar {
+    width: 4px;
+}
+
+.eventos-dia::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.eventos-dia::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 2px;
+}
+
+.eventos-dia::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+    .dia-celula {
+        height: 120px;
+        padding: 0.3rem;
+    }
+    
+    .dia-numero {
+        font-size: 0.9rem;
+    }
+    
+    .evento-item {
+        font-size: 0.7rem;
+    }
+}
+</style>
+
+<!-- Template filter personalizado (adicionar ao templatetags se necessário) -->
+{% load static %}
+{% load financeiro_tags %}
+<script>
+// Adicionar interatividade se necessário
+document.addEventListener('DOMContentLoaded', function() {
+    // Highlight do dia atual
+    const hoje = document.querySelector('.dia-celula.hoje');
+    if (hoje) {
+        hoje.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,111 @@
+{% extends 'base_with_sidebar.html' %}
+{% load static %}
+
+{% block title %}Empresas - Sistema{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-building"></i> Gestão de Empresas</h2>
+        <a href="{% url 'usuarios:criar_empresa' %}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Nova Empresa
+        </a>
+    </div>
+
+    <!-- Busca -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-10">
+                    <input type="text" class="form-control" name="busca" 
+                           placeholder="Buscar por nome fantasia, razão social ou CNPJ..." 
+                           value="{{ busca }}">
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-search"></i> Buscar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Lista de Empresas -->
+    <div class="card">
+        <div class="card-body">
+            {% if empresas %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Logo</th>
+                                <th>Nome Fantasia</th>
+                                <th>Razão Social</th>
+                                <th>CNPJ</th>
+                                <th>Cidade/UF</th>
+                                <th>Status</th>
+                                <th>Usuários</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for empresa in empresas %}
+                            <tr>
+                                <td>
+                                    {% if empresa.logo %}
+                                        <img src="{{ empresa.logo.url }}" alt="{{ empresa.nome_fantasia }}" 
+                                             style="max-height: 40px; max-width: 60px;">
+                                    {% else %}
+                                        <i class="bi bi-building fs-3 text-muted"></i>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <strong>{{ empresa.nome_fantasia }}</strong>
+                                    {% if empresa.empresa_matriz %}
+                                        <span class="badge bg-primary ms-2">Matriz</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ empresa.razao_social }}</td>
+                                <td>{{ empresa.cnpj }}</td>
+                                <td>
+                                    {% if empresa.cidade and empresa.uf %}
+                                        {{ empresa.cidade }}/{{ empresa.uf }}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if empresa.ativa %}
+                                        <span class="badge bg-success">Ativa</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Inativa</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge bg-info">{{ empresa.total_usuarios }}</span>
+                                </td>
+                                <td>
+                                    <a href="{% url 'usuarios:editar_empresa' empresa.id %}" 
+                                       class="btn btn-sm btn-outline-primary" title="Editar">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> 
+                    {% if busca %}
+                        Nenhuma empresa encontrada com os critérios de busca.
+                    {% else %}
+                        Nenhuma empresa cadastrada ainda.
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

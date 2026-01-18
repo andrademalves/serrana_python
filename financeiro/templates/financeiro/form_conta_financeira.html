@@ -1,0 +1,252 @@
+{% extends 'base_with_sidebar.html' %}
+{% load static %}
+{% load financeiro_tags %}
+
+{% block title %}{{ titulo }} - Sistema Serrana{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <h2><i class="bi bi-bank"></i> {{ titulo }}</h2>
+            <p class="text-muted">Preencha os dados da conta financeira</p>
+        </div>
+        <div class="col-auto">
+            <a href="{% url 'financeiro:listar_contas_financeiras' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Voltar
+            </a>
+        </div>
+    </div>
+
+    <!-- Card Informativo -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i>
+                <strong>Importante:</strong>
+                <ul class="mb-0 mt-2">
+                    <li><strong>Saldo Inicial:</strong> Informe o saldo da conta na data de implantação do sistema</li>
+                    <li><strong>Data do Saldo Inicial:</strong> Data de referência para o saldo inicial (geralmente a data de início de uso do sistema)</li>
+                    <li><strong>Saldo Atual:</strong> Será calculado automaticamente somando: Saldo Inicial + Entradas - Saídas</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <form method="post" id="formConta">
+                        {% csrf_token %}
+                        
+                        <!-- Nome -->
+                        <div class="mb-3">
+                            <label for="{{ form.nome.id_for_label }}" class="form-label">
+                                {{ form.nome.label }} <span class="text-danger">*</span>
+                            </label>
+                            {{ form.nome }}
+                            {% if form.nome.help_text %}
+                            <div class="form-text">{{ form.nome.help_text }}</div>
+                            {% endif %}
+                            {% if form.nome.errors %}
+                            <div class="invalid-feedback d-block">{{ form.nome.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Tipo -->
+                        <div class="mb-3">
+                            <label for="{{ form.tipo.id_for_label }}" class="form-label">
+                                {{ form.tipo.label }} <span class="text-danger">*</span>
+                            </label>
+                            {{ form.tipo }}
+                            {% if form.tipo.help_text %}
+                            <div class="form-text">{{ form.tipo.help_text }}</div>
+                            {% endif %}
+                            {% if form.tipo.errors %}
+                            <div class="invalid-feedback d-block">{{ form.tipo.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Banco (mostrar apenas se tipo = BANCO) -->
+                        <div class="mb-3" id="divBanco">
+                            <label for="{{ form.banco.id_for_label }}" class="form-label">
+                                {{ form.banco.label }}
+                            </label>
+                            <div class="input-group">
+                                {{ form.banco }}
+                                <a href="{% url 'cadastros:listar_bancos' %}" target="_blank" class="btn btn-outline-secondary" title="Cadastrar novo banco">
+                                    <i class="bi bi-box-arrow-up-right"></i>
+                                </a>
+                            </div>
+                            {% if form.banco.help_text %}
+                            <div class="form-text">{{ form.banco.help_text }}</div>
+                            {% endif %}
+                            {% if form.banco.errors %}
+                            <div class="invalid-feedback d-block">{{ form.banco.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="row">
+                            <!-- Agência -->
+                            <div class="col-md-6 mb-3" id="divAgencia">
+                                <label for="{{ form.agencia.id_for_label }}" class="form-label">
+                                    {{ form.agencia.label }}
+                                </label>
+                                {{ form.agencia }}
+                                {% if form.agencia.help_text %}
+                                <div class="form-text">{{ form.agencia.help_text }}</div>
+                                {% endif %}
+                                {% if form.agencia.errors %}
+                                <div class="invalid-feedback d-block">{{ form.agencia.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Conta -->
+                            <div class="col-md-6 mb-3" id="divConta">
+                                <label for="{{ form.conta.id_for_label }}" class="form-label">
+                                    {{ form.conta.label }}
+                                </label>
+                                {{ form.conta }}
+                                {% if form.conta.help_text %}
+                                <div class="form-text">{{ form.conta.help_text }}</div>
+                                {% endif %}
+                                {% if form.conta.errors %}
+                                <div class="invalid-feedback d-block">{{ form.conta.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <div class="row">
+                            <!-- Saldo Inicial -->
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.saldo_inicial.id_for_label }}" class="form-label">
+                                    {{ form.saldo_inicial.label }} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.saldo_inicial }}
+                                {% if form.saldo_inicial.help_text %}
+                                <div class="form-text">{{ form.saldo_inicial.help_text }}</div>
+                                {% endif %}
+                                {% if form.saldo_inicial.errors %}
+                                <div class="invalid-feedback d-block">{{ form.saldo_inicial.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Data Saldo Inicial -->
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.data_saldo_inicial.id_for_label }}" class="form-label">
+                                    {{ form.data_saldo_inicial.label }} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.data_saldo_inicial }}
+                                {% if form.data_saldo_inicial.help_text %}
+                                <div class="form-text">{{ form.data_saldo_inicial.help_text }}</div>
+                                {% endif %}
+                                {% if form.data_saldo_inicial.errors %}
+                                <div class="invalid-feedback d-block">{{ form.data_saldo_inicial.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Limite de Crédito -->
+                        <div class="mb-3">
+                            <label for="{{ form.limite_credito.id_for_label }}" class="form-label">
+                                {{ form.limite_credito.label }}
+                            </label>
+                            {{ form.limite_credito }}
+                            {% if form.limite_credito.help_text %}
+                            <div class="form-text">{{ form.limite_credito.help_text }}</div>
+                            {% endif %}
+                            {% if form.limite_credito.errors %}
+                            <div class="invalid-feedback d-block">{{ form.limite_credito.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Ativo -->
+                        <div class="mb-3 form-check">
+                            {{ form.ativo }}
+                            <label class="form-check-label" for="{{ form.ativo.id_for_label }}">
+                                {{ form.ativo.label }}
+                            </label>
+                            {% if form.ativo.help_text %}
+                            <div class="form-text">{{ form.ativo.help_text }}</div>
+                            {% endif %}
+                            {% if form.ativo.errors %}
+                            <div class="invalid-feedback d-block">{{ form.ativo.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Botões -->
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-lg"></i> Salvar
+                            </button>
+                            <a href="{% url 'financeiro:listar_contas_financeiras' %}" class="btn btn-secondary">
+                                <i class="bi bi-x-lg"></i> Cancelar
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar com Dicas -->
+        <div class="col-lg-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="bi bi-lightbulb"></i> Dicas</h5>
+                </div>
+                <div class="card-body">
+                    <h6>Tipos de Conta</h6>
+                    <ul class="small">
+                        <li><strong>Banco:</strong> Contas correntes, poupança, investimentos</li>
+                        <li><strong>Caixa:</strong> Dinheiro físico, tesouraria</li>
+                        <li><strong>Cartão de Crédito:</strong> Cartões corporativos</li>
+                        <li><strong>Digital:</strong> PayPal, PicPay, Mercado Pago</li>
+                    </ul>
+
+                    <h6 class="mt-3">Saldo Inicial</h6>
+                    <p class="small">
+                        Informe o saldo que a conta tinha na data de início de uso do sistema.
+                        Este valor será usado como base para calcular o saldo atual.
+                    </p>
+
+                    <h6 class="mt-3">Limite de Crédito</h6>
+                    <p class="small">
+                        Útil para cartões de crédito e contas com cheque especial.
+                        O saldo disponível será: Saldo Atual + Limite de Crédito.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const tipoSelect = document.getElementById('{{ form.tipo.id_for_label }}');
+    const divBanco = document.getElementById('divBanco');
+    const divAgencia = document.getElementById('divAgencia');
+    const divConta = document.getElementById('divConta');
+
+    function toggleCamposBanco() {
+        const tipo = tipoSelect.value;
+        const isBanco = tipo === 'BANCO';
+        
+        divBanco.style.display = isBanco ? 'block' : 'none';
+        divAgencia.style.display = isBanco ? 'block' : 'none';
+        divConta.style.display = isBanco ? 'block' : 'none';
+        
+        if (!isBanco) {
+            document.getElementById('{{ form.banco.id_for_label }}').value = '';
+            document.getElementById('{{ form.agencia.id_for_label }}').value = '';
+            document.getElementById('{{ form.conta.id_for_label }}').value = '';
+        }
+    }
+
+    tipoSelect.addEventListener('change', toggleCamposBanco);
+    toggleCamposBanco(); // Executar na carga
+});
+</script>
+{% endblock %}

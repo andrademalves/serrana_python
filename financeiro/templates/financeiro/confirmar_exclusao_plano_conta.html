@@ -1,0 +1,123 @@
+{% extends 'base_with_sidebar.html' %}
+{% load static %}
+{% load financeiro_tags %}
+
+{% block title %}Excluir Conta - Sistema Serrana{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">
+                <i class="bi bi-trash text-danger me-2"></i>Excluir Conta
+            </h2>
+            <p class="text-muted mb-0">Confirme a exclusão da conta contábil</p>
+        </div>
+        <div>
+            <a href="{% url 'financeiro:listar_plano_contas' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-2"></i>Voltar
+            </a>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card border-danger shadow-sm">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-exclamation-triangle me-2"></i>Confirmação de Exclusão
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        <strong>Atenção!</strong> Esta ação não pode ser desfeita.
+                    </div>
+
+                    <p class="mb-3">Você está prestes a excluir a seguinte conta:</p>
+
+                    <div class="card bg-light">
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-3">
+                                    <label class="text-muted small">Código</label>
+                                    <div><strong><code>{{ conta.codigo }}</code></strong></div>
+                                </div>
+                                <div class="col-md-9">
+                                    <label class="text-muted small">Nome</label>
+                                    <div><strong>{{ conta.nome }}</strong></div>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="text-muted small">Tipo</label>
+                                    <div>
+                                        {% if conta.tipo == 'RECEITA' %}
+                                            <span class="badge bg-success">{{ conta.get_tipo_display }}</span>
+                                        {% elif conta.tipo == 'DESPESA' %}
+                                            <span class="badge bg-danger">{{ conta.get_tipo_display }}</span>
+                                        {% else %}
+                                            <span class="badge bg-primary">{{ conta.get_tipo_display }}</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="text-muted small">Natureza</label>
+                                    <div>
+                                        {% if conta.natureza == 'ANALITICA' %}
+                                            <span class="badge bg-success">Analítica</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Sintética</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="text-muted small">Nível</label>
+                                    <div><span class="badge bg-info">{{ conta.nivel }}</span></div>
+                                </div>
+                                {% if conta.conta_pai %}
+                                <div class="col-12">
+                                    <label class="text-muted small">Conta Pai</label>
+                                    <div>{{ conta.conta_pai.codigo }} - {{ conta.conta_pai.nome }}</div>
+                                </div>
+                                {% endif %}
+                                {% if conta.contas_filhas.exists %}
+                                <div class="col-12">
+                                    <label class="text-muted small">Contas Filhas</label>
+                                    <div class="alert alert-danger small mb-0">
+                                        <i class="bi bi-exclamation-circle me-1"></i>
+                                        Esta conta possui {{ conta.contas_filhas.count }} conta(s) filha(s). Exclua-as primeiro!
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info mt-3 mb-0">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <strong>Importante:</strong> Se houver títulos financeiros vinculados a esta conta, 
+                        a exclusão será bloqueada para preservar o histórico. Neste caso, considere apenas desativar a conta.
+                    </div>
+
+                    <form method="post" class="mt-4">
+                        {% csrf_token %}
+                        <div class="d-flex justify-content-end gap-2">
+                            <a href="{% url 'financeiro:listar_plano_contas' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-x-circle me-2"></i>Cancelar
+                            </a>
+                            {% if not conta.contas_filhas.exists %}
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-trash me-2"></i>Confirmar Exclusão
+                            </button>
+                            {% else %}
+                            <button type="button" class="btn btn-danger" disabled>
+                                <i class="bi bi-ban me-2"></i>Não pode excluir (tem filhas)
+                            </button>
+                            {% endif %}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

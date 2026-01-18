@@ -1,0 +1,211 @@
+{% extends 'base_with_sidebar.html' %}
+{% load static %}
+
+{% block title %}Nova Transferência - Sistema Serrana{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <h2><i class="bi bi-arrow-left-right"></i> Nova Transferência entre Contas</h2>
+            <p class="text-muted">Transfira valores entre suas contas bancárias e caixa</p>
+        </div>
+        <div class="col-auto">
+            <a href="{% url 'financeiro:listar_contas_financeiras' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Voltar
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0"><i class="bi bi-arrow-repeat"></i> Dados da Transferência</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" id="formTransferencia">
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="data_transferencia" class="form-label">
+                                    Data da Transferência <span class="text-danger">*</span>
+                                </label>
+                                <input type="date" class="form-control" id="data_transferencia" 
+                                       name="data_transferencia" value="{{ hoje|date:'Y-m-d' }}" required>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="valor" class="form-label">
+                                    Valor <span class="text-danger">*</span>
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text">R$</span>
+                                    <input type="text" class="form-control" id="valor" name="valor" 
+                                           placeholder="0,00" required>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="conta_origem" class="form-label">
+                                    Conta Origem <span class="text-danger">*</span>
+                                </label>
+                                <select class="form-select" id="conta_origem" name="conta_origem" required>
+                                    <option value="">Selecione...</option>
+                                    {% for conta in contas %}
+                                    <option value="{{ conta.id }}" data-saldo="{{ conta.saldo_atual }}">
+                                        {{ conta.nome }} - Saldo: R$ {{ conta.saldo_atual|floatformat:2 }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <small class="text-muted" id="saldoOrigem"></small>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="conta_destino" class="form-label">
+                                    Conta Destino <span class="text-danger">*</span>
+                                </label>
+                                <select class="form-select" id="conta_destino" name="conta_destino" required>
+                                    <option value="">Selecione...</option>
+                                    {% for conta in contas %}
+                                    <option value="{{ conta.id }}">
+                                        {{ conta.nome }} - Saldo: R$ {{ conta.saldo_atual|floatformat:2 }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="taxa" class="form-label">
+                                    Taxa (opcional)
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text">R$</span>
+                                    <input type="text" class="form-control" id="taxa" name="taxa" 
+                                           placeholder="0,00" value="0,00">
+                                </div>
+                                <small class="text-muted">Taxa cobrada pela operação (se houver)</small>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Total a Debitar</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-danger text-white">R$</span>
+                                    <input type="text" class="form-control fw-bold" id="totalDebitar" 
+                                           readonly value="0,00">
+                                </div>
+                                <small class="text-muted">Valor + Taxa</small>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="descricao" class="form-label">
+                                Descrição/Motivo <span class="text-danger">*</span>
+                            </label>
+                            <textarea class="form-control" id="descricao" name="descricao" 
+                                      rows="3" placeholder="Ex: Transferência para pagamento de fornecedores" 
+                                      required></textarea>
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i>
+                            <strong>Importante:</strong> A transferência irá debitar o valor + taxa da conta origem 
+                            e creditar apenas o valor na conta destino.
+                        </div>
+                        
+                        <div class="d-flex justify-content-end gap-2">
+                            <a href="{% url 'financeiro:listar_contas_financeiras' %}" class="btn btn-secondary">
+                                <i class="bi bi-x-circle"></i> Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-warning">
+                                <i class="bi bi-arrow-repeat"></i> Realizar Transferência
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="card bg-light">
+                <div class="card-body">
+                    <h6 class="text-muted"><i class="bi bi-info-circle"></i> Sobre Transferências</h6>
+                    <p class="small mb-2">
+                        <strong>O que são?</strong><br>
+                        Movimentações de valores entre suas próprias contas.
+                    </p>
+                    <p class="small mb-2">
+                        <strong>Quando usar?</strong><br>
+                        • Transferência entre banco e caixa<br>
+                        • Transferência entre contas bancárias<br>
+                        • Consolidação de saldos
+                    </p>
+                    <p class="small mb-0">
+                        <strong>Nota:</strong> A transferência cria duas movimentações automáticas 
+                        (débito na origem e crédito no destino).
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const valorInput = document.getElementById('valor');
+    const taxaInput = document.getElementById('taxa');
+    const totalDebitar = document.getElementById('totalDebitar');
+    const contaOrigem = document.getElementById('conta_origem');
+    const contaDestino = document.getElementById('conta_destino');
+    const formTransferencia = document.getElementById('formTransferencia');
+    
+    // Formatar moeda
+    function formatCurrency(input) {
+        let value = input.value.replace(/\D/g, '');
+        value = (parseInt(value) / 100).toFixed(2);
+        input.value = value.replace('.', ',');
+    }
+    
+    valorInput.addEventListener('blur', function() {
+        formatCurrency(this);
+        calcularTotal();
+    });
+    
+    taxaInput.addEventListener('blur', function() {
+        formatCurrency(this);
+        calcularTotal();
+    });
+    
+    function calcularTotal() {
+        const valor = parseFloat(valorInput.value.replace(',', '.')) || 0;
+        const taxa = parseFloat(taxaInput.value.replace(',', '.')) || 0;
+        const total = valor + taxa;
+        totalDebitar.value = total.toFixed(2).replace('.', ',');
+    }
+    
+    // Validar contas diferentes
+    formTransferencia.addEventListener('submit', function(e) {
+        if (contaOrigem.value === contaDestino.value) {
+            e.preventDefault();
+            alert('Conta origem e destino não podem ser iguais!');
+            return false;
+        }
+        
+        // Confirmar
+        const valor = valorInput.value;
+        const origem = contaOrigem.options[contaOrigem.selectedIndex].text.split(' - ')[0];
+        const destino = contaDestino.options[contaDestino.selectedIndex].text.split(' - ')[0];
+        
+        if (!confirm(`Confirma a transferência de R$ ${valor} de ${origem} para ${destino}?`)) {
+            e.preventDefault();
+            return false;
+        }
+    });
+});
+</script>
+{% endblock %}

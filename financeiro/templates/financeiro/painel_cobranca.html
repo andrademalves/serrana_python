@@ -1,0 +1,567 @@
+{% extends 'base_with_sidebar.html' %}
+{% load static %}
+{% load financeiro_tags %}
+
+{% block title %}Painel de Cobrança{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Cabeçalho -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1"><i class="bi bi-bullseye"></i> Painel de Cobrança</h2>
+            <p class="text-muted mb-0">Gerencie réguas de cobrança automatizadas</p>
+        </div>
+        <div class="btn-group">
+            <a href="{% url 'financeiro:criar_regua' %}" class="btn btn-success">
+                <i class="bi bi-plus-circle"></i> Nova Régua
+            </a>
+            <a href="{% url 'financeiro:listar_reguas' %}" class="btn btn-primary">
+                <i class="bi bi-gear"></i> Gerenciar Réguas
+            </a>
+            <a href="{% url 'financeiro:reprocessar_falhas' %}" class="btn btn-warning">
+                <i class="bi bi-arrow-clockwise"></i> Reprocessar Falhas
+            </a>
+        </div>
+    </div>
+
+    <!-- KPIs -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-4 col-lg-2">
+            <div class="card border-0 shadow-sm h-100 hover-lift">
+                <div class="card-body p-4">
+                    <div class="text-center">
+                        <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 70px; height: 70px;">
+                            <i class="bi bi-send fs-2"></i>
+                        </div>
+                        <h6 class="text-muted text-uppercase fw-bold mb-2" style="font-size: 0.75rem; letter-spacing: 0.5px;">Disparos Hoje</h6>
+                        <h2 class="mb-0 fw-bold display-6">{{ disparos_hoje }}</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 col-lg-2">
+            <div class="card border-0 shadow-sm h-100 hover-lift">
+                <div class="card-body p-4">
+                    <div class="text-center">
+                        <div class="bg-info text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 70px; height: 70px;">
+                            <i class="bi bi-hourglass-split fs-2"></i>
+                        </div>
+                        <h6 class="text-muted text-uppercase fw-bold mb-2" style="font-size: 0.75rem; letter-spacing: 0.5px;">A Vencer (7d)</h6>
+                        <h2 class="mb-0 fw-bold display-6">{{ a_vencer_7d }}</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 col-lg-2">
+            <div class="card border-0 shadow-sm h-100 hover-lift">
+                <div class="card-body p-4">
+                    <div class="text-center">
+                        <div class="bg-danger text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 70px; height: 70px;">
+                            <i class="bi bi-exclamation-triangle fs-2"></i>
+                        </div>
+                        <h6 class="text-muted text-uppercase fw-bold mb-2" style="font-size: 0.75rem; letter-spacing: 0.5px;">Vencidas</h6>
+                        <h2 class="mb-0 fw-bold display-6 text-danger">{{ vencidas }}</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 col-lg-2">
+            <div class="card border-0 shadow-sm h-100 hover-lift">
+                <div class="card-body p-4">
+                    <div class="text-center">
+                        <div class="bg-warning text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 70px; height: 70px;">
+                            <i class="bi bi-x-circle fs-2"></i>
+                        </div>
+                        <h6 class="text-muted text-uppercase fw-bold mb-2" style="font-size: 0.75rem; letter-spacing: 0.5px;">Falhas</h6>
+                        <h2 class="mb-0 fw-bold display-6 text-warning">{{ falhas }}</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 col-lg-2">
+            <div class="card border-0 shadow-sm h-100 hover-lift">
+                <div class="card-body p-4">
+                    <div class="text-center">
+                        <div class="bg-success text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 70px; height: 70px;">
+                            <i class="bi bi-chat-dots fs-2"></i>
+                        </div>
+                        <h6 class="text-muted text-uppercase fw-bold mb-2" style="font-size: 0.75rem; letter-spacing: 0.5px;">Negociação</h6>
+                        <h2 class="mb-0 fw-bold display-6 text-success">{{ em_negociacao }}</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 col-lg-2">
+            <div class="card border-0 shadow-sm h-100 hover-lift">
+                <div class="card-body p-4">
+                    <div class="text-center">
+                        <div class="bg-dark text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 70px; height: 70px;">
+                            <i class="bi bi-list-check fs-2"></i>
+                        </div>
+                        <h6 class="text-muted text-uppercase fw-bold mb-2" style="font-size: 0.75rem; letter-spacing: 0.5px;">Total Parcelas</h6>
+                        <h2 class="mb-0 fw-bold display-6">{{ total_parcelas }}</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+    .hover-lift {
+        transition: all 0.3s ease;
+    }
+    .hover-lift:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.15) !important;
+    }
+    </style>
+
+    <!-- Filtros -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Período</label>
+                    <select name="periodo" class="form-select">
+                        <option value="7" {% if periodo_selecionado == '7' %}selected{% endif %}>Próximos 7 dias</option>
+                        <option value="15" {% if periodo_selecionado == '15' %}selected{% endif %}>Próximos 15 dias</option>
+                        <option value="30" {% if periodo_selecionado == '30' %}selected{% endif %}>Próximos 30 dias</option>
+                        <option value="" {% if not periodo_selecionado %}selected{% endif %}>Todos</option>
+                    </select>
+                </div>
+                
+                <div class="col-md-3">
+                    <label class="form-label">Status Cobrança</label>
+                    <select name="status_cobranca" class="form-select">
+                        <option value="">Todos</option>
+                        <option value="NORMAL" {% if status_selecionado == 'NORMAL' %}selected{% endif %}>Normal</option>
+                        <option value="NEGOCIACAO" {% if status_selecionado == 'NEGOCIACAO' %}selected{% endif %}>Negociação</option>
+                        <option value="PROMESSA" {% if status_selecionado == 'PROMESSA' %}selected{% endif %}>Promessa</option>
+                        <option value="INTENSA" {% if status_selecionado == 'INTENSA' %}selected{% endif %}>Cobrança Intensa</option>
+                        <option value="BLOQUEADA" {% if status_selecionado == 'BLOQUEADA' %}selected{% endif %}>Bloqueada</option>
+                    </select>
+                </div>
+                
+                <div class="col-md-4">
+                    <label class="form-label">Régua</label>
+                    <select name="regua" class="form-select">
+                        <option value="">Todas</option>
+                        {% for regua in reguas %}
+                        <option value="{{ regua.id }}" {% if regua_selecionada == regua.id|stringformat:"s" %}selected{% endif %}>
+                            {{ regua.nome }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-funnel"></i> Filtrar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Tabela de Parcelas -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white">
+            <h5 class="mb-0">Parcelas - Total: {{ total_parcelas }}</h5>
+            {% if total_parcelas > 100 %}
+            <small class="text-muted">Exibindo primeiras 100 parcelas</small>
+            {% endif %}
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Cliente</th>
+                            <th>Título</th>
+                            <th>Parcela</th>
+                            <th>Vencimento</th>
+                            <th>Valor</th>
+                            <th>Status</th>
+                            <th>Régua</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for parcela in parcelas %}
+                        <tr>
+                            <td>
+                                <strong>{{ parcela.titulo.pessoa.nome }}</strong>
+                                {% if parcela.contato_email_override %}
+                                <br><small class="text-muted">{{ parcela.contato_email_override }}</small>
+                                {% elif parcela.titulo.pessoa.email %}
+                                <br><small class="text-muted">{{ parcela.titulo.pessoa.email }}</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <strong>{{ parcela.titulo.numero_documento }}</strong>
+                                <br><small class="text-muted">{{ parcela.titulo.descricao|truncatewords:5 }}</small>
+                            </td>
+                            <td>{{ parcela.numero_parcela }}/{{ parcela.titulo.parcelas.count }}</td>
+                            <td>
+                                {{ parcela.data_vencimento|date:"d/m/Y" }}
+                                {% if parcela.esta_vencida %}
+                                <br><span class="badge bg-danger">{{ parcela.dias_atraso }} dia(s)</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if parcela.saldo_aberto %}
+                                    {{ parcela.saldo_aberto|currency }}
+                                {% else %}
+                                    R$ 0,00
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if parcela.status_cobranca == 'NORMAL' %}
+                                <span class="badge bg-secondary">Normal</span>
+                                {% elif parcela.status_cobranca == 'NEGOCIACAO' %}
+                                <span class="badge bg-info">Negociação</span>
+                                {% elif parcela.status_cobranca == 'PROMESSA' %}
+                                <span class="badge bg-success">Promessa</span>
+                                {% elif parcela.status_cobranca == 'INTENSA' %}
+                                <span class="badge bg-danger">Intensa</span>
+                                {% elif parcela.status_cobranca == 'BLOQUEADA' %}
+                                <span class="badge bg-dark">Bloqueada</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if parcela.regua %}
+                                    <span class="badge bg-primary">{{ parcela.regua.nome }}</span>
+                                    {% if parcela.regua_ativa %}
+                                    <i class="bi bi-check-circle text-success" title="Ativa"></i>
+                                    {% else %}
+                                    <i class="bi bi-pause-circle text-warning" title="Pausada"></i>
+                                    {% endif %}
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    {% if parcela.regua and not parcela.regua_ativa %}
+                                    <!-- Régua configurada mas INATIVA - mostrar botão de ativar -->
+                                    <a href="{% url 'financeiro:ativar_regua_parcela' parcela.id %}" 
+                                       class="btn btn-success" 
+                                       title="Ativar Régua '{{ parcela.regua.nome }}'">
+                                        <i class="bi bi-play-circle"></i> Ativar Régua
+                                    </a>
+                                    {% elif parcela.regua_ativa %}
+                                    <!-- Régua ATIVA - mostrar botão de disparar -->
+                                    <button type="button"
+                                       class="btn btn-outline-primary btn-disparar" 
+                                       data-url="{% url 'financeiro:disparar_cobranca' parcela.id %}"
+                                       data-cliente="{{ parcela.titulo.pessoa.nome }}"
+                                       data-valor="{% if parcela.saldo_aberto %}{{ parcela.saldo_aberto }}{% else %}0{% endif %}"
+                                       data-valor-original="{% if parcela.valor_original %}{{ parcela.valor_original }}{% else %}0{% endif %}"
+                                       data-parcela="{{ parcela.numero_parcela }}"
+                                       title="Disparar Agora">
+                                        <i class="bi bi-send"></i>
+                                    </button>
+                                    
+                                    <button type="button"
+                                       class="btn btn-outline-success btn-reenviar"
+                                       data-url="{% url 'financeiro:reenviar_cobranca' parcela.id %}"
+                                       data-cliente="{{ parcela.titulo.pessoa.nome }}"
+                                       data-parcela="{{ parcela.numero_parcela }}"
+                                       title="Reenviar (ignora se já foi enviado)">
+                                        <i class="bi bi-arrow-repeat"></i>
+                                    </button>
+                                    
+                                    <button type="button" 
+                                            class="btn btn-outline-warning" 
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#pausarModal{{ parcela.id }}"
+                                            title="Pausar Régua">
+                                        <i class="bi bi-pause"></i>
+                                    </button>
+                                    {% else %}
+                                    <!-- Sem régua configurada -->
+                                    <span class="text-muted small">Sem régua</span>
+                                    {% endif %}
+                                    
+                                    <button type="button" 
+                                            class="btn btn-outline-info" 
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#promessaModal{{ parcela.id }}"
+                                            title="Promessa Pagamento">
+                                        <i class="bi bi-calendar-check"></i>
+                                    </button>
+                                    
+                                    <div class="btn-group">
+                                        <button type="button" 
+                                                class="btn btn-outline-secondary dropdown-toggle" 
+                                                data-bs-toggle="dropdown" 
+                                                title="Mais ações">
+                                            <i class="bi bi-three-dots-vertical"></i>
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            <li>
+                                                <a class="dropdown-item" 
+                                                   data-bs-toggle="modal" 
+                                                   data-bs-target="#negociacaoModal{{ parcela.id }}"
+                                                   href="#">
+                                                    <i class="bi bi-chat-dots text-success"></i> Marcar como Negociação
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <a class="dropdown-item" href="{% url 'financeiro:marcar_normal' parcela.id %}">
+                                                    <i class="bi bi-arrow-counterclockwise text-secondary"></i> Voltar ao Normal
+                                                </a>
+                                            </li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li>
+                                                <a class="dropdown-item" href="{% url 'financeiro:historico_cobranca' parcela.id %}">
+                                                    <i class="bi bi-clock-history"></i> Histórico
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                
+                                <!-- Modal Pausar -->
+                                <div class="modal fade" id="pausarModal{{ parcela.id }}" tabindex="-1">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <form method="post" action="{% url 'financeiro:pausar_regua' parcela.id %}">
+                                                {% csrf_token %}
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title">Pausar Régua</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <div class="mb-3">
+                                                        <label class="form-label">Pausar por (dias)</label>
+                                                        <input type="number" name="dias" class="form-control" value="7" min="1">
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label class="form-label">Motivo</label>
+                                                        <textarea name="motivo" class="form-control" rows="3"></textarea>
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                                    <button type="submit" class="btn btn-warning">Pausar</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Modal Promessa -->
+                                <div class="modal fade" id="promessaModal{{ parcela.id }}" tabindex="-1">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <form method="post" action="{% url 'financeiro:marcar_promessa' parcela.id %}">
+                                                {% csrf_token %}
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title">Promessa de Pagamento</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <div class="mb-3">
+                                                        <label class="form-label">Data Prometida</label>
+                                                        <input type="date" name="data_promessa" class="form-control" required>
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label class="form-label">Observação</label>
+                                                        <textarea name="observacao" class="form-control" rows="3"></textarea>
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                                    <button type="submit" class="btn btn-success">Salvar</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Modal Negociação -->
+                                <div class="modal fade" id="negociacaoModal{{ parcela.id }}" tabindex="-1">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <form method="post" action="{% url 'financeiro:marcar_negociacao' parcela.id %}">
+                                                {% csrf_token %}
+                                                <div class="modal-header bg-success text-white">
+                                                    <h5 class="modal-title">
+                                                        <i class="bi bi-chat-dots"></i> Marcar como Negociação
+                                                    </h5>
+                                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <div class="alert alert-info">
+                                                        <i class="bi bi-info-circle"></i>
+                                                        A régua de cobrança automática será pausada enquanto estiver em negociação.
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label class="form-label fw-bold">Descreva a negociação</label>
+                                                        <textarea name="observacao_negociacao" 
+                                                                  class="form-control" 
+                                                                  rows="4"
+                                                                  placeholder="Ex: Cliente solicitou parcelamento em 3x, desconto de 10%, prazo adicional de 15 dias, etc."
+                                                                  required></textarea>
+                                                        <small class="text-muted">Esta informação aparecerá nas contas a receber.</small>
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                                    <button type="submit" class="btn btn-success">
+                                                        <i class="bi bi-check-circle"></i> Marcar como Negociação
+                                                    </button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center text-muted py-5">
+                                <i class="bi bi-inbox fs-1 d-block mb-3"></i>
+                                <h5>Nenhuma parcela encontrada</h5>
+                                <p class="mb-0">Crie títulos a receber para visualizá-los aqui</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Mostrar alerta se não há parcelas
+{% if total_parcelas == 0 %}
+document.addEventListener('DOMContentLoaded', function() {
+    Swal.fire({
+        icon: 'info',
+        title: 'Painel de Cobrança',
+        html: `
+            <div class="text-start">
+                <p><strong>Nenhuma parcela encontrada para cobrança.</strong></p>
+                <hr>
+                <p><i class="bi bi-lightbulb text-warning"></i> <strong>Para utilizar a régua de cobrança:</strong></p>
+                <ol class="text-start">
+                    <li>Crie um título do tipo <span class="badge bg-success">A Receber</span></li>
+                    <li>Adicione parcelas ao título</li>
+                    <li>Configure a régua de cobrança</li>
+                    <li>Vincule a régua às parcelas</li>
+                    <li>Os disparos serão automáticos!</li>
+                </ol>
+                <hr>
+                <div class="d-grid gap-2">
+                    <a href="/financeiro/titulos/criar/?tipo=RECEBER" class="btn btn-success">
+                        <i class="bi bi-plus-circle"></i> Criar Título a Receber
+                    </a>
+                    <a href="/financeiro/cobranca/reguas/criar/" class="btn btn-primary">
+                        <i class="bi bi-gear"></i> Configurar Régua de Cobrança
+                    </a>
+                </div>
+            </div>
+        `,
+        width: 600,
+        confirmButtonText: 'Entendi',
+        confirmButtonColor: '#0d6efd'
+    });
+});
+{% endif %}
+
+// Disparar cobrança com SweetAlert2
+document.querySelectorAll('.btn-disparar').forEach(btn => {
+    btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        const url = this.dataset.url;
+        const cliente = this.dataset.cliente;
+        const valorNum = parseFloat(this.dataset.valor) || 0;
+        const parcela = this.dataset.parcela;
+        
+        // Formatar valor em reais
+        const valor = new Intl.NumberFormat('pt-BR', { 
+            style: 'currency', 
+            currency: 'BRL' 
+        }).format(valorNum);
+        
+        console.log('Valor recebido:', this.dataset.valor);
+        console.log('Valor formatado:', valor);
+        
+        Swal.fire({
+            title: 'Disparar Cobrança',
+            html: `
+                <div class="text-start">
+                    <p><strong>Cliente:</strong> ${cliente}</p>
+                    <p><strong>Parcela:</strong> ${parcela}</p>
+                    <p><strong>Valor:</strong> <span class="text-success fw-bold">${valor}</span></p>
+                    <hr>
+                    <p class="text-muted small">
+                        <i class="bi bi-info-circle"></i> 
+                        Um e-mail de cobrança será enviado imediatamente para este cliente.
+                    </p>
+                </div>
+            `,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#0d6efd',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: '<i class="bi bi-send"></i> Sim, Disparar',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Redireciona para a URL de disparo
+                window.location.href = url;
+            }
+        });
+    });
+});
+
+// Reenviar cobrança com SweetAlert2
+document.querySelectorAll('.btn-reenviar').forEach(btn => {
+    btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        const url = this.dataset.url;
+        const cliente = this.dataset.cliente;
+        const parcela = this.dataset.parcela;
+        
+        Swal.fire({
+            title: 'Reenviar Cobrança',
+            html: `
+                <div class="text-start">
+                    <p><strong>Cliente:</strong> ${cliente}</p>
+                    <p><strong>Parcela:</strong> ${parcela}</p>
+                    <hr>
+                    <p class="text-warning small">
+                        <i class="bi bi-exclamation-triangle"></i> 
+                        <strong>Atenção:</strong> Esta ação reenviará o e-mail mesmo que já tenha sido enviado anteriormente.
+                    </p>
+                    <p class="text-muted small">
+                        Use esta opção para testes ou quando precisar reenviar a cobrança manualmente.
+                    </p>
+                </div>
+            `,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#198754',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: '<i class="bi bi-arrow-repeat"></i> Sim, Reenviar',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = url;
+            }
+        });
+    });
+});
+</script>
+
+{% endblock %}

@@ -1,0 +1,287 @@
+{% extends 'base_with_sidebar.html' %}
+{% load static %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'projetos:dashboard' %}">Projetos</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'projetos:listar_projetos' %}">Projetos</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'projetos:visualizar_projeto' projeto.pk %}">{{ projeto.codigo }}</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'projetos:listar_diario_obra' projeto.pk %}">Diário da Obra</a></li>
+        <li class="breadcrumb-item active">{% if is_edit %}Editar{% else %}Nova Entrada{% endif %}</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">
+                <i class="fas fa-book"></i> {% if is_edit %}Editar Entrada -{% else %}Nova Entrada -{% endif %} Diário da Obra
+            </h6>
+            <p class="text-muted mb-0 mt-2">Projeto: <strong>{{ projeto.codigo }}</strong> - {{ projeto.descricao }}</p>
+        </div>
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                
+                <!-- Informações Básicas -->
+                <div class="card mb-3">
+                    <div class="card-header bg-light">
+                        <h6 class="mb-0"><i class="fas fa-info-circle"></i> Informações Básicas</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="{{ form.data.id_for_label }}">Data <span class="text-danger">*</span></label>
+                                    {{ form.data }}
+                                    {% if form.data.errors %}
+                                        <div class="text-danger">{{ form.data.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="{{ form.periodo.id_for_label }}">Período <span class="text-danger">*</span></label>
+                                    {{ form.periodo }}
+                                    {% if form.periodo.errors %}
+                                        <div class="text-danger">{{ form.periodo.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="{{ form.clima.id_for_label }}">Clima <span class="text-danger">*</span></label>
+                                    {{ form.clima }}
+                                    {% if form.clima.errors %}
+                                        <div class="text-danger">{{ form.clima.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="{{ form.temperatura.id_for_label }}">Temperatura</label>
+                                    {{ form.temperatura }}
+                                    {% if form.temperatura.errors %}
+                                        <div class="text-danger">{{ form.temperatura.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Equipe e Recursos -->
+                <div class="card mb-3">
+                    <div class="card-header bg-light">
+                        <h6 class="mb-0"><i class="fas fa-users"></i> Equipe e Recursos</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="{{ form.num_trabalhadores.id_for_label }}">Número de Trabalhadores <span class="text-danger">*</span></label>
+                                    {{ form.num_trabalhadores }}
+                                    {% if form.num_trabalhadores.errors %}
+                                        <div class="text-danger">{{ form.num_trabalhadores.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-9">
+                                <div class="form-group">
+                                    <label for="{{ form.equipe_descricao.id_for_label }}">Descrição da Equipe</label>
+                                    {{ form.equipe_descricao }}
+                                    {% if form.equipe_descricao.errors %}
+                                        <div class="text-danger">{{ form.equipe_descricao.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <label for="{{ form.equipamentos_utilizados.id_for_label }}">Equipamentos Utilizados</label>
+                                    {{ form.equipamentos_utilizados }}
+                                    {% if form.equipamentos_utilizados.errors %}
+                                        <div class="text-danger">{{ form.equipamentos_utilizados.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Atividades -->
+                <div class="card mb-3">
+                    <div class="card-header bg-light">
+                        <h6 class="mb-0"><i class="fas fa-tasks"></i> Atividades Realizadas</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <label for="{{ form.atividades_realizadas.id_for_label }}">Descrição das Atividades <span class="text-danger">*</span></label>
+                                    {{ form.atividades_realizadas }}
+                                    {% if form.atividades_realizadas.errors %}
+                                        <div class="text-danger">{{ form.atividades_realizadas.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="{{ form.percentual_progresso.id_for_label }}">Progresso do Dia (%)</label>
+                                    {{ form.percentual_progresso }}
+                                    {% if form.percentual_progresso.errors %}
+                                        <div class="text-danger">{{ form.percentual_progresso.errors }}</div>
+                                    {% endif %}
+                                    <small class="form-text text-muted">0 a 100</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Materiais -->
+                <div class="card mb-3">
+                    <div class="card-header bg-light">
+                        <h6 class="mb-0"><i class="fas fa-boxes"></i> Materiais</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.materiais_recebidos.id_for_label }}">Materiais Recebidos</label>
+                                    {{ form.materiais_recebidos }}
+                                    {% if form.materiais_recebidos.errors %}
+                                        <div class="text-danger">{{ form.materiais_recebidos.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.materiais_utilizados.id_for_label }}">Materiais Utilizados</label>
+                                    {{ form.materiais_utilizados }}
+                                    {% if form.materiais_utilizados.errors %}
+                                        <div class="text-danger">{{ form.materiais_utilizados.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Problemas e Soluções -->
+                <div class="card mb-3">
+                    <div class="card-header bg-light">
+                        <h6 class="mb-0"><i class="fas fa-exclamation-triangle"></i> Problemas e Soluções</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.problemas_encontrados.id_for_label }}">Problemas Encontrados</label>
+                                    {{ form.problemas_encontrados }}
+                                    {% if form.problemas_encontrados.errors %}
+                                        <div class="text-danger">{{ form.problemas_encontrados.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.solucoes_aplicadas.id_for_label }}">Soluções Aplicadas</label>
+                                    {{ form.solucoes_aplicadas }}
+                                    {% if form.solucoes_aplicadas.errors %}
+                                        <div class="text-danger">{{ form.solucoes_aplicadas.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <label for="{{ form.visitas_fiscalizacao.id_for_label }}">Visitas e Fiscalização</label>
+                                    {{ form.visitas_fiscalizacao }}
+                                    {% if form.visitas_fiscalizacao.errors %}
+                                        <div class="text-danger">{{ form.visitas_fiscalizacao.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Segurança -->
+                <div class="card mb-3">
+                    <div class="card-header bg-light">
+                        <h6 class="mb-0"><i class="fas fa-hard-hat"></i> Segurança do Trabalho</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <label for="{{ form.incidentes_seguranca.id_for_label }}">Incidentes de Segurança</label>
+                                    {{ form.incidentes_seguranca }}
+                                    {% if form.incidentes_seguranca.errors %}
+                                        <div class="text-danger">{{ form.incidentes_seguranca.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="form-check">
+                                    {{ form.epi_utilizado }}
+                                    <label class="form-check-label" for="{{ form.epi_utilizado.id_for_label }}">
+                                        {{ form.epi_utilizado.label }}
+                                    </label>
+                                    {% if form.epi_utilizado.errors %}
+                                        <div class="text-danger">{{ form.epi_utilizado.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Observações Gerais -->
+                <div class="card mb-3">
+                    <div class="card-header bg-light">
+                        <h6 class="mb-0"><i class="fas fa-comment"></i> Observações Gerais</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <label for="{{ form.observacoes.id_for_label }}">Observações</label>
+                                    {{ form.observacoes }}
+                                    {% if form.observacoes.errors %}
+                                        <div class="text-danger">{{ form.observacoes.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Botões -->
+                <div class="row">
+                    <div class="col-md-12">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Salvar
+                        </button>
+                        <a href="{% url 'projetos:listar_diario_obra' projeto.pk %}" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Cancelar
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,454 @@
+{% extends 'base_with_sidebar.html' %}
+{% load static %}
+
+{% block title %}Nova Movimentação{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-plus-circle"></i> Nova Movimentação de Estoque</h2>
+    <a href="{% url 'estoque:listar_movimentacoes' %}" class="btn btn-secondary">
+        <i class="bi bi-arrow-left"></i> Voltar
+    </a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form method="post" id="formMovimentacao">
+            {% csrf_token %}
+            
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="item" class="form-label">Item <span class="text-danger">*</span></label>
+                    <select class="form-select" id="item" name="item" required>
+                        <option value="">Selecione um item...</option>
+                        {% for item in itens %}
+                        <option value="{{ item.id }}" 
+                                data-estoque="{{ item.get_saldo_total }}"
+                                data-unidade="{{ item.unidade_medida }}"
+                                data-custo="{{ item.get_custo_medio_ponderado }}">
+                            {{ item.descricao }} (Estoque: {{ item.get_saldo_total|floatformat:3 }} {{ item.unidade_medida }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <small class="text-muted">Estoque atual: <span id="estoqueAtual">-</span></small>
+                </div>
+                
+                <div class="col-md-6 mb-3">
+                    <label for="tipo_mov" class="form-label">Tipo de Movimentação <span class="text-danger">*</span></label>
+                    <select class="form-select" id="tipo_mov" name="tipo_mov" required>
+                        <option value="">Selecione...</option>
+                        <option value="ENTRADA">Entrada (Adiciona ao estoque)</option>
+                        <option value="SAIDA">Saída (Remove do estoque)</option>
+                        <option value="TRANSFERENCIA">Transferência (Entre locais)</option>
+                        <option value="AJUSTE">Ajuste (Corrige estoque)</option>
+                    </select>
+                </div>
+            </div>
+            
+            <!-- Campos condicionais baseados no tipo de movimento -->
+            <div class="row" id="camposLocal">
+                <div class="col-md-6 mb-3" id="divLocalOrigem" style="display:none;">
+                    <label for="local_origem" class="form-label">
+                        Local de Origem <span class="text-danger campo-obrigatorio">*</span>
+                    </label>
+                    <select class="form-select" id="local_origem" name="local_origem">
+                        <option value="">Selecione...</option>
+                        {% for local in locais %}
+                        <option value="{{ local.id }}">{{ local.codigo }} - {{ local.descricao }}</option>
+                        {% endfor %}
+                    </select>
+                    <small class="text-muted">De onde o item está saindo</small>
+                </div>
+                
+                <div class="col-md-6 mb-3" id="divLocalDestino" style="display:none;">
+                    <label for="local_destino" class="form-label">
+                        Local de Destino <span class="text-danger campo-obrigatorio">*</span>
+                    </label>
+                    <select class="form-select" id="local_destino" name="local_destino">
+                        <option value="">Selecione...</option>
+                        {% for local in locais %}
+                        <option value="{{ local.id }}">{{ local.codigo }} - {{ local.descricao }}</option>
+                        {% endfor %}
+                    </select>
+                    <small class="text-muted">Para onde o item está indo</small>
+                </div>
+                
+                <div class="col-md-6 mb-3" id="divDestino" style="display:none;">
+                    <label for="destino" class="form-label">
+                        Destino/Finalidade <span class="text-danger campo-obrigatorio">*</span>
+                    </label>
+                    <select class="form-select" id="destino" name="destino">
+                        <option value="">Selecione...</option>
+                        {% for dest in destinos %}
+                        <option value="{{ dest.id }}">{{ dest.codigo }} - {{ dest.descricao }}</option>
+                        {% endfor %}
+                    </select>
+                    <small class="text-muted">Finalidade da saída</small>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label for="quantidade" class="form-label">Quantidade <span class="text-danger">*</span></label>
+                    <input type="number" class="form-control" id="quantidade" name="quantidade" 
+                           required min="0" step="0.001" value="0">
+                    <small class="text-muted">Unidade: <span id="unidadeMedida">-</span></small>
+                </div>
+                
+                <div class="col-md-4 mb-3">
+                    <label for="valor_unitario" class="form-label">Valor Unitário <span class="text-danger">*</span></label>
+                    <div class="input-group">
+                        <span class="input-group-text">R$</span>
+                        <input type="number" class="form-control" id="valor_unitario" name="valor_unitario" 
+                               required min="0" step="0.0001" value="0">
+                    </div>
+                </div>
+                
+                <div class="col-md-4 mb-3">
+                    <label for="valor_total" class="form-label">Valor Total</label>
+                    <div class="input-group">
+                        <span class="input-group-text">R$</span>
+                        <input type="text" class="form-control" id="valor_total" name="valor_total" readonly>
+                    </div>
+                    <small class="text-muted">Calculado automaticamente</small>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="documento" class="form-label">Número do Documento</label>
+                    <input type="text" class="form-control" id="documento" name="documento" 
+                           readonly value="Será gerado automaticamente" style="background-color: #e9ecef;">
+                    <small class="text-muted">Gerado automaticamente no formato: DDMMAAAA-N</small>
+                </div>
+                
+                <div class="col-md-6 mb-3">
+                    <label for="projeto" class="form-label">Projeto</label>
+                    <select class="form-select" id="projeto" name="projeto">
+                        <option value="">Nenhum (estoque geral)</option>
+                        {% for proj in projetos %}
+                        <option value="{{ proj.id }}">{{ proj.codigo }} - {{ proj.descricao }}</option>
+                        {% endfor %}
+                    </select>
+                    <small class="text-muted">Projeto/Obra ao qual o material foi destinado</small>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="solicitante_material" class="form-label">Quem Solicitou o Material</label>
+                    <select class="form-select" id="solicitante_material" name="solicitante_material">
+                        <option value="">Selecione...</option>
+                        {% for pessoa in pessoas %}
+                        <option value="{{ pessoa.id }}">{{ pessoa.nome }}</option>
+                        {% endfor %}
+                    </select>
+                    <small class="text-muted">Pessoa que solicitou o material</small>
+                </div>
+                
+                <div class="col-md-6 mb-3">
+                    <label for="liberado_por" class="form-label">Liberado Por</label>
+                    <select class="form-select" id="liberado_por" name="liberado_por">
+                        <option value="">Selecione...</option>
+                        {% for usuario in usuarios_liberadores %}
+                        <option value="{{ usuario.id }}">{{ usuario.get_full_name|default:usuario.username }}</option>
+                        {% endfor %}
+                    </select>
+                    <small class="text-muted">Usuário que liberou o material</small>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-12 mb-3">
+                    <label for="observacao" class="form-label">Observação</label>
+                    <textarea class="form-control" id="observacao" name="observacao" rows="3" 
+                              placeholder="Detalhes sobre a movimentação..."></textarea>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="alert alert-info">
+                        <strong><i class="bi bi-info-circle"></i> Atenção:</strong>
+                        <ul class="mb-0 mt-2">
+                            <li><strong>ENTRADA:</strong> Adiciona a quantidade ao estoque e recalcula o custo médio. Requer <strong>Local de Destino</strong>.</li>
+                            <li><strong>SAÍDA:</strong> Remove a quantidade do estoque. Requer <strong>Local de Origem</strong> e <strong>Destino/Finalidade</strong>.</li>
+                            <li><strong>TRANSFERÊNCIA:</strong> Move itens entre locais. Requer <strong>Local de Origem</strong> e <strong>Local de Destino</strong> (devem ser diferentes).</li>
+                            <li><strong>AJUSTE:</strong> Adiciona ou remove (quantidade negativa) do estoque sem afetar o custo médio. Requer pelo menos um local.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-12">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-save"></i> Registrar Movimentação
+                    </button>
+                    <a href="{% url 'estoque:listar_movimentacoes' %}" class="btn btn-secondary">
+                        <i class="bi bi-x-circle"></i> Cancelar
+                    </a>
+                    <small class="text-muted ms-3">
+                        <i class="bi bi-info-circle"></i> Após salvar, você poderá gerar o documento para assinatura
+                    </small>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+$(document).ready(function() {
+    // Inicializa Select2 em todos os selects
+    $('#item').select2({
+        theme: 'bootstrap-5',
+        width: '100%',
+        placeholder: 'Selecione um item...',
+        allowClear: true,
+        language: {
+            noResults: function() {
+                return "Nenhum resultado encontrado";
+            },
+            searching: function() {
+                return "Buscando...";
+            }
+        }
+    }).on('select2:select', function(e) {
+        // Evento disparado quando um item é selecionado via Select2
+        var selectedOption = $(e.params.data.element);
+        var estoqueAtual = selectedOption.data('estoque');
+        var unidade = selectedOption.data('unidade');
+        var custoMedio = selectedOption.data('custo');
+        
+        console.log('Item selecionado - Custo médio:', custoMedio);
+        
+        $('#estoqueAtual').text(estoqueAtual ? estoqueAtual + ' ' + unidade : '-');
+        $('#unidadeMedida').text(unidade ? unidade : '-');
+        
+        // Preenche o valor unitário com o custo médio
+        if (custoMedio !== undefined && custoMedio !== null && custoMedio !== '') {
+            var custoFormatado = parseFloat(custoMedio);
+            if (!isNaN(custoFormatado)) {
+                $('#valor_unitario').val(custoFormatado.toFixed(4));
+                console.log('Valor unitário preenchido:', custoFormatado.toFixed(4));
+                // Recalcula o valor total
+                calcularValorTotal();
+            }
+        } else {
+            // Se não houver custo médio, preenche com 0
+            $('#valor_unitario').val('0.0000');
+        }
+    });
+    
+    $('#tipo_mov').select2({
+        theme: 'bootstrap-5',
+        width: '100%',
+        placeholder: 'Selecione...',
+        allowClear: true,
+        minimumResultsForSearch: -1
+    });
+    
+    $('#local_origem').select2({
+        theme: 'bootstrap-5',
+        width: '100%',
+        placeholder: 'Selecione...',
+        allowClear: true
+    });
+    
+    $('#local_destino').select2({
+        theme: 'bootstrap-5',
+        width: '100%',
+        placeholder: 'Selecione...',
+        allowClear: true
+    });
+    
+    $('#destino').select2({
+        theme: 'bootstrap-5',
+        width: '100%',
+        placeholder: 'Selecione...',
+        allowClear: true
+    });
+    
+    $('#projeto').select2({
+        theme: 'bootstrap-5',
+        width: '100%',
+        placeholder: 'Nenhum (estoque geral)',
+        allowClear: true
+    });
+    
+    $('#solicitante_material').select2({
+        theme: 'bootstrap-5',
+        width: '100%',
+        placeholder: 'Selecione quem solicitou...',
+        allowClear: true
+    });
+    
+    $('#liberado_por').select2({
+        theme: 'bootstrap-5',
+        width: '100%',
+        placeholder: 'Selecione quem liberou...',
+        allowClear: true
+    });
+
+    // Controla visibilidade dos campos baseado no tipo de movimento
+    $('#tipo_mov').on('change', function() {
+        var tipoMov = $(this).val();
+        
+        // Esconde todos os campos
+        $('#divLocalOrigem').hide();
+        $('#divLocalDestino').hide();
+        $('#divDestino').hide();
+        
+        // Limpa os valores usando Select2
+        $('#local_origem').val(null).trigger('change');
+        $('#local_destino').val(null).trigger('change');
+        $('#destino').val(null).trigger('change');
+        
+        // Remove required de todos
+        $('#local_origem').removeAttr('required');
+        $('#local_destino').removeAttr('required');
+        $('#destino').removeAttr('required');
+        
+        // Mostra campos apropriados baseado no tipo
+        switch(tipoMov) {
+            case 'ENTRADA':
+                $('#divLocalDestino').show();
+                $('#local_destino').attr('required', 'required');
+                break;
+                
+            case 'SAIDA':
+                $('#divLocalOrigem').show();
+                $('#divDestino').show();
+                $('#local_origem').attr('required', 'required');
+                $('#destino').attr('required', 'required');
+                break;
+                
+            case 'TRANSFERENCIA':
+                $('#divLocalOrigem').show();
+                $('#divLocalDestino').show();
+                $('#local_origem').attr('required', 'required');
+                $('#local_destino').attr('required', 'required');
+                break;
+                
+            case 'AJUSTE':
+                $('#divLocalOrigem').show();
+                $('#divLocalDestino').show();
+                break;
+        }
+    });
+
+    // Calcula valor total
+    function calcularValorTotal() {
+        var quantidade = parseFloat($('#quantidade').val()) || 0;
+        var valorUnitario = parseFloat($('#valor_unitario').val()) || 0;
+        var valorTotal = quantidade * valorUnitario;
+        
+        $('#valor_total').val(valorTotal.toFixed(2));
+    }
+
+    $('#quantidade').on('input', calcularValorTotal);
+    $('#valor_unitario').on('input', calcularValorTotal);
+
+    // Validação do formulário
+    $('#formMovimentacao').on('submit', function(e) {
+        var item = $('#item').val();
+        var tipoMov = $('#tipo_mov').val();
+        var quantidade = parseFloat($('#quantidade').val()) || 0;
+        var valorUnitario = parseFloat($('#valor_unitario').val()) || 0;
+        
+        if (!item || !tipoMov) {
+            e.preventDefault();
+            Swal.fire({
+                icon: 'error',
+                title: 'Campos Obrigatórios',
+                text: 'Por favor, preencha todos os campos obrigatórios (*)'
+            });
+            return false;
+        }
+        
+        if (quantidade <= 0) {
+            e.preventDefault();
+            Swal.fire({
+                icon: 'error',
+                title: 'Quantidade Inválida',
+                text: 'A quantidade deve ser maior que zero'
+            });
+            return false;
+        }
+        
+        if (valorUnitario < 0) {
+            e.preventDefault();
+            Swal.fire({
+                icon: 'error',
+                title: 'Valor Inválido',
+                text: 'O valor unitário não pode ser negativo'
+            });
+            return false;
+        }
+        
+        // Validação de transferência: locais devem ser diferentes
+        if (tipoMov === 'TRANSFERENCIA') {
+            var localOrigem = $('#local_origem').val();
+            var localDestino = $('#local_destino').val();
+            
+            if (localOrigem && localDestino && localOrigem === localDestino) {
+                e.preventDefault();
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Locais Iguais',
+                    text: 'Para transferência, o Local de Origem e Local de Destino devem ser diferentes'
+                });
+                return false;
+            }
+        }
+        
+        // Validação de ajuste: pelo menos um local
+        if (tipoMov === 'AJUSTE') {
+            var localOrigem = $('#local_origem').val();
+            var localDestino = $('#local_destino').val();
+            
+            if (!localOrigem && !localDestino) {
+                e.preventDefault();
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Local Obrigatório',
+                    text: 'Para ajuste, é necessário informar pelo menos um local'
+                });
+                return false;
+            }
+        }
+        
+        // Verifica se tem estoque suficiente para saída
+        if (tipoMov === 'SAIDA') {
+            var selectedOption = $('#item').find('option:selected');
+            var estoqueAtual = parseFloat(selectedOption.data('estoque')) || 0;
+            
+            if (quantidade > estoqueAtual) {
+                e.preventDefault();
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Estoque Insuficiente',
+                    text: 'A quantidade de saída (' + quantidade + ') é maior que o estoque atual (' + estoqueAtual + ')',
+                    showCancelButton: true,
+                    confirmButtonText: 'Continuar Mesmo Assim',
+                    cancelButtonText: 'Cancelar'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $('#formMovimentacao').off('submit').submit();
+                    }
+                });
+                return false;
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

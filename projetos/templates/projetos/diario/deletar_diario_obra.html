@@ -1,0 +1,68 @@
+{% extends 'base_with_sidebar.html' %}
+{% load static %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'projetos:dashboard' %}">Projetos</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'projetos:listar_projetos' %}">Projetos</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'projetos:visualizar_projeto' projeto.pk %}">{{ projeto.codigo }}</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'projetos:listar_diario_obra' projeto.pk %}">Diário da Obra</a></li>
+        <li class="breadcrumb-item active">Excluir</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 bg-danger text-white">
+            <h6 class="m-0 font-weight-bold">
+                <i class="fas fa-exclamation-triangle"></i> Confirmar Exclusão
+            </h6>
+        </div>
+        <div class="card-body">
+            <div class="alert alert-danger">
+                <h5><i class="fas fa-exclamation-circle"></i> Atenção!</h5>
+                <p>Você tem certeza que deseja excluir esta entrada do diário da obra?</p>
+                <p class="mb-0"><strong>Esta ação não pode ser desfeita!</strong></p>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header">
+                    <strong>Detalhes da Entrada</strong>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Projeto:</strong> {{ projeto.codigo }} - {{ projeto.descricao }}</p>
+                            <p><strong>Data:</strong> {{ diario.data|date:"d/m/Y" }}</p>
+                            <p><strong>Período:</strong> {{ diario.get_periodo_display }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Clima:</strong> {{ diario.get_clima_display }}</p>
+                            <p><strong>Trabalhadores:</strong> {{ diario.num_trabalhadores }}</p>
+                            <p><strong>Registrado por:</strong> {{ diario.criado_por.get_full_name|default:diario.criado_por.username }}</p>
+                        </div>
+                    </div>
+                    <hr>
+                    <p><strong>Atividades:</strong></p>
+                    <p>{{ diario.atividades_realizadas|truncatewords:30 }}</p>
+                </div>
+            </div>
+
+            <form method="post">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger">
+                    <i class="fas fa-trash"></i> Sim, excluir esta entrada
+                </button>
+                <a href="{% url 'projetos:visualizar_diario_obra' diario.pk %}" class="btn btn-secondary">
+                    <i class="fas fa-times"></i> Cancelar
+                </a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

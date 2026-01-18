@@ -1,0 +1,164 @@
+{% extends 'base_with_sidebar.html' %}
+{% load static %}
+{% load financeiro_tags %}
+
+{% block title %}Formas de Pagamento - Sistema Serrana{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Cabeçalho -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">
+                <i class="bi bi-credit-card me-2"></i>Formas de Pagamento
+            </h2>
+            <p class="text-muted mb-0">Gerenciamento de formas de pagamento/recebimento</p>
+        </div>
+        <div>
+            <a href="{% url 'financeiro:criar_forma_pagamento' %}" class="btn btn-primary">
+                <i class="bi bi-plus-circle me-2"></i>Nova Forma de Pagamento
+            </a>
+        </div>
+    </div>
+
+    <!-- Card de Informações -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle me-2"></i>
+                <strong>Sobre as Formas de Pagamento:</strong>
+                Configure aqui as diferentes formas de pagamento/recebimento disponíveis no sistema, 
+                incluindo prazos de compensação e taxas quando aplicáveis.
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabela de Formas de Pagamento -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white">
+            <h5 class="mb-0">
+                <i class="bi bi-list me-2"></i>Formas Cadastradas
+                <span class="badge bg-secondary ms-2">{{ formas.count }}</span>
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if formas %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Código</th>
+                            <th>Descrição</th>
+                            <th>Tipo</th>
+                            <th class="text-center">Compensação</th>
+                            <th class="text-end">Taxa %</th>
+                            <th class="text-end">Taxa Fixa</th>
+                            <th class="text-center">Status</th>
+                            <th class="text-center" style="width: 150px;">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for forma in formas %}
+                        <tr>
+                            <td><code>{{ forma.codigo }}</code></td>
+                            <td><strong>{{ forma.descricao }}</strong></td>
+                            <td>
+                                {% if forma.tipo == 'PIX' %}
+                                    <span class="badge bg-primary">{{ forma.get_tipo_display }}</span>
+                                {% elif forma.tipo == 'DINHEIRO' %}
+                                    <span class="badge bg-success">{{ forma.get_tipo_display }}</span>
+                                {% elif forma.tipo == 'BOLETO' %}
+                                    <span class="badge bg-warning text-dark">{{ forma.get_tipo_display }}</span>
+                                {% elif forma.tipo == 'CARTAO_CREDITO' or forma.tipo == 'CARTAO_DEBITO' %}
+                                    <span class="badge bg-info">{{ forma.get_tipo_display }}</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ forma.get_tipo_display }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                {% if forma.prazo_compensacao > 0 %}
+                                    <span class="badge bg-warning text-dark">{{ forma.prazo_compensacao }} dia{{ forma.prazo_compensacao|pluralize }}</span>
+                                {% else %}
+                                    <span class="text-muted">Imediato</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                {% if forma.taxa_percentual > 0 %}
+                                    {{ forma.taxa_percentual }}%
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                {% if forma.taxa_fixa > 0 %}
+                                    {{ forma.taxa_fixa|currency }}
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                {% if forma.ativo %}
+                                    <span class="badge bg-success">Ativo</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Inativo</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                <a href="{% url 'financeiro:editar_forma_pagamento' forma.id %}" 
+                                   class="btn btn-sm btn-outline-primary" 
+                                   title="Editar">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <a href="{% url 'financeiro:excluir_forma_pagamento' forma.id %}" 
+                                   class="btn btn-sm btn-outline-danger" 
+                                   title="Excluir">
+                                    <i class="bi bi-trash"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-warning mb-0">
+                <i class="bi bi-exclamation-triangle me-2"></i>
+                Nenhuma forma de pagamento cadastrada. 
+                <a href="{% url 'financeiro:criar_forma_pagamento' %}" class="alert-link">Cadastre a primeira</a>.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Cards de Ajuda -->
+    <div class="row mt-3">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h6 class="card-title">
+                        <i class="bi bi-clock-history text-primary me-2"></i>Prazo de Compensação
+                    </h6>
+                    <p class="card-text small text-muted mb-0">
+                        Define quantos dias úteis leva até o valor estar disponível na conta. 
+                        Útil para cheques, transferências bancárias e cartões.
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h6 class="card-title">
+                        <i class="bi bi-percent text-warning me-2"></i>Taxas
+                    </h6>
+                    <p class="card-text small text-muted mb-0">
+                        Configure taxas percentuais (ex: cartão de crédito 3%) ou fixas (ex: boleto R$ 2,50) 
+                        que serão automaticamente calculadas nos pagamentos.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

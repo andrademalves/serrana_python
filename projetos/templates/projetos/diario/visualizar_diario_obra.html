@@ -1,0 +1,257 @@
+{% extends 'base_with_sidebar.html' %}
+{% load static %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'projetos:dashboard' %}">Projetos</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'projetos:listar_projetos' %}">Projetos</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'projetos:visualizar_projeto' projeto.pk %}">{{ projeto.codigo }}</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'projetos:listar_diario_obra' projeto.pk %}">Diário da Obra</a></li>
+        <li class="breadcrumb-item active">{{ diario.data|date:"d/m/Y" }}</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Cabeçalho -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="fas fa-book"></i> Diário da Obra - {{ diario.data|date:"d/m/Y" }}</h2>
+            <p class="text-muted mb-0">Projeto: <strong>{{ projeto.codigo }}</strong> - {{ projeto.descricao }}</p>
+        </div>
+        <div>
+            <a href="{% url 'projetos:editar_diario_obra' diario.pk %}" class="btn btn-warning">
+                <i class="fas fa-edit"></i> Editar
+            </a>
+            <a href="{% url 'projetos:listar_diario_obra' projeto.pk %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Voltar
+            </a>
+        </div>
+    </div>
+
+    <!-- Informações Básicas -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 bg-primary text-white">
+            <h6 class="m-0 font-weight-bold"><i class="fas fa-info-circle"></i> Informações Básicas</h6>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3">
+                    <p><strong>Data:</strong><br>{{ diario.data|date:"d/m/Y" }}</p>
+                </div>
+                <div class="col-md-3">
+                    <p><strong>Período:</strong><br>
+                        <span class="badge badge-info">{{ diario.get_periodo_display }}</span>
+                    </p>
+                </div>
+                <div class="col-md-3">
+                    <p><strong>Clima:</strong><br>
+                        {% if diario.clima == 'ENSOLARADO' %}
+                            <i class="fas fa-sun text-warning"></i> {{ diario.get_clima_display }}
+                        {% elif diario.clima == 'NUBLADO' %}
+                            <i class="fas fa-cloud text-secondary"></i> {{ diario.get_clima_display }}
+                        {% elif diario.clima == 'CHUVOSO' %}
+                            <i class="fas fa-cloud-rain text-primary"></i> {{ diario.get_clima_display }}
+                        {% else %}
+                            <i class="fas fa-bolt text-danger"></i> {{ diario.get_clima_display }}
+                        {% endif %}
+                    </p>
+                </div>
+                <div class="col-md-3">
+                    <p><strong>Temperatura:</strong><br>{{ diario.temperatura|default:"Não informada" }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Equipe e Recursos -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 bg-info text-white">
+            <h6 class="m-0 font-weight-bold"><i class="fas fa-users"></i> Equipe e Recursos</h6>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3">
+                    <p><strong>Número de Trabalhadores:</strong></p>
+                    <h3 class="text-primary">{{ diario.num_trabalhadores }}</h3>
+                </div>
+                <div class="col-md-9">
+                    <p><strong>Descrição da Equipe:</strong></p>
+                    <p>{{ diario.equipe_descricao|default:"Não informada"|linebreaks }}</p>
+                </div>
+            </div>
+            <hr>
+            <div class="row">
+                <div class="col-md-12">
+                    <p><strong>Equipamentos Utilizados:</strong></p>
+                    <p>{{ diario.equipamentos_utilizados|default:"Nenhum equipamento registrado"|linebreaks }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Atividades -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 bg-success text-white">
+            <h6 class="m-0 font-weight-bold"><i class="fas fa-tasks"></i> Atividades Realizadas</h6>
+        </div>
+        <div class="card-body">
+            <div class="row mb-3">
+                <div class="col-md-12">
+                    <p><strong>Descrição das Atividades:</strong></p>
+                    <p>{{ diario.atividades_realizadas|linebreaks }}</p>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>Progresso do Dia:</strong></p>
+                    <div class="progress" style="height: 30px;">
+                        <div class="progress-bar bg-success" role="progressbar" 
+                             style="width: {{ diario.percentual_progresso }}%;" 
+                             aria-valuenow="{{ diario.percentual_progresso }}" 
+                             aria-valuemin="0" aria-valuemax="100">
+                            <strong>{{ diario.percentual_progresso }}%</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Materiais -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 bg-warning text-dark">
+            <h6 class="m-0 font-weight-bold"><i class="fas fa-boxes"></i> Materiais</h6>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>Materiais Recebidos:</strong></p>
+                    <p>{{ diario.materiais_recebidos|default:"Nenhum material recebido"|linebreaks }}</p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>Materiais Utilizados:</strong></p>
+                    <p>{{ diario.materiais_utilizados|default:"Nenhum material registrado"|linebreaks }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Problemas e Soluções -->
+    {% if diario.problemas_encontrados or diario.solucoes_aplicadas or diario.visitas_fiscalizacao %}
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 bg-danger text-white">
+            <h6 class="m-0 font-weight-bold"><i class="fas fa-exclamation-triangle"></i> Problemas, Soluções e Visitas</h6>
+        </div>
+        <div class="card-body">
+            {% if diario.problemas_encontrados %}
+            <div class="row mb-3">
+                <div class="col-md-12">
+                    <p><strong>Problemas Encontrados:</strong></p>
+                    <div class="alert alert-danger">
+                        {{ diario.problemas_encontrados|linebreaks }}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if diario.solucoes_aplicadas %}
+            <div class="row mb-3">
+                <div class="col-md-12">
+                    <p><strong>Soluções Aplicadas:</strong></p>
+                    <div class="alert alert-success">
+                        {{ diario.solucoes_aplicadas|linebreaks }}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if diario.visitas_fiscalizacao %}
+            <div class="row">
+                <div class="col-md-12">
+                    <p><strong>Visitas e Fiscalização:</strong></p>
+                    <div class="alert alert-info">
+                        {{ diario.visitas_fiscalizacao|linebreaks }}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Segurança -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 bg-dark text-white">
+            <h6 class="m-0 font-weight-bold"><i class="fas fa-hard-hat"></i> Segurança do Trabalho</h6>
+        </div>
+        <div class="card-body">
+            <div class="row mb-3">
+                <div class="col-md-12">
+                    <p><strong>EPIs Utilizados:</strong></p>
+                    {% if diario.epi_utilizado %}
+                        <span class="badge badge-success badge-lg"><i class="fas fa-check"></i> Sim - Todos os trabalhadores utilizaram EPIs adequados</span>
+                    {% else %}
+                        <span class="badge badge-danger badge-lg"><i class="fas fa-times"></i> Não - EPIs não foram utilizados adequadamente</span>
+                    {% endif %}
+                </div>
+            </div>
+            {% if diario.incidentes_seguranca %}
+            <div class="row">
+                <div class="col-md-12">
+                    <p><strong>Incidentes de Segurança:</strong></p>
+                    <div class="alert alert-warning">
+                        {{ diario.incidentes_seguranca|linebreaks }}
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="alert alert-success">
+                        <i class="fas fa-check-circle"></i> Nenhum incidente de segurança registrado
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Observações Gerais -->
+    {% if diario.observacoes %}
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-comment"></i> Observações Gerais</h6>
+        </div>
+        <div class="card-body">
+            <p>{{ diario.observacoes|linebreaks }}</p>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Auditoria -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-secondary"><i class="fas fa-history"></i> Informações de Auditoria</h6>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>Registrado por:</strong><br>{{ diario.criado_por.get_full_name|default:diario.criado_por.username }}</p>
+                    <p><strong>Data de Registro:</strong><br>{{ diario.criado_em|date:"d/m/Y H:i" }}</p>
+                </div>
+                <div class="col-md-6">
+                    {% if diario.atualizado_por %}
+                    <p><strong>Última atualização por:</strong><br>{{ diario.atualizado_por.get_full_name|default:diario.atualizado_por.username }}</p>
+                    <p><strong>Data de Atualização:</strong><br>{{ diario.atualizado_em|date:"d/m/Y H:i" }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

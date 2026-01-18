@@ -1,0 +1,284 @@
+{% extends 'base_with_sidebar.html' %}
+{% load static %}
+{% load financeiro_tags %}
+
+{% block title %}Resultado por Centro de Custo - {{ mes_nome }}/{{ ano }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Cabeçalho -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="bi bi-diagram-3"></i> Resultado por Centro de Custo</h2>
+            <p class="text-muted mb-0">Análise de receitas e despesas por centro de custo - {{ mes_nome }}/{{ ano }}</p>
+        </div>
+        <div>
+            <a href="{% url 'financeiro:dashboard' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Voltar
+            </a>
+        </div>
+    </div>
+
+    <!-- Filtro de Período -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label for="mes" class="form-label">Mês</label>
+                    <select name="mes" id="mes" class="form-select">
+                        {% for m in "123456789012"|make_list %}
+                            {% with mes_num=forloop.counter %}
+                            <option value="{{ mes_num }}" {% if mes_num == mes %}selected{% endif %}>
+                                {{ mes_num|stringformat:"02d" }}
+                            </option>
+                            {% endwith %}
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="ano" class="form-label">Ano</label>
+                    <input type="number" name="ano" id="ano" class="form-control" value="{{ ano }}" min="2020" max="2030">
+                </div>
+                <div class="col-md-6 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-funnel"></i> Filtrar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Totais Gerais -->
+    {% with total_receitas=0 total_despesas=0 %}
+        {% for res in resultados %}
+            {% with total_receitas=total_receitas|add:res.receitas %}{% endwith %}
+            {% with total_despesas=total_despesas|add:res.despesas %}{% endwith %}
+        {% endfor %}
+        
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="card border-success">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <p class="text-muted mb-1">Total Receitas</p>
+                                <h4 class="mb-0 text-success">R$ {{ total_receitas|floatformat:2|default:"0,00" }}</h4>
+                            </div>
+                            <i class="bi bi-arrow-down-circle fs-1 text-success"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card border-danger">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <p class="text-muted mb-1">Total Despesas</p>
+                                <h4 class="mb-0 text-danger">R$ {{ total_despesas|floatformat:2|default:"0,00" }}</h4>
+                            </div>
+                            <i class="bi bi-arrow-up-circle fs-1 text-danger"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card border-primary">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <p class="text-muted mb-1">Resultado Geral</p>
+                                <h4 class="mb-0 {% if total_receitas|add:total_despesas >= 0 %}text-primary{% else %}text-warning{% endif %}">
+                                    R$ {{ total_receitas|add:total_despesas|floatformat:2|default:"0,00" }}
+                                </h4>
+                            </div>
+                            <i class="bi bi-calculator fs-1 text-primary"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endwith %}
+
+    <!-- Tabela de Resultados por Centro -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="bi bi-table"></i> Resultado Detalhado por Centro de Custo</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Centro de Custo</th>
+                            <th>Tipo</th>
+                            <th class="text-end">Receitas</th>
+                            <th class="text-end">Despesas</th>
+                            <th class="text-end">Resultado</th>
+                            <th class="text-end">Margem %</th>
+                            <th class="text-center">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for res in resultados %}
+                        <tr>
+                            <td>
+                                <strong>{{ res.centro.nome }}</strong><br>
+                                <small class="text-muted">{{ res.centro.codigo }}</small>
+                            </td>
+                            <td>
+                                <span class="badge bg-secondary">{{ res.centro.get_tipo_display }}</span>
+                            </td>
+                            <td class="text-end text-success">
+                                <strong>{{ res.receitas|currency }}</strong>
+                            </td>
+                            <td class="text-end text-danger">
+                                <strong>{{ res.despesas|currency }}</strong>
+                            </td>
+                            <td class="text-end">
+                                <strong class="{% if res.resultado >= 0 %}text-primary{% else %}text-warning{% endif %}">
+                                    {{ res.resultado|currency }}
+                                </strong>
+                            </td>
+                            <td class="text-end">
+                                <span class="badge {% if res.margem >= 20 %}bg-success{% elif res.margem >= 0 %}bg-info{% else %}bg-danger{% endif %}">
+                                    {{ res.margem|floatformat:1 }}%
+                                </span>
+                            </td>
+                            <td class="text-center">
+                                {% if res.resultado >= 0 %}
+                                    <i class="bi bi-check-circle-fill text-success fs-5" title="Lucrativo"></i>
+                                {% else %}
+                                    <i class="bi bi-exclamation-triangle-fill text-warning fs-5" title="Prejuízo"></i>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center text-muted py-5">
+                                <i class="bi bi-inbox fs-1 d-block mb-3"></i>
+                                <p class="mb-0">Nenhum centro de custo encontrado</p>
+                                <small>Cadastre centros de custo ou selecione outro período</small>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    {% if resultados %}
+                    <tfoot class="table-light">
+                        <tr>
+                            <th colspan="2">TOTAL GERAL</th>
+                            <th class="text-end text-success">
+                                R$ {% widthratio resultados|length 1 1 as total %}0,00
+                            </th>
+                            <th class="text-end text-danger">
+                                R$ 0,00
+                            </th>
+                            <th class="text-end">
+                                <strong>R$ 0,00</strong>
+                            </th>
+                            <th colspan="2"></th>
+                        </tr>
+                    </tfoot>
+                    {% endif %}
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráfico de Resultados -->
+    <div class="card mt-4">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="bi bi-bar-chart"></i> Comparativo por Centro de Custo</h5>
+        </div>
+        <div class="card-body">
+            <canvas id="graficoResultados" height="80"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('graficoResultados');
+    
+    const labels = [{% for res in resultados %}'{{ res.centro.nome|truncatewords:3 }}'{% if not forloop.last %}, {% endif %}{% endfor %}];
+    const receitas = [{% for res in resultados %}{{ res.receitas|default:0 }}{% if not forloop.last %}, {% endif %}{% endfor %}];
+    const despesas = [{% for res in resultados %}{{ res.despesas|default:0 }}{% if not forloop.last %}, {% endif %}{% endfor %}];
+    const resultados = [{% for res in resultados %}{{ res.resultado|default:0 }}{% if not forloop.last %}, {% endif %}{% endfor %}];
+    
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Receitas',
+                    data: receitas,
+                    backgroundColor: 'rgba(40, 167, 69, 0.7)',
+                    borderColor: 'rgba(40, 167, 69, 1)',
+                    borderWidth: 1
+                },
+                {
+                    label: 'Despesas',
+                    data: despesas,
+                    backgroundColor: 'rgba(220, 53, 69, 0.7)',
+                    borderColor: 'rgba(220, 53, 69, 1)',
+                    borderWidth: 1
+                },
+                {
+                    label: 'Resultado',
+                    data: resultados,
+                    type: 'line',
+                    borderColor: 'rgba(0, 123, 255, 1)',
+                    backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                    borderWidth: 2,
+                    fill: false
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    position: 'top',
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.dataset.label || '';
+                            if (label) {
+                                label += ': ';
+                            }
+                            label += 'R$ ' + context.parsed.y.toFixed(2).replace('.', ',');
+                            return label;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return 'R$ ' + value.toFixed(2).replace('.', ',');
+                        }
+                    }
+                }
+            }
+        }
+    });
+});
+</script>
+
+<style>
+.card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.table tbody tr:hover {
+    background-color: rgba(0, 123, 255, 0.05);
+}
+</style>
+{% endblock %}

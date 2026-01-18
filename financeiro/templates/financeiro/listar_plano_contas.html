@@ -1,0 +1,177 @@
+{% extends 'base_with_sidebar.html' %}
+{% load static %}
+{% load financeiro_tags %}
+
+{% block title %}Plano de Contas - Sistema Serrana{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">
+                <i class="bi bi-folder-symlink me-2"></i>Plano de Contas
+            </h2>
+            <p class="text-muted mb-0">Estrutura hierárquica de contas contábeis</p>
+        </div>
+        <div>
+            <a href="{% url 'financeiro:criar_plano_conta' %}" class="btn btn-primary">
+                <i class="bi bi-plus-circle me-2"></i>Nova Conta
+            </a>
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle me-2"></i>
+                <strong>Estrutura Hierárquica:</strong>
+                Contas <strong>Sintéticas</strong> são totalizadoras (pais). 
+                Contas <strong>Analíticas</strong> recebem lançamentos (filhas).
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white">
+            <h5 class="mb-0">
+                <i class="bi bi-list-nested me-2"></i>Contas Cadastradas
+                <span class="badge bg-secondary ms-2">{{ contas.count }}</span>
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if contas %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 150px;">Código</th>
+                            <th>Nome</th>
+                            <th style="width: 100px;">Nível</th>
+                            <th>Tipo</th>
+                            <th>Natureza</th>
+                            <th class="text-center">Status</th>
+                            <th class="text-center" style="width: 150px;">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for conta in contas %}
+                        <tr>
+                            <td><code class="fw-bold">{{ conta.codigo }}</code></td>
+                            <td>
+                                <span style="padding-left: {{ conta.nivel|add:'-1'|default:0 }}rem;">
+                                    {% if conta.nivel > 1 %}
+                                        <i class="bi bi-arrow-return-right text-muted"></i>
+                                    {% endif %}
+                                    <strong>{{ conta.nome }}</strong>
+                                </span>
+                                {% if conta.conta_pai %}
+                                    <br><small class="text-muted">Pai: {{ conta.conta_pai.codigo }}</small>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                <span class="badge bg-secondary">{{ conta.nivel }}</span>
+                            </td>
+                            <td>
+                                {% if conta.tipo == 'RECEITA' %}
+                                    <span class="badge bg-success">Receita</span>
+                                {% elif conta.tipo == 'DESPESA' %}
+                                    <span class="badge bg-danger">Despesa</span>
+                                {% elif conta.tipo == 'ATIVO' %}
+                                    <span class="badge bg-primary">Ativo</span>
+                                {% elif conta.tipo == 'PASSIVO' %}
+                                    <span class="badge bg-warning text-dark">Passivo</span>
+                                {% else %}
+                                    <span class="badge bg-info">Patrimônio</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if conta.natureza == 'ANALITICA' %}
+                                    <span class="badge bg-success">Analítica</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Sintética</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                {% if conta.ativo %}
+                                    <span class="badge bg-success">Ativo</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Inativo</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                <a href="{% url 'financeiro:editar_plano_conta' conta.id %}" 
+                                   class="btn btn-sm btn-outline-primary" 
+                                   title="Editar">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <a href="{% url 'financeiro:excluir_plano_conta' conta.id %}" 
+                                   class="btn btn-sm btn-outline-danger" 
+                                   title="Excluir">
+                                    <i class="bi bi-trash"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-warning mb-0">
+                <i class="bi bi-exclamation-triangle me-2"></i>
+                Nenhuma conta cadastrada. 
+                <a href="{% url 'financeiro:criar_plano_conta' %}" class="alert-link">Cadastre a primeira</a>.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="row mt-3">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h6 class="card-title">
+                        <i class="bi bi-diagram-3 text-primary me-2"></i>Exemplo de Estrutura
+                    </h6>
+                    <ul class="list-unstyled small mb-0">
+                        <li><code>1</code> - ATIVO (Sintética)</li>
+                        <li class="ms-3"><code>1.1</code> - Circulante (Sintética)</li>
+                        <li class="ms-4"><code>1.1.01</code> - Caixa (Analítica)</li>
+                        <li class="ms-4"><code>1.1.02</code> - Bancos (Analítica)</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h6 class="card-title">
+                        <i class="bi bi-arrow-down-up text-success me-2"></i>Receitas e Despesas
+                    </h6>
+                    <ul class="list-unstyled small mb-0">
+                        <li><code>3</code> - RECEITAS (Sintética)</li>
+                        <li class="ms-3"><code>3.1</code> - Vendas (Sintética)</li>
+                        <li class="ms-4"><code>3.1.01</code> - Vendas Produtos (Analítica)</li>
+                        <li><code>4</code> - DESPESAS (Sintética)</li>
+                        <li class="ms-3"><code>4.1</code> - Administrativas (Sintética)</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h6 class="card-title">
+                        <i class="bi bi-info-circle text-warning me-2"></i>Dicas
+                    </h6>
+                    <ul class="small mb-0">
+                        <li>Use códigos numéricos hierárquicos</li>
+                        <li>Contas sintéticas não movimentam</li>
+                        <li>Apenas analíticas em lançamentos</li>
+                        <li>Mantenha estrutura organizada</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

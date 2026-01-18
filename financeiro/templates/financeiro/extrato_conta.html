@@ -1,0 +1,231 @@
+{% extends 'base_with_sidebar.html' %}
+{% load static %}
+{% load financeiro_tags %}
+
+{% block title %}Extrato de Conta - Sistema Serrana{% endblock %}
+
+{% block extra_css %}
+<style>
+    .saldo-positivo { color: #28a745; }
+    .saldo-negativo { color: #dc3545; }
+    .movimentacao-entrada { border-left: 3px solid #28a745; }
+    .movimentacao-saida { border-left: 3px solid #dc3545; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Cabeçalho -->
+    <div class="row mb-4">
+        <div class="col">
+            <h2><i class="bi bi-file-text"></i> Extrato de Conta</h2>
+            <h4 class="text-muted">{{ conta.nome }}</h4>
+        </div>
+        <div class="col-auto">
+            <a href="{% url 'financeiro:listar_contas_financeiras' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Voltar
+            </a>
+        </div>
+    </div>
+
+    <!-- Informações da Conta -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <small class="text-muted">Tipo</small>
+                            <p><strong>{{ conta.get_tipo_display }}</strong></p>
+                        </div>
+                        {% if conta.banco %}
+                        <div class="col-md-4">
+                            <small class="text-muted">Banco</small>
+                            <p><strong>{{ conta.banco }}</strong></p>
+                        </div>
+                        <div class="col-md-4">
+                            <small class="text-muted">Agência / Conta</small>
+                            <p><strong>{{ conta.agencia }} / {{ conta.conta }}</strong></p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-light">
+                <div class="card-body text-center">
+                    <small class="text-muted">Saldo Atual</small>
+                    <h2 class="{% if conta.saldo_atual >= 0 %}saldo-positivo{% else %}saldo-negativo{% endif %}">
+                        {{ conta.saldo_atual|currency }}
+                    </h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Data Início</label>
+                    <input type="date" name="data_inicio" class="form-control" value="{{ data_inicio }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Data Fim</label>
+                    <input type="date" name="data_fim" class="form-control" value="{{ data_fim }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Tipo</label>
+                    <select name="tipo" class="form-select">
+                        <option value="">Todos</option>
+                        <option value="ENTRADA" {% if tipo == 'ENTRADA' %}selected{% endif %}>Entradas</option>
+                        <option value="SAIDA" {% if tipo == 'SAIDA' %}selected{% endif %}>Saídas</option>
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary me-2">
+                        <i class="bi bi-search"></i> Filtrar
+                    </button>
+                    <a href="{% url 'financeiro:extrato_conta' conta.id %}" class="btn btn-outline-secondary me-2">
+                        <i class="bi bi-x"></i> Limpar
+                    </a>
+                    <a href="{% url 'financeiro:extrato_conta_pdf' conta.id %}?{{ request.GET.urlencode }}" class="btn btn-danger" target="_blank">
+                        <i class="bi bi-file-pdf"></i> PDF
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Extrato -->
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="bi bi-list-ul"></i> Movimentações</h5>
+        </div>
+        <div class="card-body p-0">
+            {% if movimentacoes %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Data</th>
+                            <th>Descrição</th>
+                            <th>Centro de Custo</th>
+                            <th class="text-end">Entrada</th>
+                            <th class="text-end">Saída</th>
+                            <th class="text-end">Saldo</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for mov in movimentacoes %}
+                        <tr class="movimentacao-{% if mov.tipo == 'ENTRADA' %}entrada{% else %}saida{% endif %}">
+                            <td>{{ mov.data_movimentacao|date:"d/m/Y" }}</td>
+                            <td>
+                                <strong>{{ mov.descricao }}</strong>
+                                {% if mov.baixa_financeira %}
+                                <br><small class="text-muted">Ref: Baixa #{{ mov.baixa_financeira.id }}</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if mov.centro_custo %}
+                                <span class="badge bg-info">{{ mov.centro_custo.codigo }}</span>
+                                {% else %}
+                                -
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                {% if mov.tipo == 'ENTRADA' %}
+                                <span class="text-success fw-bold">{{ mov.valor|currency }}</span>
+                                {% else %}
+                                -
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                {% if mov.tipo == 'SAIDA' %}
+                                <span class="text-danger fw-bold">{{ mov.valor|currency }}</span>
+                                {% else %}
+                                -
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                <strong class="{% if mov.saldo_posterior >= 0 %}saldo-positivo{% else %}saldo-negativo{% endif %}">
+                                    {{ mov.saldo_posterior|currency }}
+                                </strong>
+                            </td>
+                            <td>
+                                {% if mov.estornado %}
+                                <span class="badge bg-danger">Estornado</span>
+                                {% else %}
+                                <span class="badge bg-success">Ativo</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot class="table-light">
+                        <tr>
+                            <th colspan="3" class="text-end">Totais:</th>
+                            <th class="text-end text-success">{{ total_entradas|currency }}</th>
+                            <th class="text-end text-danger">{{ total_saidas|currency }}</th>
+                            <th class="text-end">
+                                <strong class="{% if saldo_final >= 0 %}saldo-positivo{% else %}saldo-negativo{% endif %}">
+                                    {{ saldo_final|currency }}
+                                </strong>
+                            </th>
+                            <th></th>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-info m-3">
+                <i class="bi bi-info-circle"></i> Nenhuma movimentação encontrada para o período selecionado.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Estatísticas do Período -->
+    {% if movimentacoes %}
+    <div class="row mt-4">
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <small class="text-muted">Total de Movimentações</small>
+                    <h4>{{ movimentacoes|length }}</h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <small class="text-muted">Total Entradas</small>
+                    <h4 class="text-success">{{ total_entradas|currency }}</h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <small class="text-muted">Total Saídas</small>
+                    <h4 class="text-danger">{{ total_saidas|currency }}</h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <small class="text-muted">Saldo do Período</small>
+                    <h4 class="{% if saldo_final >= 0 %}text-success{% else %}text-danger{% endif %}">
+                        {{ saldo_final|currency }}
+                    </h4>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

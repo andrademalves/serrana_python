@@ -1,0 +1,98 @@
+{% extends 'base_with_sidebar.html' %}
+{% load static %}
+{% load financeiro_tags %}
+
+{% block title %}Bancos - Sistema Serrana{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Cabeçalho -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">
+                <i class="bi bi-building me-2"></i>Bancos
+            </h2>
+            <p class="text-muted mb-0">Gerenciamento de instituições financeiras</p>
+        </div>
+        <div>
+            <a href="{% url 'financeiro:criar_banco' %}" class="btn btn-primary">
+                <i class="bi bi-plus-lg me-2"></i>Novo Banco
+            </a>
+        </div>
+    </div>
+
+    <!-- Lista de Bancos -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            {% if bancos %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 100px;">Código</th>
+                            <th>Nome</th>
+                            <th style="width: 100px;" class="text-center">Status</th>
+                            <th style="width: 200px;" class="text-center">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for banco in bancos %}
+                        <tr>
+                            <td>
+                                <span class="badge bg-secondary">{{ banco.codigo_compe }}</span>
+                            </td>
+                            <td>
+                                <strong>{{ banco.nome }}</strong>
+                            </td>
+                            <td class="text-center">
+                                {% if banco.ativo %}
+                                    <span class="badge bg-success">Ativo</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Inativo</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <a href="{% url 'financeiro:editar_banco' banco.id %}" 
+                                       class="btn btn-outline-primary" 
+                                       title="Editar">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <a href="{% url 'financeiro:excluir_banco' banco.id %}" 
+                                       class="btn btn-outline-danger" 
+                                       title="Excluir">
+                                        <i class="bi bi-trash"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-info mb-0">
+                <i class="bi bi-info-circle me-2"></i>
+                Nenhum banco cadastrado. 
+                <a href="{% url 'financeiro:criar_banco' %}" class="alert-link">Cadastre o primeiro banco</a>.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Informações -->
+    <div class="card border-0 shadow-sm mt-4">
+        <div class="card-header bg-primary text-white">
+            <h6 class="mb-0">
+                <i class="bi bi-info-circle me-2"></i>Sobre o Código COMPE
+            </h6>
+        </div>
+        <div class="card-body">
+            <p class="mb-0">
+                O código COMPE (Código de Compensação) é um número de 3 dígitos atribuído pelo Banco Central do Brasil 
+                para identificar cada instituição financeira. Exemplos: 001 - Banco do Brasil, 237 - Bradesco, 341 - Itaú.
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}

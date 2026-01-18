@@ -1,0 +1,217 @@
+{% extends 'base_with_sidebar.html' %}
+{% load static %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'projetos:dashboard' %}">Projetos</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'projetos:listar_projetos' %}">Projetos</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'projetos:visualizar_projeto' projeto.pk %}">{{ projeto.codigo }}</a></li>
+        <li class="breadcrumb-item active">Diário da Obra</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Cabeçalho -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="fas fa-book"></i> Diário da Obra</h2>
+            <p class="text-muted mb-0">Projeto: <strong>{{ projeto.codigo }}</strong> - {{ projeto.descricao }}</p>
+        </div>
+        <a href="{% url 'projetos:adicionar_diario_obra' projeto.pk %}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Nova Entrada
+        </a>
+    </div>
+
+    <!-- Estatísticas -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Total de Registros
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_entradas }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-calendar-alt fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Média de Trabalhadores
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ media_trabalhadores }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-users fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Status do Projeto
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ projeto.get_status_display }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-chart-line fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-filter"></i> Filtros</h6>
+        </div>
+        <div class="card-body">
+            <form method="get" class="form-inline">
+                <div class="form-group mr-3 mb-2">
+                    <label for="data_inicio" class="mr-2">Data Início:</label>
+                    <input type="date" name="data_inicio" id="data_inicio" class="form-control" value="{{ request.GET.data_inicio }}">
+                </div>
+                <div class="form-group mr-3 mb-2">
+                    <label for="data_fim" class="mr-2">Data Fim:</label>
+                    <input type="date" name="data_fim" id="data_fim" class="form-control" value="{{ request.GET.data_fim }}">
+                </div>
+                <div class="form-group mr-3 mb-2">
+                    <label for="periodo" class="mr-2">Período:</label>
+                    <select name="periodo" id="periodo" class="form-control">
+                        <option value="">Todos</option>
+                        <option value="MANHA" {% if request.GET.periodo == 'MANHA' %}selected{% endif %}>Manhã</option>
+                        <option value="TARDE" {% if request.GET.periodo == 'TARDE' %}selected{% endif %}>Tarde</option>
+                        <option value="INTEGRAL" {% if request.GET.periodo == 'INTEGRAL' %}selected{% endif %}>Dia Integral</option>
+                        <option value="NOITE" {% if request.GET.periodo == 'NOITE' %}selected{% endif %}>Noite</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary mb-2 mr-2">
+                    <i class="fas fa-search"></i> Filtrar
+                </button>
+                <a href="{% url 'projetos:listar_diario_obra' projeto.pk %}" class="btn btn-secondary mb-2">
+                    <i class="fas fa-times"></i> Limpar
+                </a>
+            </form>
+        </div>
+    </div>
+
+    <!-- Lista de Diários -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Registros do Diário</h6>
+        </div>
+        <div class="card-body">
+            {% if diarios %}
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover" id="dataTable">
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Período</th>
+                            <th>Clima</th>
+                            <th>Trabalhadores</th>
+                            <th>Progresso</th>
+                            <th>EPIs</th>
+                            <th>Registrado por</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for diario in diarios %}
+                        <tr>
+                            <td>{{ diario.data|date:"d/m/Y" }}</td>
+                            <td>
+                                <span class="badge badge-info">{{ diario.get_periodo_display }}</span>
+                            </td>
+                            <td>
+                                {% if diario.clima == 'ENSOLARADO' %}
+                                    <i class="fas fa-sun text-warning"></i> {{ diario.get_clima_display }}
+                                {% elif diario.clima == 'NUBLADO' %}
+                                    <i class="fas fa-cloud text-secondary"></i> {{ diario.get_clima_display }}
+                                {% elif diario.clima == 'CHUVOSO' %}
+                                    <i class="fas fa-cloud-rain text-primary"></i> {{ diario.get_clima_display }}
+                                {% else %}
+                                    <i class="fas fa-bolt text-danger"></i> {{ diario.get_clima_display }}
+                                {% endif %}
+                            </td>
+                            <td class="text-center">{{ diario.num_trabalhadores }}</td>
+                            <td>
+                                <div class="progress" style="height: 20px;">
+                                    <div class="progress-bar bg-success" role="progressbar" 
+                                         style="width: {{ diario.percentual_progresso }}%;" 
+                                         aria-valuenow="{{ diario.percentual_progresso }}" 
+                                         aria-valuemin="0" aria-valuemax="100">
+                                        {{ diario.percentual_progresso }}%
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="text-center">
+                                {% if diario.epi_utilizado %}
+                                    <span class="badge badge-success"><i class="fas fa-check"></i> Sim</span>
+                                {% else %}
+                                    <span class="badge badge-danger"><i class="fas fa-times"></i> Não</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ diario.criado_por.get_full_name|default:diario.criado_por.username }}</td>
+                            <td class="text-nowrap">
+                                <a href="{% url 'projetos:visualizar_diario_obra' diario.pk %}" class="btn btn-sm btn-info" title="Visualizar">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="{% url 'projetos:editar_diario_obra' diario.pk %}" class="btn btn-sm btn-warning" title="Editar">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{% url 'projetos:deletar_diario_obra' diario.pk %}" class="btn btn-sm btn-danger" title="Excluir">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i> Nenhum registro encontrado no diário da obra. 
+                <a href="{% url 'projetos:adicionar_diario_obra' projeto.pk %}">Clique aqui</a> para adicionar a primeira entrada.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        $('#dataTable').DataTable({
+            "language": {
+                "url": "//cdn.datatables.net/plug-ins/1.13.4/i18n/pt-BR.json"
+            },
+            "order": [[0, "desc"]],
+            "pageLength": 25
+        });
+    });
+</script>
+{% endblock %}

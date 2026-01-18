@@ -1,0 +1,163 @@
+{% extends 'base_with_sidebar.html' %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h2 class="mb-4">{{ titulo }}</h2>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-3">
+            <div class="card text-white bg-primary mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="fas fa-file-invoice-dollar"></i> Orçamentos
+                    </h5>
+                    <p class="card-text display-4">{{ total_orcamentos }}</p>
+                    <small>{{ orcamentos_pendentes }} pendentes</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card text-white bg-success mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="fas fa-project-diagram"></i> Projetos
+                    </h5>
+                    <p class="card-text display-4">{{ projetos_ativos }}</p>
+                    <small>de {{ total_projetos }} total</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card text-white bg-warning mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="fas fa-shopping-cart"></i> Vendas Diretas
+                    </h5>
+                    <p class="card-text display-4">{{ vendas_mes }}</p>
+                    <small>Este mês ({{ total_vendas }} total)</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card text-white bg-info mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="fas fa-dollar-sign"></i> Faturamento
+                    </h5>
+                    <p class="card-text display-4">R$ 0</p>
+                    <small>Este mês</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-clock"></i> Orçamentos Recentes</h5>
+                </div>
+                <div class="card-body">
+                    {% if ultimos_orcamentos %}
+                        <div class="list-group">
+                            {% for orcamento in ultimos_orcamentos %}
+                                <div class="list-group-item">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6 class="mb-1">{{ orcamento.cliente.nome }}</h6>
+                                            <small class="text-muted">{{ orcamento.nome_obra }}</small>
+                                        </div>
+                                        <span class="badge bg-{{ orcamento.status|lower }}">{{ orcamento.get_status_display }}</span>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted">Nenhum orçamento cadastrado ainda.</p>
+                    {% endif %}
+                    <a href="{% url 'projetos:criar_orcamento' %}" class="btn btn-primary mt-3">
+                        <i class="fas fa-plus"></i> Criar Orçamento
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-tasks"></i> Projetos em Andamento</h5>
+                </div>
+                <div class="card-body">
+                    {% if projetos_andamento %}
+                        <div class="list-group">
+                            {% for projeto in projetos_andamento %}
+                                <div class="list-group-item">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6 class="mb-1">{{ projeto.nome_obra }}</h6>
+                                            <small class="text-muted">{{ projeto.cliente.nome }}</small>
+                                        </div>
+                                        <span class="badge bg-success">{{ projeto.get_status_display }}</span>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted">Nenhum projeto em andamento.</p>
+                    {% endif %}
+                    <a href="{% url 'projetos:criar_projeto' %}" class="btn btn-success mt-3">
+                        <i class="fas fa-plus"></i> Criar Projeto
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-info-circle"></i> Acesso Rápido</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <a href="{% url 'projetos:listar_orcamentos' %}" class="btn btn-outline-primary btn-block mb-2">
+                                <i class="fas fa-file-invoice-dollar"></i><br>
+                                Ver Orçamentos
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{% url 'projetos:criar_orcamento' %}" class="btn btn-outline-primary btn-block mb-2">
+                                <i class="fas fa-plus-circle"></i><br>
+                                Novo Orçamento
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{% url 'projetos:listar_projetos' %}" class="btn btn-outline-success btn-block mb-2">
+                                <i class="fas fa-project-diagram"></i><br>
+                                Ver Projetos
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{% url 'projetos:listar_vendas' %}" class="btn btn-outline-warning btn-block mb-2">
+                                <i class="fas fa-shopping-cart"></i><br>
+                                Ver Vendas
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

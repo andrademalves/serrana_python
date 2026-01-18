@@ -1,0 +1,252 @@
+{% extends 'base_with_sidebar.html' %}
+{% load static %}
+
+{% block title %}Orçamentos - Serrana{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- CABEÇALHO -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-file-invoice-dollar"></i> Orçamentos</h2>
+        <a href="{% url 'vendas:orcamento_create' %}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Novo Orçamento
+        </a>
+    </div>
+
+    <!-- ESTATÍSTICAS -->
+    <div class="row mb-4">
+        <div class="col-md-2">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h6 class="text-muted">Total</h6>
+                    <h3>{{ stats.total_orcamentos }}</h3>
+                    <small>R$ {{ stats.valor_total|floatformat:2 }}</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-center border-secondary">
+                <div class="card-body">
+                    <h6 class="text-secondary">Rascunho</h6>
+                    <h3>{{ stats.rascunho }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-center border-info">
+                <div class="card-body">
+                    <h6 class="text-info">Enviado</h6>
+                    <h3>{{ stats.enviado }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-center border-warning">
+                <div class="card-body">
+                    <h6 class="text-warning">Negociação</h6>
+                    <h3>{{ stats.negociacao }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-center border-success">
+                <div class="card-body">
+                    <h6 class="text-success">Aprovado</h6>
+                    <h3>{{ stats.aprovado }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-center border-danger">
+                <div class="card-body">
+                    <h6 class="text-danger">Reprovado</h6>
+                    <h3>{{ stats.reprovado }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FILTROS -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <i class="fas fa-filter"></i> Filtros
+        </div>
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-2">
+                    <label>Status</label>
+                    <select name="status" class="form-select">
+                        <option value="">Todos</option>
+                        {% for value, label in status_choices %}
+                        <option value="{{ value }}" {% if filtros.status == value %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label>Cliente</label>
+                    <select name="cliente" class="form-select">
+                        <option value="">Todos</option>
+                        {% for cliente in clientes %}
+                        <option value="{{ cliente.id }}" {% if filtros.cliente == cliente.id|stringformat:"s" %}selected{% endif %}>
+                            {{ cliente.nome_razao }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label>Vendedor</label>
+                    <select name="vendedor" class="form-select">
+                        <option value="">Todos</option>
+                        {% for vendedor in vendedores %}
+                        <option value="{{ vendedor.id }}" {% if filtros.vendedor == vendedor.id|stringformat:"s" %}selected{% endif %}>
+                            {{ vendedor.get_full_name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label>Data Início</label>
+                    <input type="date" name="data_inicio" class="form-control" value="{{ filtros.data_inicio }}">
+                </div>
+                <div class="col-md-2">
+                    <label>Data Fim</label>
+                    <input type="date" name="data_fim" class="form-control" value="{{ filtros.data_fim }}">
+                </div>
+                <div class="col-md-1 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- TABELA -->
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Número</th>
+                            <th>Cliente</th>
+                            <th>Vendedor</th>
+                            <th>Data</th>
+                            <th>Validade</th>
+                            <th>Status</th>
+                            <th>Valor</th>
+                            <th>Obra</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for orc in orcamentos %}
+                        <tr>
+                            <td>
+                                <a href="{% url 'vendas:orcamento_detail' orc.pk %}">
+                                    <strong>{{ orc.numero }}</strong>
+                                </a>
+                            </td>
+                            <td>{{ orc.cliente.nome_razao }}</td>
+                            <td>{{ orc.vendedor.get_full_name }}</td>
+                            <td>{{ orc.data_orcamento|date:"d/m/Y" }}</td>
+                            <td>
+                                {{ orc.validade_ate|date:"d/m/Y" }}
+                                {% if orc.esta_vencido %}
+                                <span class="badge bg-danger">VENCIDO</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if orc.status == 'RASCUNHO' %}
+                                <span class="badge bg-secondary">Rascunho</span>
+                                {% elif orc.status == 'ENVIADO' %}
+                                <span class="badge bg-info">Enviado</span>
+                                {% elif orc.status == 'NEGOCIACAO' %}
+                                <span class="badge bg-warning">Negociação</span>
+                                {% elif orc.status == 'APROVADO' %}
+                                <span class="badge bg-success">Aprovado</span>
+                                {% elif orc.status == 'REPROVADO' %}
+                                <span class="badge bg-danger">Reprovado</span>
+                                {% elif orc.status == 'CANCELADO' %}
+                                <span class="badge bg-dark">Cancelado</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <strong>R$ {{ orc.total|floatformat:2 }}</strong>
+                            </td>
+                            <td>
+                                {% if orc.obra_gerada %}
+                                <a href="{% url 'projetos:obra_detail' orc.obra_gerada.pk %}">
+                                    {{ orc.obra_gerada.codigo }}
+                                </a>
+                                {% else %}
+                                -
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{% url 'vendas:orcamento_detail' orc.pk %}" 
+                                       class="btn btn-outline-primary" title="Ver Detalhes">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    {% if orc.pode_editar %}
+                                    <a href="{% url 'vendas:orcamento_edit' orc.pk %}" 
+                                       class="btn btn-outline-secondary" title="Editar">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    {% endif %}
+                                    <a href="{% url 'vendas:orcamento_pdf' orc.pk %}" 
+                                       class="btn btn-outline-danger" title="PDF" target="_blank">
+                                        <i class="fas fa-file-pdf"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="9" class="text-center text-muted py-5">
+                                <i class="fas fa-inbox fa-3x mb-3"></i>
+                                <p>Nenhum orçamento encontrado</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- PAGINAÇÃO -->
+            {% if orcamentos.has_other_pages %}
+            <nav>
+                <ul class="pagination justify-content-center">
+                    {% if orcamentos.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ orcamentos.previous_page_number }}">Anterior</a>
+                    </li>
+                    {% endif %}
+
+                    {% for num in orcamentos.paginator.page_range %}
+                    {% if orcamentos.number == num %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ num }}</span>
+                    </li>
+                    {% elif num > orcamentos.number|add:'-3' and num < orcamentos.number|add:'3' %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                    </li>
+                    {% endif %}
+                    {% endfor %}
+
+                    {% if orcamentos.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ orcamentos.next_page_number }}">Próxima</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

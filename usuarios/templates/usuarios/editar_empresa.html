@@ -1,0 +1,475 @@
+{% extends 'base_with_sidebar.html' %}
+{% load static %}
+
+{% block title %}Editar {{ empresa.nome_fantasia }} - Sistema{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-building"></i> Editar Empresa: {{ empresa.nome_fantasia }}</h2>
+        <a href="{% url 'usuarios:listar_empresas' %}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+    </div>
+
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        
+        <!-- Dados Básicos -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-info-circle"></i> Dados da Empresa</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="razao_social" class="form-label">Razão Social *</label>
+                        <input type="text" class="form-control" id="razao_social" name="razao_social" 
+                               value="{{ empresa.razao_social }}" required>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="nome_fantasia" class="form-label">Nome Fantasia *</label>
+                        <input type="text" class="form-control" id="nome_fantasia" name="nome_fantasia" 
+                               value="{{ empresa.nome_fantasia }}" required>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label for="cnpj" class="form-label">CNPJ *</label>
+                        <input type="text" class="form-control" id="cnpj" name="cnpj" 
+                               value="{{ empresa.cnpj }}" required>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="inscricao_estadual" class="form-label">Inscrição Estadual</label>
+                        <input type="text" class="form-control" id="inscricao_estadual" name="inscricao_estadual" 
+                               value="{{ empresa.inscricao_estadual }}">
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="inscricao_municipal" class="form-label">Inscrição Municipal</label>
+                        <input type="text" class="form-control" id="inscricao_municipal" name="inscricao_municipal" 
+                               value="{{ empresa.inscricao_municipal }}">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Endereço -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-geo-alt"></i> Endereço</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <label for="cep" class="form-label">CEP</label>
+                        <input type="text" class="form-control" id="cep" name="cep" 
+                               value="{{ empresa.cep }}">
+                    </div>
+                    <div class="col-md-7 mb-3">
+                        <label for="logradouro" class="form-label">Logradouro</label>
+                        <input type="text" class="form-control" id="logradouro" name="logradouro" 
+                               value="{{ empresa.logradouro }}">
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <label for="numero" class="form-label">Número</label>
+                        <input type="text" class="form-control" id="numero" name="numero" 
+                               value="{{ empresa.numero }}">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label for="complemento" class="form-label">Complemento</label>
+                        <input type="text" class="form-control" id="complemento" name="complemento" 
+                               value="{{ empresa.complemento }}">
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="bairro" class="form-label">Bairro</label>
+                        <input type="text" class="form-control" id="bairro" name="bairro" 
+                               value="{{ empresa.bairro }}">
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="cidade" class="form-label">Cidade</label>
+                        <input type="text" class="form-control" id="cidade" name="cidade" 
+                               value="{{ empresa.cidade }}">
+                    </div>
+                    <div class="col-md-1 mb-3">
+                        <label for="uf" class="form-label">UF</label>
+                        <input type="text" class="form-control" id="uf" name="uf" 
+                               value="{{ empresa.uf }}" maxlength="2" style="text-transform: uppercase;">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contato e Configurações -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-telephone"></i> Contato e Configurações</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label for="telefone" class="form-label">Telefone</label>
+                        <input type="text" class="form-control" id="telefone" name="telefone" 
+                               value="{{ empresa.telefone }}">
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="email" class="form-label">E-mail</label>
+                        <input type="email" class="form-control" id="email" name="email" 
+                               value="{{ empresa.email }}">
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="website" class="form-label">Website</label>
+                        <input type="url" class="form-control" id="website" name="website" 
+                               value="{{ empresa.website }}">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label for="logo" class="form-label">Logo</label>
+                        {% if empresa.logo %}
+                            <div class="mb-2">
+                                <img src="{{ empresa.logo.url }}" alt="{{ empresa.nome_fantasia }}" 
+                                     style="max-height: 100px; max-width: 150px;" class="img-thumbnail">
+                            </div>
+                        {% endif %}
+                        <input type="file" class="form-control" id="logo" name="logo" accept="image/*">
+                        <small class="text-muted">Deixe em branco para manter a logo atual</small>
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <label for="cor_primaria" class="form-label">Cor Primária</label>
+                        <input type="color" class="form-control form-control-color" id="cor_primaria" 
+                               name="cor_primaria" value="{{ empresa.cor_primaria }}">
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <label for="cor_secundaria" class="form-label">Cor Secundária</label>
+                        <input type="color" class="form-control form-control-color" id="cor_secundaria" 
+                               name="cor_secundaria" value="{{ empresa.cor_secundaria }}">
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <label class="form-label d-block">Status</label>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="ativa" name="ativa" 
+                                   {% if empresa.ativa %}checked{% endif %}>
+                            <label class="form-check-label" for="ativa">Ativa</label>
+                        </div>
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <label class="form-label d-block">Tipo</label>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="empresa_matriz" name="empresa_matriz"
+                                   {% if empresa.empresa_matriz %}checked{% endif %}>
+                            <label class="form-check-label" for="empresa_matriz">É Matriz</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Regime Tributário e Impostos -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-receipt"></i> Regime Tributário e Impostos</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="regime_tributario" class="form-label">Regime Tributário</label>
+                            <select class="form-control" id="regime_tributario" name="regime_tributario">
+                                <option value="">Selecione o regime</option>
+                                {% for regime in regimes_tributarios %}
+                                <option value="{{ regime.id }}" {% if empresa.regime_tributario.id == regime.id %}selected{% endif %}>
+                                    {{ regime.get_nome_display }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <small class="text-muted">Define como os impostos serão calculados nos orçamentos</small>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label">Alíquotas de Impostos</label>
+                            <div class="d-grid">
+                                {% if empresa.regime_tributario %}
+                                <a href="{% url 'usuarios:configurar_impostos_empresa' empresa.id %}" class="btn btn-outline-primary">
+                                    <i class="bi bi-gear me-2"></i>Configurar Alíquotas
+                                </a>
+                                {% else %}
+                                <button type="button" class="btn btn-outline-secondary" disabled>
+                                    <i class="bi bi-gear me-2"></i>Selecione um regime primeiro
+                                </button>
+                                {% endif %}
+                            </div>
+                            <small class="text-muted">Configure as alíquotas de cada imposto</small>
+                        </div>
+                    </div>
+                </div>
+                
+                {% if empresa.regime_tributario %}
+                <div class="alert alert-info mt-3">
+                    <i class="bi bi-info-circle me-2"></i>
+                    <strong>Regime Atual:</strong> {{ empresa.regime_tributario.get_nome_display }}
+                    <br>
+                    <small>{{ empresa.regime_tributario.descricao }}</small>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Configurações SMTP para E-mails -->
+        <div class="card mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-envelope-at"></i> Configurações de E-mail (SMTP)</h5>
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="smtp_ativo" name="smtp_ativo" 
+                           {% if empresa.smtp_ativo %}checked{% endif %}
+                           onchange="toggleSMTP()">
+                    <label class="form-check-label" for="smtp_ativo">
+                        <strong>Usar SMTP Próprio</strong>
+                    </label>
+                </div>
+            </div>
+            <div class="card-body" id="smtp_config_fields">
+                <div class="alert alert-info mb-3">
+                    <i class="bi bi-info-circle"></i> 
+                    <strong>Configure o SMTP da empresa para enviar e-mails de cobrança personalizados.</strong>
+                    <br>
+                    <small>Se desativado, será usado o SMTP padrão do sistema.</small>
+                    <br>
+                    <small class="text-danger"><strong>⚠️ TLS e SSL são mutuamente exclusivos:</strong> Ative apenas um deles (recomendado: TLS porta 587).</small>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="smtp_host" class="form-label">Servidor SMTP</label>
+                        <input type="text" class="form-control" id="smtp_host" name="smtp_host" 
+                               value="{{ empresa.smtp_host }}" placeholder="smtp.gmail.com">
+                        <small class="text-muted">Ex: smtp.gmail.com, smtp.office365.com</small>
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <label for="smtp_port" class="form-label">Porta</label>
+                        <input type="number" class="form-control" id="smtp_port" name="smtp_port" 
+                               value="{{ empresa.smtp_port|default:587 }}">
+                        <small class="text-muted">587 (TLS) ou 465 (SSL)</small>
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <label class="form-label d-block">TLS</label>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="smtp_use_tls" name="smtp_use_tls"
+                                   {% if empresa.smtp_use_tls or not empresa.smtp_host %}checked{% endif %}
+                                   onchange="toggleTlsSsl('tls')">
+                            <label class="form-check-label" for="smtp_use_tls">Usar TLS</label>
+                        </div>
+                        <small class="text-muted">Porta 587</small>
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <label class="form-label d-block">SSL</label>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="smtp_use_ssl" name="smtp_use_ssl"
+                                   {% if empresa.smtp_use_ssl %}checked{% endif %}
+                                   onchange="toggleTlsSsl('ssl')">
+                            <label class="form-check-label" for="smtp_use_ssl">Usar SSL</label>
+                        </div>
+                        <small class="text-muted">Porta 465</small>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="smtp_username" class="form-label">Usuário SMTP</label>
+                        <input type="text" class="form-control" id="smtp_username" name="smtp_username" 
+                               value="{{ empresa.smtp_username }}" placeholder="seu-email@gmail.com">
+                        <small class="text-muted">Geralmente é o e-mail completo</small>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="smtp_password" class="form-label">Senha SMTP</label>
+                        <input type="password" class="form-control" id="smtp_password" name="smtp_password" 
+                               value="{{ empresa.smtp_password }}" placeholder="Senha ou senha de app">
+                        <small class="text-muted">Gmail: Use senha de aplicativo</small>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="smtp_from_email" class="form-label">E-mail Remetente</label>
+                        <input type="email" class="form-control" id="smtp_from_email" name="smtp_from_email" 
+                               value="{{ empresa.smtp_from_email }}" placeholder="noreply@empresa.com">
+                        <small class="text-muted">E-mail que aparecerá como remetente</small>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="smtp_from_name" class="form-label">Nome Remetente</label>
+                        <input type="text" class="form-control" id="smtp_from_name" name="smtp_from_name" 
+                               value="{{ empresa.smtp_from_name }}" placeholder="{{ empresa.nome_fantasia }}">
+                        <small class="text-muted">Nome que aparecerá como remetente</small>
+                    </div>
+                </div>
+                
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle"></i> 
+                    <strong>Gmail:</strong> 
+                    <a href="https://myaccount.google.com/apppasswords" target="_blank">Gere uma senha de aplicativo</a>
+                    ao invés de usar sua senha normal.
+                </div>
+                
+                {% if empresa.tem_smtp_configurado %}
+                <div class="alert alert-success">
+                    <i class="bi bi-check-circle"></i> 
+                    SMTP configurado! 
+                    <a href="{% url 'usuarios:testar_smtp' empresa.id %}" class="btn btn-sm btn-success ms-2">
+                        <i class="bi bi-send-check"></i> Testar Envio
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Usuários Vinculados -->
+        <div class="card mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-people"></i> Usuários com Acesso</h5>
+                <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#modalVincularUsuario">
+                    <i class="bi bi-plus-circle"></i> Vincular Usuário
+                </button>
+            </div>
+            <div class="card-body">
+                {% if usuarios_vinculados %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Usuário</th>
+                                    <th>Papel</th>
+                                    <th>Status</th>
+                                    <th>Data Início</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for vinculo in usuarios_vinculados %}
+                                <tr>
+                                    <td>{{ vinculo.usuario.get_full_name|default:vinculo.usuario.username }}</td>
+                                    <td>{{ vinculo.papel|default:"-" }}</td>
+                                    <td>
+                                        {% if vinculo.ativo %}
+                                            <span class="badge bg-success">Ativo</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Inativo</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ vinculo.data_inicio|date:"d/m/Y" }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted mb-0">Nenhum usuário vinculado ainda.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-end gap-2">
+            <a href="{% url 'usuarios:listar_empresas' %}" class="btn btn-secondary">Cancelar</a>
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-check-circle"></i> Salvar Alterações
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Modal Vincular Usuário -->
+<div class="modal fade" id="modalVincularUsuario" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="{% url 'usuarios:vincular_usuario_empresa' empresa.id %}">
+                {% csrf_token %}
+                <div class="modal-header">
+                    <h5 class="modal-title">Vincular Usuário à Empresa</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="usuario_id" class="form-label">Usuário *</label>
+                        <select class="form-select" id="usuario_id" name="usuario_id" required>
+                            <option value="">Selecione...</option>
+                            {% for user in usuarios_disponiveis %}
+                                <option value="{{ user.id }}">{{ user.get_full_name|default:user.username }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="papel" class="form-label">Papel</label>
+                        <input type="text" class="form-control" id="papel" name="papel" 
+                               placeholder="Ex: Administrador, Operador, Financeiro">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Vincular</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Toggle dos campos SMTP
+    function toggleSMTP() {
+        const smtpAtivo = document.getElementById('smtp_ativo').checked;
+        const fields = document.getElementById('smtp_config_fields');
+        
+        if (smtpAtivo) {
+            fields.style.opacity = '1';
+            fields.querySelectorAll('input').forEach(input => {
+                input.removeAttribute('disabled');
+            });
+        } else {
+            fields.style.opacity = '0.5';
+            fields.querySelectorAll('input').forEach(input => {
+                if (input.id !== 'smtp_ativo') {
+                    input.setAttribute('disabled', 'disabled');
+                }
+            });
+        }
+    }
+    
+    // TLS e SSL são mutuamente exclusivos
+    function toggleTlsSsl(tipo) {
+        const tlsCheckbox = document.getElementById('smtp_use_tls');
+        const sslCheckbox = document.getElementById('smtp_use_ssl');
+        const portInput = document.getElementById('smtp_port');
+        
+        if (tipo === 'tls' && tlsCheckbox.checked) {
+            sslCheckbox.checked = false;
+            // Sugerir porta 587 para TLS
+            if (!portInput.value || portInput.value === '465') {
+                portInput.value = '587';
+            }
+        } else if (tipo === 'ssl' && sslCheckbox.checked) {
+            tlsCheckbox.checked = false;
+            // Sugerir porta 465 para SSL
+            if (!portInput.value || portInput.value === '587') {
+                portInput.value = '465';
+            }
+        }
+        
+        // Se ambos estão desmarcados, ativar TLS por padrão
+        if (!tlsCheckbox.checked && !sslCheckbox.checked) {
+            tlsCheckbox.checked = true;
+            portInput.value = '587';
+        }
+    }
+    
+    // Executar ao carregar a página
+    document.addEventListener('DOMContentLoaded', function() {
+        toggleSMTP();
+        
+        // Garantir que apenas um está ativado
+        const tlsCheckbox = document.getElementById('smtp_use_tls');
+        const sslCheckbox = document.getElementById('smtp_use_ssl');
+        if (tlsCheckbox.checked && sslCheckbox.checked) {
+            sslCheckbox.checked = false;
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,240 @@
+{% extends 'base_with_sidebar.html' %}
+{% load static %}
+{% load financeiro_tags %}
+
+{% block title %}Contas a Pagar{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Cabeçalho -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="bi bi-cash-coin text-danger"></i> Contas a Pagar</h2>
+            <p class="text-muted mb-0">Gerenciamento de parcelas a pagar</p>
+        </div>
+        <div>
+            <a href="{% url 'financeiro:criar_titulo' %}?tipo=PAGAR" class="btn btn-danger">
+                <i class="bi bi-plus-circle"></i> Nova Conta a Pagar
+            </a>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label for="status" class="form-label">Status</label>
+                    <select name="status" id="status" class="form-select">
+                        <option value="ABERTO" {% if status == 'ABERTO' %}selected{% endif %}>Em Aberto</option>
+                        <option value="PARCIAL" {% if status == 'PARCIAL' %}selected{% endif %}>Parcialmente Quitado</option>
+                        <option value="QUITADO" {% if status == 'QUITADO' %}selected{% endif %}>Quitado</option>
+                        <option value="TODOS" {% if status == 'TODOS' %}selected{% endif %}>Todos</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="vencimento" class="form-label">Vencimento</label>
+                    <select name="vencimento" id="vencimento" class="form-select" onchange="toggleDateFilters()">
+                        <option value="TODOS" {% if vencimento == 'TODOS' %}selected{% endif %}>Todos</option>
+                        <option value="VENCIDAS" {% if vencimento == 'VENCIDAS' %}selected{% endif %}>Vencidas</option>
+                        <option value="HOJE" {% if vencimento == 'HOJE' %}selected{% endif %}>Hoje</option>
+                        <option value="7_DIAS" {% if vencimento == '7_DIAS' %}selected{% endif %}>Próximos 7 dias</option>
+                        <option value="30_DIAS" {% if vencimento == '30_DIAS' %}selected{% endif %}>Próximos 30 dias</option>
+                        <option value="PERSONALIZADO" {% if vencimento == 'PERSONALIZADO' %}selected{% endif %}>Data Específica</option>
+                    </select>
+                </div>
+                <div class="col-md-3" id="dateFilters" style="{% if vencimento != 'PERSONALIZADO' %}display: none;{% endif %}">
+                    <label class="form-label">Período</label>
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <input type="date" name="data_inicio" class="form-control form-control-sm" 
+                                   value="{{ data_inicio }}" placeholder="Data Inicial">
+                        </div>
+                        <div class="col-6">
+                            <input type="date" name="data_fim" class="form-control form-control-sm" 
+                                   value="{{ data_fim }}" placeholder="Data Final">
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary me-2">
+                        <i class="bi bi-funnel"></i> Filtrar
+                    </button>
+                    <a href="{% url 'financeiro:contas_pagar' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-x-circle"></i> Limpar
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Resumo -->
+    {% with total_pagar=parcelas|length %}
+    {% with total_valor=0 %}
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card border-danger">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted mb-1">Total de Parcelas</p>
+                            <h4 class="mb-0">{{ total_pagar }}</h4>
+                        </div>
+                        <i class="bi bi-list-ol fs-1 text-danger"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-warning">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted mb-1">Vencidas</p>
+                            <h4 class="mb-0 text-warning">
+                                {{ parcelas|length }}
+                            </h4>
+                        </div>
+                        <i class="bi bi-exclamation-triangle fs-1 text-warning"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-info">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted mb-1">Total a Pagar</p>
+                            <h4 class="mb-0 text-info">R$ 0,00</h4>
+                        </div>
+                        <i class="bi bi-cash-stack fs-1 text-info"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endwith %}
+    {% endwith %}
+
+    <!-- Tabela de Parcelas -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="bi bi-list-ul"></i> Lista de Parcelas a Pagar</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Título</th>
+                            <th>Fornecedor</th>
+                            <th>Parcela</th>
+                            <th>Vencimento</th>
+                            <th class="text-end">Valor Original</th>
+                            <th class="text-end">Valor Pago</th>
+                            <th class="text-end">Saldo</th>
+                            <th>Status</th>
+                            <th class="text-center">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for parcela in parcelas %}
+                        <tr class="{% if parcela.esta_vencida %}table-warning{% endif %}">
+                            <td>
+                                <strong>{{ parcela.titulo.numero_documento }}</strong><br>
+                                <small class="text-muted">{{ parcela.titulo.descricao|truncatewords:5 }}</small>
+                            </td>
+                            <td>{{ parcela.titulo.pessoa.nome }}</td>
+                            <td>{{ parcela.numero_parcela }}/{{ parcela.titulo.num_parcelas }}</td>
+                            <td>
+                                {{ parcela.data_vencimento|date:"d/m/Y" }}
+                                {% if parcela.esta_vencida %}
+                                    <br><small class="text-danger">
+                                        <i class="bi bi-exclamation-circle"></i> {{ parcela.dias_atraso }} dia(s) atraso
+                                    </small>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">{{ parcela.valor_original|currency }}</td>
+                            <td class="text-end">{{ parcela.valor_pago|currency }}</td>
+                            <td class="text-end">
+                                <strong class="{% if parcela.saldo_aberto > 0 %}text-danger{% else %}text-success{% endif %}">
+                                    {{ parcela.saldo_aberto|currency }}
+                                </strong>
+                            </td>
+                            <td>
+                                {% if parcela.status == 'ABERTO' %}
+                                    <span class="badge bg-warning">Em Aberto</span>
+                                {% elif parcela.status == 'PARCIAL' %}
+                                    <span class="badge bg-info">Parcial</span>
+                                {% elif parcela.status == 'QUITADO' %}
+                                    <span class="badge bg-success">Quitado</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ parcela.get_status_display }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <a href="{% url 'financeiro:detalhe_titulo' parcela.titulo.id %}" 
+                                       class="btn btn-outline-primary" 
+                                       title="Ver Detalhes">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    {% if parcela.status != 'QUITADO' %}
+                                    <a href="{% url 'financeiro:editar_titulo' parcela.titulo.id %}" 
+                                       class="btn btn-outline-warning" 
+                                       title="Editar">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <a href="{% url 'financeiro:baixar_parcela' parcela.id %}" 
+                                       class="btn btn-outline-success" 
+                                       title="Baixar/Pagar">
+                                        <i class="bi bi-check-circle"></i>
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="9" class="text-center text-muted py-5">
+                                <i class="bi bi-inbox fs-1 d-block mb-3"></i>
+                                <p class="mb-0">Nenhuma parcela a pagar encontrada</p>
+                                <small>Tente ajustar os filtros ou criar uma nova conta</small>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleDateFilters() {
+    const vencimento = document.getElementById('vencimento').value;
+    const dateFilters = document.getElementById('dateFilters');
+    
+    if (vencimento === 'PERSONALIZADO') {
+        dateFilters.style.display = 'block';
+    } else {
+        dateFilters.style.display = 'none';
+    }
+}
+</script>
+
+<style>
+.card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.table tbody tr:hover {
+    background-color: rgba(220, 53, 69, 0.05);
+}
+
+.btn-group-sm .btn {
+    padding: 0.25rem 0.5rem;
+}
+</style>
+{% endblock %}

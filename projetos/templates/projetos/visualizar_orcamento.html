@@ -1,0 +1,269 @@
+{% extends 'base_with_sidebar.html' %}
+{% load static %}
+{% load projetos_tags %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    @media print {
+        .no-print {
+            display: none !important;
+        }
+        .sidebar {
+            display: none !important;
+        }
+        .main-content {
+            margin-left: 0 !important;
+            width: 100% !important;
+        }
+    }
+    
+    .info-row {
+        border-bottom: 1px solid #dee2e6;
+        padding: 10px 0;
+    }
+    
+    .info-label {
+        font-weight: 600;
+        color: #6c757d;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <!-- Cabeçalho com botões -->
+    <div class="row mb-4 no-print">
+        <div class="col-md-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2><i class="bi bi-file-earmark-text"></i> {{ titulo }}</h2>
+                <div>
+                    <a href="{% url 'projetos:imprimir_orcamento_pdf' orcamento.pk %}" class="btn btn-primary" target="_blank">
+                        <i class="bi bi-file-pdf"></i> Gerar PDF
+                    </a>
+                    <button onclick="window.print()" class="btn btn-outline-primary">
+                        <i class="bi bi-printer"></i> Imprimir
+                    </button>
+                    <a href="{% url 'projetos:listar_orcamentos' %}" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left"></i> Voltar
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Resumo do Orçamento -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0"><i class="bi bi-file-earmark-text"></i> Orçamento {{ orcamento.codigo }}</h4>
+        </div>
+        <div class="card-body">
+            <!-- Dados do Cliente e Vendedor -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <h5 class="text-primary mb-3"><i class="bi bi-person"></i> Cliente</h5>
+                    <div class="info-row">
+                        <div class="info-label">Nome/Razão Social:</div>
+                        <div>{{ orcamento.cliente.nome }}</div>
+                    </div>
+                    {% if orcamento.cliente.cpf_cnpj %}
+                    <div class="info-row">
+                        <div class="info-label">CPF/CNPJ:</div>
+                        <div>{{ orcamento.cliente.cpf_cnpj }}</div>
+                    </div>
+                    {% endif %}
+                    {% if orcamento.cliente.endereco_completo %}
+                    <div class="info-row">
+                        <div class="info-label">Endereço:</div>
+                        <div>{{ orcamento.cliente.endereco_completo }}</div>
+                    </div>
+                    {% endif %}
+                    {% if orcamento.cliente.telefone %}
+                    <div class="info-row">
+                        <div class="info-label">Telefone:</div>
+                        <div>{{ orcamento.cliente.telefone }}</div>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <div class="col-md-6">
+                    <h5 class="text-primary mb-3"><i class="bi bi-person-badge"></i> Vendedor</h5>
+                    <div class="info-row">
+                        <div class="info-label">Nome:</div>
+                        <div>{{ orcamento.vendedor.nome }}</div>
+                    </div>
+                    
+                    <h5 class="text-primary mb-3 mt-4"><i class="bi bi-calendar"></i> Informações do Orçamento</h5>
+                    <div class="info-row">
+                        <div class="info-label">Data:</div>
+                        <div>{{ orcamento.data_orcamento|date:"d/m/Y" }}</div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-label">Validade:</div>
+                        <div>{{ orcamento.validade_dias }} dias</div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-label">Forma de Pagamento:</div>
+                        <div>{{ orcamento.get_forma_pagamento_display }}</div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-label">Status:</div>
+                        <div>
+                            {% if orcamento.status == 'PENDENTE' %}
+                                <span class="badge bg-warning">{{ orcamento.get_status_display }}</span>
+                            {% elif orcamento.status == 'APROVADO' %}
+                                <span class="badge bg-success">{{ orcamento.get_status_display }}</span>
+                            {% elif orcamento.status == 'REJEITADO' %}
+                                <span class="badge bg-danger">{{ orcamento.get_status_display }}</span>
+                            {% else %}
+                                <span class="badge bg-info">{{ orcamento.get_status_display }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Itens do Orçamento -->
+            <h5 class="text-primary mb-3"><i class="bi bi-list-ul"></i> Itens do Orçamento</h5>
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Tipo</th>
+                            <th>Item</th>
+                            <th>Descrição</th>
+                            <th class="text-center">Qtd</th>
+                            <th class="text-end">Valor Unit.</th>
+                            <th class="text-end">Desconto</th>
+                            <th class="text-end">Subtotal</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in itens %}
+                        <tr>
+                            <td>{{ item.get_tipo_display }}</td>
+                            <td>
+                                {% if item.item_ref %}
+                                    {{ item|get_item_original_name }}
+                                {% elif item.item %}
+                                    {{ item.item.codigo }} - {{ item.item.descricao }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td>{{ item.descricao }}</td>
+                            <td class="text-center">{{ item.quantidade }}</td>
+                            <td class="text-end">R$ {{ item.valor_unitario|floatformat:2 }}</td>
+                            <td class="text-end">R$ {{ item.desconto|floatformat:2 }}</td>
+                            <td class="text-end fw-bold">R$ {{ item.valor_total|floatformat:2 }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center text-muted">Nenhum item cadastrado</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot class="table-secondary">
+                        <tr>
+                            <th colspan="6" class="text-end">Total dos Itens:</th>
+                            <th class="text-end">R$ {{ orcamento.valor_total|floatformat:2 }}</th>
+                        </tr>
+                        {% if orcamento.desconto > 0 %}
+                        <tr>
+                            <th colspan="6" class="text-end">Desconto:</th>
+                            <th class="text-end text-danger">- R$ {{ orcamento.desconto|floatformat:2 }}</th>
+                        </tr>
+                        {% endif %}
+                        <tr class="table-primary">
+                            <th colspan="6" class="text-end fs-5">Valor Final:</th>
+                            <th class="text-end fs-5 text-primary">R$ {{ orcamento.valor_final|floatformat:2 }}</th>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <!-- Parcelas (se houver) -->
+            {% if orcamento.parcelas.exists %}
+            <h5 class="text-primary mb-3 mt-4"><i class="bi bi-credit-card"></i> Condições de Pagamento</h5>
+            <div class="table-responsive">
+                <table class="table table-bordered table-sm">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="text-center">#</th>
+                            <th>Descrição</th>
+                            <th>Vencimento</th>
+                            <th class="text-end">Valor</th>
+                            <th>Forma de Pagamento</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for parcela in orcamento.parcelas.all %}
+                        <tr>
+                            <td class="text-center">{{ parcela.numero_parcela }}</td>
+                            <td>{{ parcela.descricao|default:"-" }}</td>
+                            <td>{{ parcela.data_vencimento|date:"d/m/Y" }}</td>
+                            <td class="text-end">R$ {{ parcela.valor|floatformat:2 }}</td>
+                            <td>
+                                <span class="badge bg-info">{{ parcela.get_forma_pagamento_display }}</span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot class="table-secondary">
+                        <tr>
+                            <th colspan="3" class="text-end">Total:</th>
+                            <th class="text-end">
+                                <span id="totalParcelas">R$ 0,00</span>
+                                <script>
+                                    var total = 0;
+                                    {% for p in orcamento.parcelas.all %}
+                                    total += {{ p.valor }};
+                                    {% endfor %}
+                                    document.getElementById('totalParcelas').textContent = 'R$ ' + total.toFixed(2).replace('.', ',');
+                                </script>
+                            </th>
+                            <th></th>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-warning mt-4">
+                <i class="bi bi-exclamation-triangle"></i> Nenhuma condição de pagamento definida.
+            </div>
+            {% endif %}
+
+            <!-- Observações -->
+            {% if orcamento.observacoes %}
+            <div class="mt-4">
+                <h5 class="text-primary mb-3"><i class="bi bi-chat-left-text"></i> Observações</h5>
+                <div class="alert alert-info">
+                    {{ orcamento.observacoes|linebreaks }}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Informações de Auditoria -->
+            <div class="mt-4 pt-3 border-top">
+                <small class="text-muted">
+                    <i class="bi bi-clock"></i> Criado em {{ orcamento.criado_em|date:"d/m/Y H:i" }} 
+                    {% if orcamento.criado_por %}por {{ orcamento.criado_por.get_full_name|default:orcamento.criado_por.username }}{% endif %}
+                </small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Botões de Ação -->
+    <div class="row mt-4 no-print">
+        <div class="col-md-12 text-center">
+            <button onclick="window.print()" class="btn btn-lg btn-primary">
+                <i class="bi bi-printer"></i> Imprimir Orçamento
+            </button>
+            <a href="{% url 'projetos:listar_orcamentos' %}" class="btn btn-lg btn-secondary">
+                <i class="bi bi-list"></i> Ver Todos os Orçamentos
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

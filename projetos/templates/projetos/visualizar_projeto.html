@@ -1,0 +1,221 @@
+{% extends 'base_with_sidebar.html' %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2><i class="bi bi-building"></i> {{ titulo }}</h2>
+                <div>
+                    <a href="{% url 'projetos:listar_diario_obra' projeto.pk %}" class="btn btn-info">
+                        <i class="fas fa-book"></i> Diário da Obra
+                    </a>
+                    <a href="{% url 'projetos:editar_projeto' projeto.pk %}" class="btn btn-warning">
+                        <i class="bi bi-pencil"></i> Editar
+                    </a>
+                    <a href="{% url 'projetos:listar_projetos' %}" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left"></i> Voltar
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Informações Básicas -->
+        <div class="col-lg-6">
+            <div class="card mb-3">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-info-circle"></i> Informações Básicas</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm">
+                        <tr>
+                            <th width="35%">Código:</th>
+                            <td>{{ projeto.codigo }}</td>
+                        </tr>
+                        <tr>
+                            <th>Cliente:</th>
+                            <td>{{ projeto.cliente.nome }}</td>
+                        </tr>
+                        <tr>
+                            <th>Vendedor/Responsável:</th>
+                            <td>{{ projeto.vendedor.nome }}</td>
+                        </tr>
+                        <tr>
+                            <th>Nome da Obra:</th>
+                            <td>{{ projeto.descricao }}</td>
+                        </tr>
+                        <tr>
+                            <th>Status:</th>
+                            <td>
+                                <span class="badge bg-{% if projeto.status == 'ANDAMENTO' %}success{% elif projeto.status == 'CONCLUIDO' %}primary{% else %}warning{% endif %}">
+                                    {{ projeto.get_status_display }}
+                                </span>
+                            </td>
+                        </tr>
+                        {% if projeto.orcamento %}
+                        <tr>
+                            <th>Orçamento Original:</th>
+                            <td>
+                                <a href="{% url 'projetos:visualizar_orcamento' projeto.orcamento.pk %}">
+                                    {{ projeto.orcamento.codigo }}
+                                </a>
+                            </td>
+                        </tr>
+                        {% endif %}
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Datas -->
+        <div class="col-lg-6">
+            <div class="card mb-3">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="bi bi-calendar"></i> Datas</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm">
+                        {% if projeto.data_orcamento %}
+                        <tr>
+                            <th width="40%">Data do Orçamento:</th>
+                            <td>{{ projeto.data_orcamento|date:"d/m/Y" }}</td>
+                        </tr>
+                        {% endif %}
+                        {% if projeto.data_contratacao %}
+                        <tr>
+                            <th>Data da Contratação:</th>
+                            <td>{{ projeto.data_contratacao|date:"d/m/Y" }}</td>
+                        </tr>
+                        {% endif %}
+                        {% if projeto.data_inicio_real %}
+                        <tr>
+                            <th>Início do Projeto:</th>
+                            <td>{{ projeto.data_inicio_real|date:"d/m/Y" }}</td>
+                        </tr>
+                        {% endif %}
+                        {% if projeto.data_previsao_termino %}
+                        <tr>
+                            <th>Previsão de Término:</th>
+                            <td>{{ projeto.data_previsao_termino|date:"d/m/Y" }}</td>
+                        </tr>
+                        {% endif %}
+                        {% if projeto.data_termino_real %}
+                        <tr>
+                            <th>Término do Projeto:</th>
+                            <td>{{ projeto.data_termino_real|date:"d/m/Y" }}</td>
+                        </tr>
+                        {% endif %}
+                        {% if projeto.prazo_obra %}
+                        <tr>
+                            <th>Prazo da Obra:</th>
+                            <td>{{ projeto.prazo_obra }}</td>
+                        </tr>
+                        {% endif %}
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Dados da Obra -->
+        <div class="col-lg-6">
+            <div class="card mb-3">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="bi bi-geo-alt"></i> Endereço da Obra</h5>
+                </div>
+                <div class="card-body">
+                    {% if projeto.logradouro %}
+                        {{ projeto.logradouro }}
+                        {% if projeto.complemento %}, {{ projeto.complemento }}{% endif %}
+                        <br>
+                        {% if projeto.bairro %}{{ projeto.bairro }}<br>{% endif %}
+                        {% if projeto.cidade %}{{ projeto.cidade }}{% endif %}
+                        {% if projeto.uf %}/{{ projeto.uf }}{% endif %}
+                        {% if projeto.cep %} - CEP: {{ projeto.cep }}{% endif %}
+                    {% else %}
+                        <em class="text-muted">Não informado</em>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Valores e Visitas -->
+        <div class="col-lg-6">
+            <div class="card mb-3">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0"><i class="bi bi-currency-dollar"></i> Valores e Visitas Técnicas</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm">
+                        <tr>
+                            <th width="50%">Orçamento:</th>
+                            <td><strong class="text-primary">R$ {{ projeto.valor_orcado|floatformat:2 }}</strong></td>
+                        </tr>
+                        <tr>
+                            <th>Valor Contratado:</th>
+                            <td><strong class="text-success">R$ {{ projeto.valor_contratado|floatformat:2 }}</strong></td>
+                        </tr>
+                    </table>
+                    
+                    <hr>
+                    <h6 class="mb-2">Visitas Técnicas</h6>
+                    <table class="table table-sm">
+                        <tr>
+                            <th width="50%">Total de Visitas:</th>
+                            <td>{{ total_visitas|default:"0" }}</td>
+                        </tr>
+                        <tr>
+                            <th>Visitas Cobradas:</th>
+                            <td>{{ visitas_cobradas|default:"0" }}</td>
+                        </tr>
+                        {% if valor_total_visitas > 0 %}
+                        <tr>
+                            <th>Valor Total das Visitas:</th>
+                            <td>R$ {{ valor_total_visitas|floatformat:2 }}</td>
+                        </tr>
+                        {% endif %}
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Observações -->
+    {% if projeto.observacoes %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-pencil-square"></i> Observações</h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-0">{{ projeto.observacoes|linebreaks }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Auditoria -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <small class="text-muted">
+                        <strong>Criado em:</strong> {{ projeto.criado_em|date:"d/m/Y H:i" }}
+                        {% if projeto.criado_por %}por {{ projeto.criado_por.get_full_name|default:projeto.criado_por.username }}{% endif %}
+                        <br>
+                        <strong>Última atualização:</strong> {{ projeto.atualizado_em|date:"d/m/Y H:i" }}
+                        {% if projeto.atualizado_por %}por {{ projeto.atualizado_por.get_full_name|default:projeto.atualizado_por.username }}{% endif %}
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

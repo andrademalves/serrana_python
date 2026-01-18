@@ -1,0 +1,356 @@
+{% extends 'base_with_sidebar.html' %}
+{% load static %}
+{% load financeiro_tags %}
+
+{% block title %}{% if acao == 'criar' %}Nova Régua de Cobrança{% else %}Editar Régua{% endif %}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Cabeçalho -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">
+                <i class="bi bi-{% if acao == 'criar' %}plus-circle{% else %}pencil-square{% endif %}"></i>
+                {% if acao == 'criar' %}Nova Régua de Cobrança{% else %}Editar Régua{% endif %}
+            </h2>
+            <p class="text-muted mb-0">Configure mensagens automáticas de cobrança por etapas</p>
+        </div>
+        <a href="{% url 'financeiro:painel_cobranca' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+    </div>
+
+    <form method="post" id="reguaForm">
+        {% csrf_token %}
+        
+        <div class="row">
+            <!-- Coluna Principal -->
+            <div class="col-lg-8">
+                <!-- Informações Básicas -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="bi bi-info-circle"></i> Informações Básicas</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">{{ form.nome.label }} *</label>
+                            {{ form.nome }}
+                            {% if form.nome.errors %}
+                                <div class="text-danger small">{{ form.nome.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">{{ form.descricao.label }}</label>
+                            {{ form.descricao }}
+                            <small class="text-muted d-block mt-1">
+                                Explique o propósito desta régua (ex: "Régua padrão para cobrança progressiva de clientes")
+                            </small>
+                            {% if form.descricao.errors %}
+                                <div class="text-danger small">{{ form.descricao.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-8 mb-3">
+                                <label class="form-label fw-bold">{{ form.empresa.label }} *</label>
+                                {{ form.empresa }}
+                                {% if form.empresa.errors %}
+                                    <div class="text-danger small">{{ form.empresa.errors }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">{{ form.ativa.label }}</label>
+                                <div class="form-check form-switch">
+                                    {{ form.ativa }}
+                                    <label class="form-check-label" for="{{ form.ativa.id_for_label }}">
+                                        Régua Ativa
+                                    </label>
+                                </div>
+                                <small class="text-muted">Somente réguas ativas disparam cobranças</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Etapas da Régua -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0"><i class="bi bi-list-ol"></i> Etapas de Cobrança</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted mb-4">
+                            <i class="bi bi-info-circle text-primary"></i>
+                            <strong>Configure as mensagens que serão enviadas automaticamente.</strong>
+                            Cada etapa representa um momento de cobrança (antes, no dia ou após o vencimento).
+                        </p>
+
+                        {{ formset.management_form }}
+                        
+                        <div id="etapas-container">
+                            {% for form in formset %}
+                            <div class="etapa-form border rounded p-3 mb-3 bg-light position-relative">
+                                {{ form.id }}
+                                
+                                <!-- Botão Deletar -->
+                                {% if not forloop.first or formset|length > 1 %}
+                                <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 m-2 delete-etapa">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                                {% endif %}
+
+                                <div class="row">
+                                    <div class="col-md-2">
+                                        <label class="form-label fw-bold small">Ordem</label>
+                                        {{ form.ordem }}
+                                        {% if form.ordem.errors %}<div class="text-danger small">{{ form.ordem.errors }}</div>{% endif %}
+                                    </div>
+
+                                    <div class="col-md-5">
+                                        <label class="form-label fw-bold small">Nome da Etapa *</label>
+                                        {{ form.nome }}
+                                        {% if form.nome.errors %}<div class="text-danger small">{{ form.nome.errors }}</div>{% endif %}
+                                    </div>
+
+                                    <div class="col-md-3">
+                                        <label class="form-label fw-bold small">
+                                            Dias <i class="bi bi-question-circle" data-bs-toggle="tooltip" title="Negativo = antes, 0 = no dia, Positivo = depois"></i>
+                                        </label>
+                                        {{ form.offset_dias }}
+                                        {% if form.offset_dias.errors %}<div class="text-danger small">{{ form.offset_dias.errors }}</div>{% endif %}
+                                    </div>
+
+                                    <div class="col-md-2">
+                                        <label class="form-label fw-bold small">Enviar Email</label>
+                                        <div class="form-check form-switch">
+                                            {{ form.enviar_email }}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="email-fields mt-3">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold small">Assunto do E-mail</label>
+                                        {{ form.assunto_email }}
+                                        {% if form.assunto_email.errors %}<div class="text-danger small">{{ form.assunto_email.errors }}</div>{% endif %}
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold small">Mensagem do E-mail</label>
+                                        {{ form.template_email }}
+                                        {% if form.template_email.errors %}<div class="text-danger small">{{ form.template_email.errors }}</div>{% endif %}
+                                    </div>
+
+                                    <div class="form-check">
+                                        {{ form.ativo }}
+                                        <label class="form-check-label" for="{{ form.ativo.id_for_label }}">
+                                            Etapa ativa
+                                        </label>
+                                    </div>
+                                </div>
+
+                                {{ form.DELETE }}
+                            </div>
+                            {% endfor %}
+                        </div>
+
+                        <button type="button" class="btn btn-outline-success btn-sm" id="add-etapa">
+                            <i class="bi bi-plus-circle"></i> Adicionar Etapa
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Botões de Ação -->
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        <i class="bi bi-check-circle"></i> Salvar Régua
+                    </button>
+                    <a href="{% url 'financeiro:painel_cobranca' %}" class="btn btn-outline-secondary btn-lg">
+                        Cancelar
+                    </a>
+                </div>
+            </div>
+
+            <!-- Coluna Lateral - Guia Rápido -->
+            <div class="col-lg-4">
+                <!-- Variáveis Disponíveis -->
+                <div class="card border-0 shadow-sm mb-4 sticky-top" style="top: 20px;">
+                    <div class="card-header bg-info text-white">
+                        <h6 class="mb-0"><i class="bi bi-code-square"></i> Variáveis Disponíveis</h6>
+                    </div>
+                    <div class="card-body">
+                        <p class="small text-muted mb-3">
+                            Use essas variáveis nas mensagens para personalizar os e-mails:
+                        </p>
+
+                        <div class="list-group list-group-flush small">
+                            <div class="list-group-item px-0 py-2">
+                                <code class="text-primary">{cliente_nome}</code>
+                                <p class="mb-0 text-muted small">Nome do cliente</p>
+                            </div>
+                            <div class="list-group-item px-0 py-2">
+                                <code class="text-primary">{parcela_numero}</code>
+                                <p class="mb-0 text-muted small">Número da parcela</p>
+                            </div>
+                            <div class="list-group-item px-0 py-2">
+                                <code class="text-primary">{parcela_valor}</code>
+                                <p class="mb-0 text-muted small">Valor formatado (R$)</p>
+                            </div>
+                            <div class="list-group-item px-0 py-2">
+                                <code class="text-primary">{data_vencimento}</code>
+                                <p class="mb-0 text-muted small">Data de vencimento</p>
+                            </div>
+                            <div class="list-group-item px-0 py-2">
+                                <code class="text-primary">{dias_atraso}</code>
+                                <p class="mb-0 text-muted small">Dias de atraso (se houver)</p>
+                            </div>
+                            <div class="list-group-item px-0 py-2">
+                                <code class="text-primary">{titulo_numero}</code>
+                                <p class="mb-0 text-muted small">Número do título</p>
+                            </div>
+                            <div class="list-group-item px-0 py-2">
+                                <code class="text-primary">{empresa_nome}</code>
+                                <p class="mb-0 text-muted small">Nome da empresa</p>
+                            </div>
+                            <div class="list-group-item px-0 py-2">
+                                <code class="text-primary">{empresa_telefone}</code>
+                                <p class="mb-0 text-muted small">Telefone da empresa</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Exemplos de Etapas -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-warning">
+                        <h6 class="mb-0"><i class="bi bi-lightbulb"></i> Exemplos de Etapas</h6>
+                    </div>
+                    <div class="card-body small">
+                        <div class="mb-3">
+                            <strong>Etapa 1: Lembrete (-3 dias)</strong>
+                            <pre class="bg-light p-2 rounded mt-1 small">Olá {cliente_nome},
+
+Lembrete amigável: sua parcela {parcela_numero} vence em 3 dias.
+Valor: {parcela_valor}
+Vencimento: {data_vencimento}
+
+{empresa_nome}</pre>
+                        </div>
+
+                        <div class="mb-3">
+                            <strong>Etapa 2: Vencimento (0 dias)</strong>
+                            <pre class="bg-light p-2 rounded mt-1 small">Olá {cliente_nome},
+
+A parcela {parcela_numero} vence HOJE!
+Valor: {parcela_valor}
+
+Evite multas e juros.</pre>
+                        </div>
+
+                        <div class="mb-0">
+                            <strong>Etapa 3: Atraso (+7 dias)</strong>
+                            <pre class="bg-light p-2 rounded mt-1 small">Olá {cliente_nome},
+
+Sua parcela está em atraso há {dias_atraso} dias.
+Entre em contato urgente.
+
+{empresa_telefone}</pre>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dicas -->
+                <div class="alert alert-success">
+                    <h6 class="alert-heading"><i class="bi bi-check2-circle"></i> Dicas</h6>
+                    <ul class="small mb-0">
+                        <li>Use offset negativos para lembretes antes do vencimento</li>
+                        <li>Crie pelo menos 5 etapas para cobrança progressiva</li>
+                        <li>Seja educado nos primeiros contatos</li>
+                        <li>Intensifique o tom conforme o atraso aumenta</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+// Gerenciamento do formset de etapas
+document.addEventListener('DOMContentLoaded', function() {
+    const container = document.getElementById('etapas-container');
+    const addButton = document.getElementById('add-etapa');
+    const totalForms = document.querySelector('[name$="TOTAL_FORMS"]');
+    
+    // Adicionar nova etapa
+    addButton.addEventListener('click', function() {
+        const formCount = parseInt(totalForms.value);
+        const newForm = document.querySelector('.etapa-form').cloneNode(true);
+        
+        // Atualizar índices do formulário
+        newForm.innerHTML = newForm.innerHTML.replace(/__prefix__/g, formCount);
+        newForm.innerHTML = newForm.innerHTML.replace(/-0-/g, `-${formCount}-`);
+        newForm.innerHTML = newForm.innerHTML.replace(/_0_/g, `_${formCount}_`);
+        
+        // Limpar valores
+        newForm.querySelectorAll('input[type="text"], input[type="number"], textarea').forEach(input => {
+            input.value = '';
+        });
+        newForm.querySelectorAll('input[type="checkbox"]').forEach(input => {
+            input.checked = false;
+        });
+        
+        // Adicionar ao container
+        container.appendChild(newForm);
+        totalForms.value = formCount + 1;
+        
+        // Reattach delete handlers
+        attachDeleteHandlers();
+    });
+    
+    // Deletar etapa
+    function attachDeleteHandlers() {
+        document.querySelectorAll('.delete-etapa').forEach(button => {
+            button.onclick = function() {
+                const etapaForm = this.closest('.etapa-form');
+                const deleteInput = etapaForm.querySelector('input[name$="-DELETE"]');
+                
+                if (deleteInput) {
+                    deleteInput.checked = true;
+                    etapaForm.style.display = 'none';
+                } else {
+                    etapaForm.remove();
+                }
+            };
+        });
+    }
+    
+    attachDeleteHandlers();
+    
+    // Tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+});
+</script>
+
+<style>
+.etapa-form {
+    transition: all 0.3s ease;
+}
+
+.etapa-form:hover {
+    background-color: #f8f9fa !important;
+}
+
+pre {
+    font-size: 0.8rem;
+    margin-bottom: 0;
+}
+
+code {
+    font-size: 0.9rem;
+}
+</style>
+{% endblock %}

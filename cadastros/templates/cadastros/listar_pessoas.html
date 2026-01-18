@@ -1,0 +1,144 @@
+﻿{% extends 'base_with_sidebar.html' %}
+
+{% block title %}Pessoas - Sistema Serrana{% endblock %}
+
+{% block sidebar %}
+    <a class="nav-link" href="{% url 'usuarios:home_modulos' %}">
+        <i class="bi bi-grid"></i> Módulos
+    </a>
+    <hr>
+    <h6 class="text-muted text-uppercase px-3 mb-2">Cadastros</h6>
+    <a class="nav-link" href="{% url 'cadastros:dashboard_cadastros' %}">
+        <i class="bi bi-speedometer2"></i> Dashboard
+    </a>
+    <a class="nav-link active" href="{% url 'cadastros:listar_pessoas' %}">
+        <i class="bi bi-person-lines-fill"></i> Pessoas
+    </a>
+    <a class="nav-link" href="{% url 'cadastros:listar_produtos' %}">
+        <i class="bi bi-box-seam"></i> Produtos
+    </a>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-person-lines-fill"></i> Pessoas</h2>
+    <a href="{% url 'cadastros:criar_pessoa' %}" class="btn btn-primary">
+        <i class="bi bi-plus-circle"></i> Nova Pessoa
+    </a>
+</div>
+
+<!-- Filtros -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-4">
+                <input type="text" class="form-control" name="q" placeholder="Buscar por nome, CPF/CNPJ, email..." value="{{ q }}">
+            </div>
+            <div class="col-md-2">
+                <select class="form-select" name="tipo">
+                    <option value="">Todos os Tipos</option>
+                    <option value="F" {% if tipo == 'F' %}selected{% endif %}>Pessoa Física</option>
+                    <option value="J" {% if tipo == 'J' %}selected{% endif %}>Pessoa Jurídica</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select class="form-select" name="classificacao">
+                    <option value="">Todas Classificações</option>
+                    <option value="cliente" {% if classificacao == 'cliente' %}selected{% endif %}>Clientes</option>
+                    <option value="fornecedor" {% if classificacao == 'fornecedor' %}selected{% endif %}>Fornecedores</option>
+                    <option value="funcionario" {% if classificacao == 'funcionario' %}selected{% endif %}>Funcionários</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-search"></i> Buscar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Tabela -->
+<div class="card">
+    <div class="card-body">
+        {% if pessoas %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>CPF/CNPJ</th>
+                            <th>Tipo</th>
+                            <th>Contato</th>
+                            <th>Classificação</th>
+                            <th>Status</th>
+                            <th class="text-end">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for pessoa in pessoas %}
+                        <tr>
+                            <td>
+                                <strong>{{ pessoa.nome }}</strong>
+                                {% if pessoa.nome_fantasia %}
+                                    <br><small class="text-muted">{{ pessoa.nome_fantasia }}</small>
+                                {% endif %}
+                            </td>
+                            <td>{{ pessoa.cpf_cnpj }}</td>
+                            <td>
+                                {% if pessoa.tipo == 'F' %}
+                                    <span class="badge bg-info">Física</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Jurídica</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if pessoa.email %}
+                                    <i class="bi bi-envelope"></i> {{ pessoa.email }}<br>
+                                {% endif %}
+                                {% if pessoa.celular %}
+                                    <i class="bi bi-phone"></i> {{ pessoa.celular }}
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if pessoa.cliente %}
+                                    <span class="badge bg-success">Cliente</span>
+                                {% endif %}
+                                {% if pessoa.fornecedor %}
+                                    <span class="badge bg-warning">Fornecedor</span>
+                                {% endif %}
+                                {% if pessoa.funcionario %}
+                                    <span class="badge bg-primary">Funcionário</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if pessoa.ativo %}
+                                    <span class="badge bg-success">Ativo</span>
+                                {% else %}
+                                    <span class="badge bg-danger">Inativo</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end table-actions">
+                                <a href="{% url 'cadastros:editar_pessoa' pessoa.id %}" class="btn btn-sm btn-warning" title="Editar">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <form method="post" action="{% url 'cadastros:excluir_pessoa' pessoa.id %}" style="display:inline;" onsubmit="confirmarExclusao(event, 'Deseja realmente inativar {{ pessoa.nome }}?')">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-danger" title="Inativar">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i> Nenhuma pessoa encontrada.
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

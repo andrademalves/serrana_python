@@ -1,0 +1,119 @@
+{% extends 'base_with_sidebar.html' %}
+{% load static %}
+{% load financeiro_tags %}
+
+{% block title %}{{ titulo }} - Sistema Serrana{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Cabeçalho -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">
+                <i class="bi bi-building me-2"></i>{{ titulo }}
+            </h2>
+        </div>
+        <div>
+            <a href="{% url 'financeiro:listar_bancos' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-2"></i>Voltar
+            </a>
+        </div>
+    </div>
+
+    <!-- Formulário -->
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+                        
+                        {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {{ form.non_field_errors }}
+                        </div>
+                        {% endif %}
+
+                        <div class="row g-3">
+                            <!-- Código COMPE -->
+                            <div class="col-md-3">
+                                <label for="{{ form.codigo_compe.id_for_label }}" class="form-label">
+                                    Código COMPE <span class="text-danger">*</span>
+                                </label>
+                                {{ form.codigo_compe }}
+                                {% if form.codigo_compe.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.codigo_compe.errors.0 }}
+                                    </div>
+                                {% endif %}
+                                <small class="form-text text-muted">3 dígitos do BC</small>
+                            </div>
+
+                            <!-- Nome -->
+                            <div class="col-md-7">
+                                <label for="{{ form.nome.id_for_label }}" class="form-label">
+                                    Nome do Banco <span class="text-danger">*</span>
+                                </label>
+                                {{ form.nome }}
+                                {% if form.nome.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.nome.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Ativo -->
+                            <div class="col-md-2">
+                                <label class="form-label d-block">Status</label>
+                                <div class="form-check form-switch">
+                                    {{ form.ativo }}
+                                    <label class="form-check-label" for="{{ form.ativo.id_for_label }}">
+                                        Ativo
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Botões -->
+                        <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
+                            <a href="{% url 'financeiro:listar_bancos' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-x-lg me-2"></i>Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-lg me-2"></i>Salvar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Informações sobre códigos COMPE -->
+            <div class="card border-0 shadow-sm mt-3">
+                <div class="card-body">
+                    <h6 class="card-title">
+                        <i class="bi bi-info-circle me-2"></i>Códigos COMPE Comuns
+                    </h6>
+                    <div class="row g-2 small">
+                        <div class="col-md-6">
+                            <ul class="list-unstyled mb-0">
+                                <li><strong>001</strong> - Banco do Brasil</li>
+                                <li><strong>033</strong> - Santander</li>
+                                <li><strong>104</strong> - Caixa Econômica Federal</li>
+                                <li><strong>237</strong> - Bradesco</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <ul class="list-unstyled mb-0">
+                                <li><strong>341</strong> - Itaú</li>
+                                <li><strong>748</strong> - Sicredi</li>
+                                <li><strong>756</strong> - Sicoob</li>
+                                <li><strong>077</strong> - Banco Inter</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

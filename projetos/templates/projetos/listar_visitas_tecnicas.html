@@ -1,0 +1,130 @@
+{% extends 'base_with_sidebar.html' %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2><i class="bi bi-calendar-check"></i> {{ titulo }}</h2>
+                <a href="{% url 'projetos:criar_visita_tecnica' %}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle"></i> Agendar Nova Visita
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Orçamento</th>
+                                <th>Cliente</th>
+                                <th>Data Visita</th>
+                                <th>Horário</th>
+                                <th>Técnico</th>
+                                <th>Valor Cobrado</th>
+                                <th>Status</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for visita in visitas %}
+                            <tr>
+                                <td>
+                                    <a href="{% url 'projetos:visualizar_orcamento' visita.orcamento.pk %}">
+                                        {{ visita.orcamento.codigo }}
+                                    </a>
+                                </td>
+                                <td>{{ visita.orcamento.cliente.nome }}</td>
+                                <td>{{ visita.data_visita|date:"d/m/Y" }}</td>
+                                <td>
+                                    {% if visita.hora_inicio %}
+                                        {{ visita.hora_inicio|time:"H:i" }}
+                                        {% if visita.hora_fim %} - {{ visita.hora_fim|time:"H:i" }}{% endif %}
+                                    {% else %}
+                                        <em class="text-muted">Não definido</em>
+                                    {% endif %}
+                                </td>
+                                <td>{{ visita.tecnico.nome }}</td>
+                                <td>R$ {{ visita.valor_cobrado|floatformat:2 }}</td>
+                                <td>
+                                    <span class="badge bg-{% if visita.status == 'REALIZADA' %}success{% elif visita.status == 'AGENDADA' %}warning{% else %}secondary{% endif %}">
+                                        {{ visita.get_status_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{% url 'projetos:visualizar_visita_tecnica' visita.pk %}" class="btn btn-info" title="Visualizar">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        {% if visita.status == 'AGENDADA' %}
+                                        <a href="{% url 'projetos:editar_visita_tecnica' visita.pk %}" class="btn btn-warning" title="Editar">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <button class="btn btn-success" title="Marcar Realizada" onclick="confirmarRealizacao({{ visita.pk }}, '{{ visita.orcamento.codigo }}')">
+                                            <i class="bi bi-check-circle"></i>
+                                        </button>
+                                        <button class="btn btn-danger" title="Cancelar" onclick="confirmarCancelamento({{ visita.pk }}, '{{ visita.orcamento.codigo }}')">
+                                            <i class="bi bi-x-circle"></i>
+                                        </button>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="8" class="text-center text-muted">
+                                    <i class="bi bi-inbox"></i> Nenhuma visita técnica cadastrada
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+function confirmarRealizacao(visitaId, orcamentoCodigo) {
+    Swal.fire({
+        title: 'Confirmar Realização',
+        text: `Confirma que a visita técnica do orçamento ${orcamentoCodigo} foi realizada?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#198754',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Sim, foi realizada!',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            window.location.href = `/projetos/visitas-tecnicas/${visitaId}/marcar-realizada/`;
+        }
+    });
+}
+
+function confirmarCancelamento(visitaId, orcamentoCodigo) {
+    Swal.fire({
+        title: 'Cancelar Visita',
+        text: `Deseja realmente cancelar a visita técnica do orçamento ${orcamentoCodigo}?`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Sim, cancelar visita!',
+        cancelButtonText: 'Não cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            window.location.href = `/projetos/visitas-tecnicas/${visitaId}/cancelar/`;
+        }
+    });
+}
+</script>
+{% endblock %}

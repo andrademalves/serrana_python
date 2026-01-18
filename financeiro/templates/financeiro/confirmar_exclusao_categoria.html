@@ -1,0 +1,66 @@
+{% extends 'base_with_sidebar.html' %}
+{% load static %}
+
+{% block title %}Excluir Categoria de Custo - Sistema Serrana{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="text-center mb-4">
+                        <i class="bi bi-exclamation-triangle text-danger" style="font-size: 3rem;"></i>
+                        <h3 class="mt-3">Confirmar Exclusão</h3>
+                    </div>
+
+                    <div class="alert alert-warning">
+                        <strong>Atenção!</strong> Você está prestes a excluir a categoria de custo:
+                    </div>
+
+                    <div class="card bg-light mb-4">
+                        <div class="card-body">
+                            <h5 class="mb-2">{{ categoria.nome }}</h5>
+                            <p class="mb-2">
+                                <strong>Tipo:</strong> 
+                                {% if categoria.tipo == 'FIXO' %}
+                                    <span class="badge bg-primary">{{ categoria.get_tipo_display }}</span>
+                                {% elif categoria.tipo == 'VARIAVEL' %}
+                                    <span class="badge bg-success">{{ categoria.get_tipo_display }}</span>
+                                {% else %}
+                                    <span class="badge bg-warning">{{ categoria.get_tipo_display }}</span>
+                                {% endif %}
+                            </p>
+                            {% if categoria.tipo == 'MISTO' %}
+                            <p class="mb-2">
+                                <strong>Percentual Variável:</strong> {{ categoria.percentual_variavel }}%
+                            </p>
+                            {% endif %}
+                            {% if categoria.observacao %}
+                            <p class="text-muted mb-0"><small>{{ categoria.observacao }}</small></p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <p class="text-muted">
+                        <i class="bi bi-info-circle me-2"></i>
+                        Esta ação não poderá ser desfeita. Certifique-se de que não há registros vinculados a esta categoria.
+                    </p>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-flex gap-2 justify-content-end">
+                            <a href="{% url 'financeiro:listar_categorias_custo' %}" class="btn btn-secondary">
+                                <i class="bi bi-x-lg me-2"></i>Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-trash me-2"></i>Confirmar Exclusão
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

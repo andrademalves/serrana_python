@@ -1,0 +1,187 @@
+{% extends 'base_with_sidebar.html' %}
+{% load static %}
+
+{% block title %}Itens do Estoque{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-boxes"></i> Itens do Estoque</h2>
+    <a href="{% url 'estoque:criar_item' %}" class="btn btn-primary">
+        <i class="bi bi-plus-circle"></i> Novo Item
+    </a>
+</div>
+
+<!-- Filtros -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <label for="busca" class="form-label">Buscar</label>
+                <input type="text" class="form-control" id="busca" name="busca" value="{{ busca }}" placeholder="Nome do item">
+            </div>
+            <div class="col-md-2">
+                <label for="tipo_item" class="form-label">Tipo</label>
+                <select class="form-select select2" id="tipo_item" name="tipo_item">
+                    <option value="">Todos</option>
+                    <option value="MP" {% if tipo_item_filtro == 'MP' %}selected{% endif %}>Matéria Prima</option>
+                    <option value="PA" {% if tipo_item_filtro == 'PA' %}selected{% endif %}>Produto Acabado</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="material" class="form-label">Material</label>
+                <select class="form-select select2" id="material" name="material">
+                    <option value="">Todos</option>
+                    <option value="ALUMINIO" {% if material_filtro == 'ALUMINIO' %}selected{% endif %}>Alumínio</option>
+                    <option value="FERRO" {% if material_filtro == 'FERRO' %}selected{% endif %}>Ferro</option>
+                    <option value="ACO" {% if material_filtro == 'ACO' %}selected{% endif %}>Aço</option>
+                    <option value="OUTROS" {% if material_filtro == 'OUTROS' %}selected{% endif %}>Outros</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="status" class="form-label">Status</label>
+                <select class="form-select select2" id="status" name="status">
+                    <option value="">Todos</option>
+                    <option value="ativo" {% if status_filtro == 'ativo' %}selected{% endif %}>Ativo</option>
+                    <option value="inativo" {% if status_filtro == 'inativo' %}selected{% endif %}>Inativo</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="estoque_baixo" class="form-label">Estoque</label>
+                <select class="form-select select2" id="estoque_baixo" name="estoque_baixo">
+                    <option value="">Todos</option>
+                    <option value="sim" {% if estoque_baixo_filtro == 'sim' %}selected{% endif %}>Estoque Baixo</option>
+                </select>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary me-2">
+                    <i class="bi bi-search"></i> Filtrar
+                </button>
+                <a href="{% url 'estoque:listar_itens' %}" class="btn btn-secondary me-2">
+                    <i class="bi bi-x-circle"></i> Limpar
+                </a>
+                <a href="{% url 'estoque:listar_itens_pdf' %}?tipo_item={{ tipo_item_filtro }}&material={{ material_filtro }}&status={{ status_filtro }}&estoque_baixo={{ estoque_baixo_filtro }}&busca={{ busca }}" class="btn btn-danger" target="_blank">
+                    <i class="bi bi-file-pdf"></i> PDF
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Tabela de Itens -->
+<div class="card">
+    <div class="card-body">
+        {% if itens %}
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th style="width: 80px;">Imagem</th>
+                        <th>Descrição</th>
+                        <th>Material</th>
+                        <th>Tipo</th>
+                        <th>Unidade</th>
+                        <th>Estoque Atual</th>
+                        <th>Estoque Mín.</th>
+                        <th>Custo Médio</th>
+                        <th>Valor Total</th>
+                        <th>Status</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in itens %}
+                    <tr {% if item.estoque_atual <= item.estoque_minimo and item.status_ativo %}class="table-warning"{% endif %}>
+                        <td>
+                            {% if item.foto %}
+                                <img src="{{ item.foto.url }}" alt="{{ item.descricao }}" class="img-thumbnail" style="width: 60px; height: 60px; object-fit: cover;">
+                            {% elif item.url_foto %}
+                                <img src="{{ item.url_foto }}" alt="{{ item.descricao }}" class="img-thumbnail" style="width: 60px; height: 60px; object-fit: cover;">
+                            {% else %}
+                                <div class="bg-secondary d-flex align-items-center justify-content-center" style="width: 60px; height: 60px; border-radius: 4px;">
+                                    <i class="bi bi-image text-white fs-4"></i>
+                                </div>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {{ item.descricao }}
+                            {% if item.estoque_atual <= item.estoque_minimo and item.status_ativo %}
+                                <i class="bi bi-exclamation-triangle text-warning" title="Estoque abaixo do mínimo"></i>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if item.material == 'ALUMINIO' %}
+                                <span class="badge bg-secondary"><i class="bi bi-box"></i> Alumínio</span>
+                            {% elif item.material == 'FERRO' %}
+                                <span class="badge bg-dark"><i class="bi bi-box"></i> Ferro</span>
+                            {% elif item.material == 'ACO' %}
+                                <span class="badge bg-secondary"><i class="bi bi-box"></i> Aço</span>
+                            {% elif item.material == 'VIDRO' %}
+                                <span class="badge bg-info"><i class="bi bi-box"></i> Vidro</span>
+                            {% elif item.material == 'MADEIRA' %}
+                                <span class="badge bg-warning text-dark"><i class="bi bi-box"></i> Madeira</span>
+                            {% elif item.material == 'PLASTICO' %}
+                                <span class="badge bg-primary"><i class="bi bi-box"></i> Plástico</span>
+                            {% elif item.material == 'BORRACHA' %}
+                                <span class="badge bg-dark"><i class="bi bi-box"></i> Borracha</span>
+                            {% elif item.material == 'OUTROS' %}
+                                <span class="badge bg-secondary"><i class="bi bi-box"></i> Outros</span>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if item.tipo_item == 'MP' %}
+                                <span class="badge bg-info">Matéria Prima</span>
+                            {% else %}
+                                <span class="badge bg-success">Produto Acabado</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ item.unidade_medida }}</td>
+                        <td>{{ item.get_saldo_total|floatformat:3 }}</td>
+                        <td>{{ item.estoque_minimo|floatformat:3 }}</td>
+                        <td>R$ {{ item.get_custo_medio_ponderado|floatformat:4 }}</td>
+                        <td>R$ {{ item.valor_total_calculado|floatformat:2 }}</td>
+                        <td>
+                            {% if item.ativo %}
+                                <span class="badge bg-success">Ativo</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Inativo</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{% url 'estoque:editar_item' item.id %}" class="btn btn-sm btn-warning" title="Editar">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            {% if item.ativo %}
+                            <button onclick="confirmarExclusao('{% url 'estoque:excluir_item' item.id %}', &quot;Item&quot;)" 
+                                    class="btn btn-sm btn-danger" title="Desativar">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="mt-3">
+            <p class="text-muted">Total de itens: {{ itens|length }}</p>
+        </div>
+        {% else %}
+        <p class="text-muted">Nenhum item encontrado.</p>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        $('.select2').select2({
+            theme: 'bootstrap-5',
+            width: '100%'
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,432 @@
+{% extends 'base_with_sidebar.html' %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2><i class="bi bi-building"></i> {{ titulo }}</h2>
+        </div>
+    </div>
+
+    <form method="post">
+        {% csrf_token %}
+        
+        {% if orcamento %}
+            <input type="hidden" name="orcamento_id" value="{{ orcamento.pk }}">
+        {% endif %}
+        
+        <div class="row">
+            <!-- Informações Básicas -->
+            <div class="col-lg-6">
+                <div class="card mb-3">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="bi bi-info-circle"></i> Informações Básicas</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="{{ form.orcamento.id_for_label }}" class="form-label">Orçamento Base</label>
+                            {{ form.orcamento }}
+                            {% if form.orcamento.errors %}
+                                <div class="text-danger small">{{ form.orcamento.errors }}</div>
+                            {% endif %}
+                            {% if orcamento %}
+                                <small class="text-muted">Orçamento {{ orcamento.codigo }} selecionado</small>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.cliente.id_for_label }}" class="form-label">Cliente *</label>
+                            {{ form.cliente }}
+                            {% if form.cliente.errors %}
+                                <div class="text-danger small">{{ form.cliente.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.endereco_cliente.id_for_label }}" class="form-label">{{ form.endereco_cliente.label }}</label>
+                            {{ form.endereco_cliente }}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.vendedor.id_for_label }}" class="form-label">Vendedor/Responsável *</label>
+                            {{ form.vendedor }}
+                            {% if form.vendedor.errors %}
+                                <div class="text-danger small">{{ form.vendedor.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.descricao.id_for_label }}" class="form-label">{{ form.descricao.label }} *</label>
+                            {{ form.descricao }}
+                            {% if form.descricao.errors %}
+                                <div class="text-danger small">{{ form.descricao.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.status.id_for_label }}" class="form-label">Status</label>
+                            {{ form.status }}
+                            {% if form.status.errors %}
+                                <div class="text-danger small">{{ form.status.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Datas -->
+            <div class="col-lg-6">
+                <div class="card mb-3">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0"><i class="bi bi-calendar"></i> Datas</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.data_orcamento.id_for_label }}" class="form-label">{{ form.data_orcamento.label }}</label>
+                                {{ form.data_orcamento }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.data_contratacao.id_for_label }}" class="form-label">{{ form.data_contratacao.label }}</label>
+                                {{ form.data_contratacao }}
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.data_inicio_real.id_for_label }}" class="form-label">{{ form.data_inicio_real.label }}</label>
+                                {{ form.data_inicio_real }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.data_previsao_termino.id_for_label }}" class="form-label">{{ form.data_previsao_termino.label }}</label>
+                                {{ form.data_previsao_termino }}
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.data_termino_real.id_for_label }}" class="form-label">{{ form.data_termino_real.label }}</label>
+                                {{ form.data_termino_real }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.prazo_obra.id_for_label }}" class="form-label">{{ form.prazo_obra.label }}</label>
+                                {{ form.prazo_obra }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row">
+            <!-- Dados da Obra -->
+            <div class="col-lg-6">
+                <div class="card mb-3">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0"><i class="bi bi-geo-alt"></i> Endereço da Obra</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <div class="form-check">
+                                {{ form.usar_endereco_cliente }}
+                                <label class="form-check-label" for="usar_endereco_cliente">
+                                    {{ form.usar_endereco_cliente.label }}
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.logradouro.id_for_label }}" class="form-label">{{ form.logradouro.label }}</label>
+                            {{ form.logradouro }}
+                            {% if form.logradouro.errors %}
+                                <div class="text-danger small">{{ form.logradouro.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.complemento.id_for_label }}" class="form-label">{{ form.complemento.label }}</label>
+                                {{ form.complemento }}
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label for="{{ form.cep.id_for_label }}" class="form-label">{{ form.cep.label }}</label>
+                                {{ form.cep }}
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.bairro.id_for_label }}" class="form-label">{{ form.bairro.label }}</label>
+                            {{ form.bairro }}
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-9 mb-3">
+                                <label for="{{ form.cidade.id_for_label }}" class="form-label">{{ form.cidade.label }}</label>
+                                {{ form.cidade }}
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label for="{{ form.uf.id_for_label }}" class="form-label">{{ form.uf.label }}</label>
+                                {{ form.uf }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Valores e Visitas Técnicas -->
+            <div class="col-lg-6">
+                <div class="card mb-3">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0"><i class="bi bi-currency-dollar"></i> Valores e Visitas</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.valor_orcado.id_for_label }}" class="form-label">{{ form.valor_orcado.label }}</label>
+                                {{ form.valor_orcado }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.valor_contratado.id_for_label }}" class="form-label">{{ form.valor_contratado.label }}</label>
+                                {{ form.valor_contratado }}
+                            </div>
+                        </div>
+                        
+                        <hr>
+                        <h6 class="mb-3">Visitas Técnicas</h6>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.num_visitas_tecnicas.id_for_label }}" class="form-label">{{ form.num_visitas_tecnicas.label }}</label>
+                                {{ form.num_visitas_tecnicas }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.num_visitas_cobradas.id_for_label }}" class="form-label">{{ form.num_visitas_cobradas.label }}</label>
+                                {{ form.num_visitas_cobradas }}
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.valor_visita.id_for_label }}" class="form-label">{{ form.valor_visita.label }}</label>
+                                {{ form.valor_visita }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.valor_total_visitas.id_for_label }}" class="form-label">{{ form.valor_total_visitas.label }}</label>
+                                {{ form.valor_total_visitas }}
+                                <small class="text-muted d-block">Calculado automaticamente</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Observações -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-pencil-square"></i> Observações</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="{{ form.observacoes.id_for_label }}" class="form-label">{{ form.observacoes.label }}</label>
+                            {{ form.observacoes }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Botões -->
+        <div class="row">
+            <div class="col-12">
+                <div class="d-flex justify-content-end gap-2">
+                    <a href="{% url 'projetos:listar_projetos' %}" class="btn btn-secondary">
+                        <i class="bi bi-x-circle"></i> Cancelar
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle"></i> Salvar Projeto
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const clienteSelect = document.getElementById('{{ form.cliente.id_for_label }}');
+    const usarEnderecoCliente = document.getElementById('usar_endereco_cliente');
+    const orcamentoSelect = document.getElementById('{{ form.orcamento.id_for_label }}');
+    
+    // Campos de visitas técnicas
+    const numVisitasTecnicas = document.getElementById('{{ form.num_visitas_tecnicas.id_for_label }}');
+    const numVisitasCobradas = document.getElementById('{{ form.num_visitas_cobradas.id_for_label }}');
+    const valorVisita = document.getElementById('{{ form.valor_visita.id_for_label }}');
+    const valorTotalVisitas = document.getElementById('{{ form.valor_total_visitas.id_for_label }}');
+    
+    // Função para buscar dados de visitas do orçamento
+    function buscarDadosVisitasOrcamento(orcamentoId) {
+        if (!orcamentoId) return;
+        
+        fetch(`/projetos/api/orcamento/${orcamentoId}/visitas/`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Preencher campos automaticamente
+                    if (numVisitasTecnicas) numVisitasTecnicas.value = data.num_visitas_tecnicas;
+                    if (numVisitasCobradas) numVisitasCobradas.value = data.num_visitas_cobradas;
+                    if (valorVisita) valorVisita.value = data.valor_visita.toFixed(2);
+                    if (valorTotalVisitas) valorTotalVisitas.value = data.valor_total_visitas.toFixed(2);
+                }
+            })
+            .catch(error => {
+                console.error('Erro ao buscar dados de visitas:', error);
+            });
+    }
+    
+    // Event listener para mudança de orçamento
+    if (orcamentoSelect) {
+        orcamentoSelect.addEventListener('change', function() {
+            const orcamentoId = this.value;
+            if (orcamentoId) {
+                buscarDadosVisitasOrcamento(orcamentoId);
+            }
+        });
+    }
+    
+    // Função para calcular valor total das visitas
+    function calcularValorTotalVisitas() {
+        const numCobradas = parseFloat(numVisitasCobradas.value) || 0;
+        const valorPorVisita = parseFloat(valorVisita.value) || 0;
+        const total = numCobradas * valorPorVisita;
+        valorTotalVisitas.value = total.toFixed(2);
+    }
+    
+    // Event listeners para cálculo automático
+    if (numVisitasCobradas && valorVisita) {
+        numVisitasCobradas.addEventListener('input', calcularValorTotalVisitas);
+        numVisitasCobradas.addEventListener('change', calcularValorTotalVisitas);
+        valorVisita.addEventListener('input', calcularValorTotalVisitas);
+        valorVisita.addEventListener('change', calcularValorTotalVisitas);
+    }
+    
+    // Armazenar dados do cliente via AJAX
+    let dadosClientes = {};
+    
+    // Função para buscar dados do cliente
+    function buscarDadosCliente(clienteId) {
+        if (!clienteId) return;
+        
+        // Fazer requisição AJAX para buscar dados do cliente
+        fetch(`/cadastros/api/pessoa/${clienteId}/`)
+            .then(response => response.json())
+            .then(data => {
+                dadosClientes[clienteId] = data;
+            })
+            .catch(error => {
+                console.error('Erro ao buscar dados do cliente:', error);
+            });
+    }
+    
+    // Função para copiar endereço do cliente
+    function copiarEnderecoCliente() {
+        const clienteId = clienteSelect.value;
+        
+        if (!clienteId) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Atenção',
+                text: 'Selecione um cliente primeiro!'
+            });
+            usarEnderecoCliente.checked = false;
+            return;
+        }
+        
+        // Buscar dados do select (option selecionada)
+        const selectedOption = clienteSelect.options[clienteSelect.selectedIndex];
+        
+        // Usar dados armazenados ou fazer nova requisição
+        if (dadosClientes[clienteId]) {
+            preencherCamposObra(dadosClientes[clienteId]);
+        } else {
+            // Buscar via AJAX
+            fetch(`/cadastros/api/pessoa/${clienteId}/`)
+                .then(response => response.json())
+                .then(data => {
+                    dadosClientes[clienteId] = data;
+                    preencherCamposObra(data);
+                })
+                .catch(error => {
+                    console.error('Erro ao buscar dados do cliente:', error);
+                    // Fallback: limpar campos
+                    limparCamposObra();
+                });
+        }
+    }
+    
+    // Função para preencher campos da obra
+    function preencherCamposObra(dados) {
+        document.getElementById('{{ form.logradouro.id_for_label }}').value = dados.logradouro || '';
+        document.getElementById('{{ form.complemento.id_for_label }}').value = dados.complemento || '';
+        document.getElementById('{{ form.bairro.id_for_label }}').value = dados.bairro || '';
+        document.getElementById('{{ form.cidade.id_for_label }}').value = dados.cidade || '';
+        document.getElementById('{{ form.uf.id_for_label }}').value = dados.uf || '';
+        document.getElementById('{{ form.cep.id_for_label }}').value = dados.cep || '';
+    }
+    
+    // Função para limpar campos da obra
+    function limparCamposObra() {
+        document.getElementById('{{ form.logradouro.id_for_label }}').value = '';
+        document.getElementById('{{ form.complemento.id_for_label }}').value = '';
+        document.getElementById('{{ form.bairro.id_for_label }}').value = '';
+        document.getElementById('{{ form.cidade.id_for_label }}').value = '';
+        document.getElementById('{{ form.uf.id_for_label }}').value = '';
+        document.getElementById('{{ form.cep.id_for_label }}').value = '';
+    }
+    
+    // Event listener para o checkbox
+    if (usarEnderecoCliente) {
+        usarEnderecoCliente.addEventListener('change', function() {
+            if (this.checked) {
+                copiarEnderecoCliente();
+            } else {
+                limparCamposObra();
+            }
+        });
+    }
+    
+    // Event listener para mudança de cliente
+    if (clienteSelect) {
+        clienteSelect.addEventListener('change', function() {
+            // Se checkbox estiver marcado, atualizar endereço
+            if (usarEnderecoCliente && usarEnderecoCliente.checked) {
+                copiarEnderecoCliente();
+            }
+        });
+    }
+    
+    // Inicializar Select2 no campo orçamento
+    if (orcamentoSelect) {
+        $(orcamentoSelect).select2({
+            theme: 'bootstrap-5',
+            placeholder: 'Selecione um orçamento',
+            allowClear: true,
+            width: '100%',
+            disabled: orcamentoSelect.hasAttribute('disabled')
+        });
+    }
+});
+</script>
+{% endblock %}

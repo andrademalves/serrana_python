@@ -1,0 +1,471 @@
+{% extends 'base_with_sidebar.html' %}
+{% load static %}
+
+{% block title %}Editar Pessoa - Sistema Serrana{% endblock %}
+
+{% block sidebar %}
+    <a class="nav-link" href="{% url 'usuarios:home_modulos' %}">
+        <i class="bi bi-grid"></i> Módulos
+    </a>
+    <hr>
+    <h6 class="text-muted text-uppercase px-3 mb-2">Cadastros</h6>
+    <a class="nav-link" href="{% url 'cadastros:dashboard_cadastros' %}">
+        <i class="bi bi-speedometer2"></i> Dashboard
+    </a>
+    <a class="nav-link active" href="{% url 'cadastros:listar_pessoas' %}">
+        <i class="bi bi-person-lines-fill"></i> Pessoas
+    </a>
+    <a class="nav-link" href="{% url 'cadastros:listar_produtos' %}">
+        <i class="bi bi-box-seam"></i> Produtos
+    </a>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-pencil"></i> Editar Pessoa</h2>
+    <a href="{% url 'cadastros:listar_pessoas' %}" class="btn btn-secondary">
+        <i class="bi bi-arrow-left"></i> Voltar
+    </a>
+</div>
+
+{% if messages %}
+<div class="alert-container">
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div class="card">
+    <div class="card-body">
+        <form method="post" id="formPessoa">
+            {% csrf_token %}
+            
+            <!-- Informações Básicas -->
+            <h5 class="mb-3">Informações Básicas</h5>
+            <div class="row mb-3">
+                <div class="col-md-2">
+                    <label class="form-label">Tipo <span class="text-danger">*</span></label>
+                    <select class="form-select" name="tipo" id="tipo" required>
+                        <option value="F" {% if pessoa.tipo == 'F' %}selected{% endif %}>Pessoa Física</option>
+                        <option value="J" {% if pessoa.tipo == 'J' %}selected{% endif %}>Pessoa Jurídica</option>
+                    </select>
+                </div>
+                <div class="col-md-5">
+                    <label class="form-label"><span id="labelNome">{% if pessoa.tipo == 'J' %}Razão Social{% else %}Nome{% endif %}</span> <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" name="nome" id="nome" required value="{{ pessoa.nome|default:'' }}">
+                    <div class="invalid-feedback">Campo obrigatório</div>
+                </div>
+                <div class="col-md-5" id="divNomeFantasia" {% if pessoa.tipo == 'F' %}style="display:none;"{% endif %}>
+                    <label class="form-label">Nome Fantasia</label>
+                    <input type="text" class="form-control" name="nome_fantasia" id="nome_fantasia" value="{{ pessoa.nome_fantasia|default:'' }}">
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <label class="form-label" id="labelDocumento">
+                        {% if pessoa.tipo == 'J' %}CNPJ{% else %}CPF{% endif %} 
+                        <span class="text-danger">*</span>
+                    </label>
+                    <input type="text" 
+                           class="form-control" 
+                           name="cpf_cnpj" 
+                           id="cpf_cnpj" 
+                           required
+                           maxlength="18" 
+                           value="{{ pessoa.cpf_cnpj|default:'' }}"
+                           placeholder="{% if pessoa.tipo == 'J' %}00.000.000/0000-00{% else %}000.000.000-00{% endif %}">
+                    <div class="invalid-feedback">Este campo é obrigatório</div>
+                </div>
+                <div class="col-md-3" id="divRg" {% if pessoa.tipo == 'J' %}style="display:none;"{% endif %}>
+                    <label class="form-label">RG</label>
+                    <input type="text" class="form-control" name="rg" id="rg" value="{{ pessoa.rg|default:'' }}">
+                </div>
+                <div class="col-md-3" id="divIe" {% if pessoa.tipo == 'F' %}style="display:none;"{% endif %}>
+                    <label class="form-label">Inscrição Estadual</label>
+                    <input type="text" class="form-control" name="ie" id="ie" value="{{ pessoa.ie|default:'' }}">
+                </div>
+                <div class="col-md-3" id="divDataEmissaoRg" {% if pessoa.tipo == 'J' %}style="display:none;"{% endif %}>
+                    <label class="form-label">Data Emissão RG</label>
+                    <input type="date" class="form-control" name="data_emissao_rg">
+                </div>
+                <div class="col-md-3" id="divOrgaoEmissor" {% if pessoa.tipo == 'J' %}style="display:none;"{% endif %}>
+                    <label class="form-label">Órgão Emissor</label>
+                    <input type="text" class="form-control" name="orgao_emissor">
+                </div>
+            </div>
+
+            <div class="row mb-3" id="divSexo" {% if pessoa.tipo == 'J' %}style="display:none;"{% endif %}>
+                <div class="col-md-3">
+                    <label class="form-label">Sexo</label>
+                    <select class="form-select" name="sexo">
+                        <option value="">Selecione...</option>
+                        <option value="M" {% if pessoa.sexo == 'M' %}selected{% endif %}>Masculino</option>
+                        <option value="F" {% if pessoa.sexo == 'F' %}selected{% endif %}>Feminino</option>
+                        <option value="O" {% if pessoa.sexo == 'O' %}selected{% endif %}>Outro</option>
+                    </select>
+                </div>
+            </div>
+
+            <hr>
+
+            <!-- Endereço -->
+            <h5 class="mb-3">Endereço</h5>
+            <div class="row mb-3">
+                <div class="col-md-3">
+                    <label class="form-label">CEP</label>
+                    <input type="text" class="form-control" name="cep" id="cep" maxlength="9" value="{{ pessoa.cep|default:'' }}">
+                    <small class="text-muted">Ex: 12345-678</small>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Logradouro</label>
+                    <input type="text" class="form-control" name="logradouro" id="logradouro" value="{{ pessoa.logradouro|default:'' }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Número</label>
+                    <input type="text" class="form-control" name="numero" id="numero" value="{{ pessoa.numero|default:'' }}">
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <label class="form-label">Complemento</label>
+                    <input type="text" class="form-control" name="complemento">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Bairro</label>
+                    <input type="text" class="form-control" name="bairro" id="bairro" value="{{ pessoa.bairro|default:'' }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Cidade</label>
+                    <input type="text" class="form-control" name="cidade" id="cidade" value="{{ pessoa.cidade|default:'' }}">
+                </div>
+                <div class="col-md-1">
+                    <label class="form-label">UF</label>
+                    <input type="text" class="form-control" name="uf" id="uf" maxlength="2" value="{{ pessoa.uf|default:'' }}">
+                </div>
+            </div>
+
+            <hr>
+
+            <!-- Contato -->
+            <h5 class="mb-3">Contato</h5>
+            <div class="row mb-3">
+                <div class="col-md-3">
+                    <label class="form-label">Telefone</label>
+                    <input type="text" class="form-control" name="telefone">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Celular 1</label>
+                    <input type="text" class="form-control" name="celular1">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Celular 2</label>
+                    <input type="text" class="form-control" name="celular2">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">E-mail</label>
+                    <input type="email" class="form-control" name="email">
+                </div>
+            </div>
+
+            <hr>
+
+            <!-- Classificação -->
+            <h5 class="mb-3">Classificação</h5>
+            <div class="row mb-3">
+                <div class="col-md-12">
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" name="cliente" id="cliente" {% if pessoa.cliente %}checked{% endif %}>
+                        <label class="form-check-label" for="cliente">Cliente</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" name="fornecedor" id="fornecedor" {% if pessoa.fornecedor %}checked{% endif %}>
+                        <label class="form-check-label" for="fornecedor">Fornecedor</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" name="funcionario" id="checkFuncionario" {% if pessoa.funcionario %}checked{% endif %}>
+                        <label class="form-check-label" for="checkFuncionario">Funcionário</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" name="terceiro" id="terceiro" {% if pessoa.terceiro %}checked{% endif %}>
+                        <label class="form-check-label" for="terceiro">Terceiro</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" name="vendedor" id="checkVendedor" {% if pessoa.vendedor %}checked{% endif %}>
+                        <label class="form-check-label" for="checkVendedor">Vendedor</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dados de Cliente/Fornecedor -->
+            <div id="divClienteFornecedor" {% if not pessoa.cliente and not pessoa.fornecedor %}style="display:none;"{% endif %}>
+                <hr>
+                <h5 class="mb-3">Dados de Cliente/Fornecedor</h5>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Ramo de Atividade</label>
+                        <input type="text" class="form-control" name="ramo_atividade">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Descrição do Ramo</label>
+                        <input type="text" class="form-control" name="descricao_ramo">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dados de Funcionário -->
+            <div id="divFuncionario" {% if not pessoa.funcionario %}style="display:none;"{% endif %}>
+                <hr>
+                <h5 class="mb-3">Dados de Funcionário</h5>
+                
+                <!-- Documentos -->
+                <h6 class="mb-2">Documentos</h6>
+                <div class="row mb-3">
+                    <div class="col-md-3">
+                        <label class="form-label">Título de Eleitor</label>
+                        <input type="text" class="form-control" name="titulo_eleitoral">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Zona</label>
+                        <input type="text" class="form-control" name="zona">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Seção</label>
+                        <input type="text" class="form-control" name="secao">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">CTPS <span class="text-danger" id="asterisco-ctps" style="display:none;">*</span></label>
+                        <input type="text" class="form-control" name="ctps">
+                        <div class="invalid-feedback">CTPS é obrigatório para funcionários</div>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Série</label>
+                        <input type="text" class="form-control" name="serie">
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-2">
+                        <label class="form-label">UF CTPS</label>
+                        <input type="text" class="form-control" name="uf_ctps" maxlength="2" value="{{ pessoa.uf_ctps|default:'' }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Data Expedição CTPS</label>
+                        <input type="date" class="form-control" name="data_expedicao_ctps">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">CNH</label>
+                        <input type="text" class="form-control" name="cnh">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Categoria CNH</label>
+                        <select class="form-select" name="cnh_categoria">
+                            <option value="">Selecione...</option>
+                            <option value="A">{% if pessoa.cnh_categoria == 'A' %}selected{% endif %}>A</option>
+                            <option value="B">{% if pessoa.cnh_categoria == 'B' %}selected{% endif %}>B</option>
+                            <option value="AB">{% if pessoa.cnh_categoria == 'AB' %}selected{% endif %}>AB</option>
+                            <option value="C">{% if pessoa.cnh_categoria == 'C' %}selected{% endif %}>C</option>
+                            <option value="D">{% if pessoa.cnh_categoria == 'D' %}selected{% endif %}>D</option>
+                            <option value="E">{% if pessoa.cnh_categoria == 'E' %}selected{% endif %}>E</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Dados Profissionais -->
+                <h6 class="mb-2 mt-4">Dados Profissionais</h6>
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Escolaridade</label>
+                        <select class="form-select" name="escolaridade">
+                            <option value="">Selecione...</option>
+                            <option value="fundamental_incompleto">{% if pessoa.escolaridade == 'fundamental_incompleto' %}selected{% endif %}>Fundamental Incompleto</option>
+                            <option value="fundamental_completo">{% if pessoa.escolaridade == 'fundamental_completo' %}selected{% endif %}>Fundamental Completo</option>
+                            <option value="medio_incompleto">{% if pessoa.escolaridade == 'medio_incompleto' %}selected{% endif %}>Médio Incompleto</option>
+                            <option value="medio_completo">{% if pessoa.escolaridade == 'medio_completo' %}selected{% endif %}>Médio Completo</option>
+                            <option value="superior_incompleto">{% if pessoa.escolaridade == 'superior_incompleto' %}selected{% endif %}>Superior Incompleto</option>
+                            <option value="superior_completo">{% if pessoa.escolaridade == 'superior_completo' %}selected{% endif %}>Superior Completo</option>
+                            <option value="pos_graduacao">{% if pessoa.escolaridade == 'pos_graduacao' %}selected{% endif %}>Pós-Graduação</option>
+                            <option value="mestrado">{% if pessoa.escolaridade == 'mestrado' %}selected{% endif %}>Mestrado</option>
+                            <option value="doutorado">{% if pessoa.escolaridade == 'doutorado' %}selected{% endif %}>Doutorado</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Cargo</label>
+                        <input type="text" class="form-control" name="cargo">
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-check mt-4">
+                            <input class="form-check-input" type="checkbox" name="deficiencia" id="deficiencia" {% if pessoa.deficiencia %}checked{% endif %}>
+                            <label class="form-check-label" for="deficiencia">Possui Deficiência</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Data Admissão <span class="text-danger" id="asterisco-admissao" style="display:none;">*</span></label>
+                        <input type="date" class="form-control" name="data_admissao">
+                        <div class="invalid-feedback">Data de admissão é obrigatória para funcionários</div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Data Demissão</label>
+                        <input type="date" class="form-control" name="data_demissao">
+                    </div>
+                </div>
+            </div>
+
+            <hr>
+
+            <!-- Observações -->
+            <h5 class="mb-3">Observações</h5>
+            <div class="row mb-3">
+                <div class="col-md-12">
+                    <textarea class="form-control" name="observacoes" rows="3">{{ pessoa.observacoes|default:'' }}</textarea>
+                </div>
+            </div>
+
+            <div class="text-end">
+                <a href="{% url 'cadastros:listar_pessoas' %}" class="btn btn-secondary">Cancelar</a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-save"></i> Salvar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const checkFuncionario = document.getElementById('checkFuncionario');
+    const divFuncionario = document.getElementById('divFuncionario');
+    const checkCliente = document.getElementById('cliente');
+    const checkFornecedor = document.getElementById('fornecedor');
+    const divClienteFornecedor = document.getElementById('divClienteFornecedor');
+    const formPessoa = document.getElementById('formPessoa');
+    
+    // Função para mostrar/ocultar campos de funcionário
+    function toggleCamposFuncionario() {
+        if (checkFuncionario.checked) {
+            divFuncionario.style.display = 'block';
+            // Tornar campos obrigatórios quando funcionário estiver marcado
+            setRequiredFuncionario(true);
+        } else {
+            divFuncionario.style.display = 'none';
+            // Remover obrigatoriedade quando desmarcado
+            setRequiredFuncionario(false);
+        }
+    }
+    
+    // Função para definir campos obrigatórios de funcionário
+    function setRequiredFuncionario(required) {
+        const camposObrigatorios = [
+            { nome: 'ctps', asterisco: 'asterisco-ctps' },
+            { nome: 'data_admissao', asterisco: 'asterisco-admissao' }
+        ];
+        
+        camposObrigatorios.forEach(function(config) {
+            const campo = document.querySelector(`[name="${config.nome}"]`);
+            const asterisco = document.getElementById(config.asterisco);
+            
+            if (campo) {
+                if (required) {
+                    campo.setAttribute('required', 'required');
+                    if (asterisco) asterisco.style.display = 'inline';
+                } else {
+                    campo.removeAttribute('required');
+                    campo.classList.remove('is-invalid');
+                    if (asterisco) asterisco.style.display = 'none';
+                    campo.value = ''; // Limpar valor ao desmarcar
+                }
+            }
+        });
+    }
+    
+    // Função para mostrar/ocultar campos de cliente/fornecedor
+    function toggleCamposClienteFornecedor() {
+        if (checkCliente.checked || checkFornecedor.checked) {
+            divClienteFornecedor.style.display = 'block';
+        } else {
+            divClienteFornecedor.style.display = 'none';
+        }
+    }
+    
+    // Validação do formulário
+    formPessoa.addEventListener('submit', function(event) {
+        console.log('Formulário sendo enviado...');
+        
+        // Adicionar classe de validação
+        formPessoa.classList.add('was-validated');
+        
+        if (!formPessoa.checkValidity()) {
+            console.log('Formulário inválido - impedindo submit');
+            event.preventDefault();
+            event.stopPropagation();
+            
+            // Scroll para o primeiro campo inválido
+            const firstInvalid = formPessoa.querySelector(':invalid');
+            if (firstInvalid) {
+                console.log('Campo inválido:', firstInvalid.name);
+                firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                setTimeout(() => firstInvalid.focus(), 300);
+            }
+            
+            // Mostrar alerta
+            alert('Por favor, preencha todos os campos obrigatórios (marcados com *)');
+            return false;
+        }
+        
+        console.log('Formulário válido - permitindo submit');
+        // Formulário válido - permite o submit normal
+        return true;
+    });
+    
+    // Aplicar ao carregar a página
+    toggleCamposFuncionario();
+    toggleCamposClienteFornecedor();
+    
+    // Aplicar ao mudar checkbox
+    checkFuncionario.addEventListener('change', toggleCamposFuncionario);
+    checkCliente.addEventListener('change', toggleCamposClienteFornecedor);
+    checkFornecedor.addEventListener('change', toggleCamposClienteFornecedor);
+    
+    // Toggle Tipo Pessoa (PF/PJ)
+    const selectTipo = document.getElementById('tipo');
+    const cpfCnpjInput = document.getElementById('cpf_cnpj');
+    const labelDocumento = document.getElementById('labelDocumento');
+    
+    selectTipo.addEventListener('change', function() {
+        const isPJ = this.value === 'J';
+        
+        // Mostrar/ocultar campos
+        document.getElementById('divNomeFantasia').style.display = isPJ ? 'block' : 'none';
+        document.getElementById('divRg').style.display = isPJ ? 'none' : 'block';
+        document.getElementById('divIe').style.display = isPJ ? 'block' : 'none';
+        document.getElementById('divDataEmissaoRg').style.display = isPJ ? 'none' : 'block';
+        document.getElementById('divOrgaoEmissor').style.display = isPJ ? 'none' : 'block';
+        document.getElementById('divSexo').style.display = isPJ ? 'none' : 'block';
+        
+        // Atualizar label e placeholder do CPF/CNPJ
+        if (isPJ) {
+            labelDocumento.innerHTML = 'CNPJ <span class="text-danger">*</span>';
+            cpfCnpjInput.placeholder = '00.000.000/0000-00';
+            cpfCnpjInput.maxLength = 18;
+        } else {
+            labelDocumento.innerHTML = 'CPF <span class="text-danger">*</span>';
+            cpfCnpjInput.placeholder = '000.000.000-00';
+            cpfCnpjInput.maxLength = 14;
+        }
+        
+        // Atualizar label Nome/Razão Social
+        document.getElementById('labelNome').textContent = isPJ ? 'Razão Social' : 'Nome';
+    });
+});
+</script>
+{% endblock %}
+{% endblock %}

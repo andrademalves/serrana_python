@@ -1,0 +1,189 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Mudar Regime Tributário - {{ empresa.nome_fantasia }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Cabeçalho -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">
+                <i class="bi bi-arrow-left-right me-2"></i>Mudar Regime Tributário
+            </h2>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item"><a href="{% url 'usuarios:listar_empresas' %}">Empresas</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'usuarios:editar_empresa' empresa.id %}">{{ empresa.nome_fantasia }}</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'usuarios:configurar_impostos_empresa' empresa.id %}">Impostos</a></li>
+                    <li class="breadcrumb-item active">Mudar Regime</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Regime Atual -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body">
+                    <h5 class="mb-3">
+                        <i class="bi bi-info-circle me-2 text-primary"></i>Regime Atual
+                    </h5>
+                    {% if regime_atual %}
+                    <div class="alert alert-info mb-0">
+                        <h4 class="mb-2">{{ regime_atual.get_nome_display }}</h4>
+                        <p class="mb-0">{{ regime_atual.descricao }}</p>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-warning mb-0">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        Nenhum regime tributário configurado
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Formulário de Mudança -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h5 class="mb-3">
+                        <i class="bi bi-arrow-repeat me-2"></i>Novo Regime
+                    </h5>
+
+                    <form method="post">
+                        {% csrf_token %}
+
+                        <!-- Novo Regime -->
+                        <div class="mb-3">
+                            <label for="novo_regime" class="form-label">
+                                Selecione o Novo Regime Tributário
+                                <span class="text-danger">*</span>
+                            </label>
+                            <select class="form-control" id="novo_regime" name="novo_regime" required>
+                                <option value="">Selecione...</option>
+                                {% for regime in regimes_disponiveis %}
+                                <option value="{{ regime.id }}" 
+                                    {% if regime_atual and regime.id == regime_atual.id %}disabled{% endif %}>
+                                    {{ regime.get_nome_display }}
+                                    {% if regime_atual and regime.id == regime_atual.id %}(Atual){% endif %}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <small class="text-muted">Escolha o regime que passará a valer</small>
+                        </div>
+
+                        <!-- Data da Mudança -->
+                        <div class="mb-3">
+                            <label for="data_mudanca" class="form-label">
+                                Data da Mudança
+                                <span class="text-danger">*</span>
+                            </label>
+                            <input type="date" 
+                                   class="form-control" 
+                                   id="data_mudanca" 
+                                   name="data_mudanca" 
+                                   value="{{ hoje|date:'Y-m-d' }}"
+                                   required>
+                            <small class="text-muted">Data em que o novo regime começará a valer</small>
+                        </div>
+
+                        <!-- Motivo -->
+                        <div class="mb-4">
+                            <label for="motivo" class="form-label">
+                                Motivo da Mudança
+                            </label>
+                            <textarea class="form-control" 
+                                      id="motivo" 
+                                      name="motivo" 
+                                      rows="3"
+                                      placeholder="Ex: Crescimento da empresa, mudança de faturamento, otimização tributária..."></textarea>
+                            <small class="text-muted">Justifique a mudança de regime (opcional, mas recomendado)</small>
+                        </div>
+
+                        <!-- Alerta -->
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle me-2"></i>
+                            <strong>Atenção:</strong> Ao mudar o regime:
+                            <ul class="mb-0 mt-2">
+                                <li>O regime atual será marcado como <strong>INATIVO</strong></li>
+                                <li>As alíquotas do regime atual serão <strong>ARQUIVADAS</strong></li>
+                                <li>Você precisará <strong>CADASTRAR NOVAS ALÍQUOTAS</strong> para o novo regime</li>
+                                <li>O histórico de regimes anteriores será <strong>MANTIDO</strong> para auditoria</li>
+                            </ul>
+                        </div>
+
+                        <!-- Botões -->
+                        <div class="d-flex gap-2 justify-content-end">
+                            <a href="{% url 'usuarios:configurar_impostos_empresa' empresa.id %}" class="btn btn-secondary">
+                                <i class="bi bi-x-lg me-2"></i>Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-warning">
+                                <i class="bi bi-arrow-repeat me-2"></i>Confirmar Mudança
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Informações Auxiliares -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-body">
+                    <h5 class="mb-3"><i class="bi bi-lightbulb me-2"></i>Quando Mudar de Regime?</h5>
+                    <div class="small">
+                        <p class="mb-2">
+                            <strong>Crescimento da Empresa:</strong> Ao ultrapassar limites de faturamento
+                        </p>
+                        <p class="mb-2">
+                            <strong>Redução de Faturamento:</strong> Para aproveitar regimes mais vantajosos
+                        </p>
+                        <p class="mb-2">
+                            <strong>Mudança de Atividade:</strong> Quando a natureza do negócio mudar
+                        </p>
+                        <p class="mb-0">
+                            <strong>Otimização Tributária:</strong> Para reduzir carga tributária legalmente
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h6 class="mb-3"><strong>Limites de Faturamento</strong></h6>
+                    <div class="small text-muted">
+                        <p class="mb-2">
+                            <span class="badge bg-primary me-1">MEI</span>
+                            Até R$ 81.000/ano
+                        </p>
+                        <p class="mb-2">
+                            <span class="badge bg-success me-1">Simples</span>
+                            Até R$ 4.800.000/ano
+                        </p>
+                        <p class="mb-2">
+                            <span class="badge bg-info me-1">Presumido</span>
+                            Até R$ 78.000.000/ano
+                        </p>
+                        <p class="mb-0">
+                            <span class="badge bg-warning me-1">Real</span>
+                            Acima de R$ 78 milhões
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Definir data de hoje como padrão
+    const dataInput = document.getElementById('data_mudanca');
+    if (!dataInput.value) {
+        const hoje = new Date().toISOString().split('T')[0];
+        dataInput.value = hoje;
+    }
+});
+</script>
+{% endblock %}

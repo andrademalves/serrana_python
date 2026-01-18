@@ -1,0 +1,157 @@
+{% extends 'base_with_sidebar.html' %}
+{% load static %}
+
+{% block title %}Criar Item{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-plus-circle"></i> Novo Item</h2>
+    <a href="{% url 'estoque:listar_itens' %}" class="btn btn-secondary">
+        <i class="bi bi-arrow-left"></i> Voltar
+    </a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form method="post" id="formItem" enctype="multipart/form-data">
+            {% csrf_token %}
+            
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="tipo_item" class="form-label">Tipo de Item <span class="text-danger">*</span></label>
+                    <select class="form-select" id="tipo_item" name="tipo_item" required>
+                        <option value="">Selecione...</option>
+                        <option value="MP">Matéria Prima</option>
+                        <option value="PA">Produto Acabado</option>
+                    </select>
+                </div>
+                
+                <div class="col-md-6 mb-3">
+                    <label for="unidade_medida" class="form-label">Unidade de Medida <span class="text-danger">*</span></label>
+                    <select class="form-select" id="unidade_medida" name="unidade_medida" required>
+                        <option value="">Selecione...</option>
+                        <option value="UN">Unidade (UN)</option>
+                        <option value="KG">Quilograma (KG)</option>
+                        <option value="MT">Metro (MT)</option>
+                        <option value="M2">Metro Quadrado (M²)</option>
+                        <option value="M3">Metro Cúbico (M³)</option>
+                        <option value="LT">Litro (LT)</option>
+                        <option value="CX">Caixa (CX)</option>
+                        <option value="PCT">Pacote (PCT)</option>
+                        <option value="PC">Peça (PC)</option>
+                        <option value="BAR">Barra (BAR)</option>
+                        <option value="CHAPA">Chapa (CHAPA)</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-12 mb-3">
+                    <label for="descricao" class="form-label">Descrição <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="descricao" name="descricao" required maxlength="255">
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-3 mb-3">
+                    <label for="material" class="form-label">Material</label>
+                    <select class="form-select" id="material" name="material">
+                        <option value="">Selecione...</option>
+                        <option value="ALUMINIO">Alumínio</option>
+                        <option value="FERRO">Ferro</option>
+                        <option value="ACO">Aço</option>
+                        <option value="VIDRO">Vidro</option>
+                        <option value="MADEIRA">Madeira</option>
+                        <option value="PLASTICO">Plástico</option>
+                        <option value="BORRACHA">Borracha</option>
+                        <option value="OUTROS">Outros</option>
+                    </select>
+                </div>
+                
+                <div class="col-md-3 mb-3">
+                    <label for="marca" class="form-label">Marca</label>
+                    <input type="text" class="form-control" id="marca" name="marca" maxlength="100">
+                </div>
+                
+                <div class="col-md-3 mb-3">
+                    <label for="modelo" class="form-label">Modelo</label>
+                    <input type="text" class="form-control" id="modelo" name="modelo" maxlength="100">
+                </div>
+                
+                <div class="col-md-3 mb-3">
+                    <label for="cor" class="form-label">Cor</label>
+                    <input type="text" class="form-control" id="cor" name="cor" maxlength="50">
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label for="estoque_minimo" class="form-label">Estoque Mínimo</label>
+                    <input type="number" class="form-control" id="estoque_minimo" name="estoque_minimo" 
+                           value="0" min="0" step="0.001">
+                </div>
+                
+                <div class="col-md-4 mb-3">
+                    <label for="foto" class="form-label">Foto do Produto</label>
+                    <input type="file" class="form-control" id="foto" name="foto" accept="image/*">
+                    <small class="text-muted">JPG, PNG, GIF</small>
+                </div>
+                
+                <div class="col-md-4 mb-3">
+                    <label for="url_foto" class="form-label">URL da Foto (Alternativa)</label>
+                    <input type="url" class="form-control" id="url_foto" name="url_foto" maxlength="500" 
+                           placeholder="https://exemplo.com/foto.jpg">
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-12 mb-3">
+                    <label for="observacoes" class="form-label">Observações</label>
+                    <textarea class="form-control" id="observacoes" name="observacoes" rows="3"></textarea>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-12 mb-3">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="ativo" name="ativo" checked>
+                        <label class="form-check-label" for="ativo">
+                            Item Ativo
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-12">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-save"></i> Salvar
+                    </button>
+                    <a href="{% url 'estoque:listar_itens' %}" class="btn btn-secondary">
+                        <i class="bi bi-x-circle"></i> Cancelar
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.getElementById('formItem').addEventListener('submit', function(e) {
+    var tipoItem = document.getElementById('tipo_item').value;
+    var descricao = document.getElementById('descricao').value;
+    var unidadeMedida = document.getElementById('unidade_medida').value;
+    
+    if (!tipoItem || !descricao || !unidadeMedida) {
+        e.preventDefault();
+        Swal.fire({
+            icon: 'error',
+            title: 'Campos Obrigatórios',
+            text: 'Por favor, preencha todos os campos obrigatórios (*)'
+        });
+        return false;
+    }
+});
+</script>
+
+{% endblock %}

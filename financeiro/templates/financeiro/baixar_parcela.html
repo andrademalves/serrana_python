@@ -1,0 +1,372 @@
+{% extends 'base_with_sidebar.html' %}
+{% load static %}
+{% load financeiro_tags %}
+
+{% block title %}Baixar Parcela - Sistema Serrana{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Cabeçalho -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">
+                <i class="bi bi-check-circle me-2"></i>Baixar Parcela
+            </h2>
+            <p class="text-muted mb-0">Registrar pagamento de parcela</p>
+        </div>
+        <div>
+            <a href="{% url 'financeiro:detalhe_titulo' parcela.titulo.id %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-2"></i>Voltar
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-3">
+        <!-- Informações da Parcela -->
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header {% if parcela.titulo.tipo == 'PAGAR' %}bg-danger{% else %}bg-success{% endif %} text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-file-earmark-text me-2"></i>Dados da Parcela
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="text-muted small">Título</label>
+                        <div><strong>{{ parcela.titulo.numero_documento }}</strong></div>
+                        <small class="text-muted">{{ parcela.titulo.descricao }}</small>
+                    </div>
+                    <hr>
+                    <div class="mb-3">
+                        <label class="text-muted small">{{ parcela.titulo.tipo|yesno:'Fornecedor,Cliente' }}</label>
+                        <div><strong>{{ parcela.titulo.pessoa.nome }}</strong></div>
+                    </div>
+                    <hr>
+                    <div class="mb-3">
+                        <label class="text-muted small">Parcela</label>
+                        <div><strong>{{ parcela.numero_parcela }}/{{ parcela.titulo.num_parcelas }}</strong></div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="text-muted small">Vencimento</label>
+                        <div>
+                            <strong>{{ parcela.data_vencimento|date:"d/m/Y" }}</strong>
+                            {% if parcela.esta_vencida %}
+                                <br><span class="badge bg-warning text-dark mt-1">
+                                    <i class="bi bi-exclamation-triangle-fill"></i>
+                                    Vencida há {{ parcela.dias_atraso }} dias
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="mb-3">
+                        <label class="text-muted small">Valor Original</label>
+                        <h4 class="mb-0">{{ parcela.valor_original|currency }}</h4>
+                    </div>
+                    <div class="mb-3">
+                        <label class="text-muted small">Já Pago</label>
+                        <div class="text-success"><strong>{{ parcela.valor_pago|currency }}</strong></div>
+                    </div>
+                    <div class="mb-0">
+                        <label class="text-muted small">Saldo em Aberto</label>
+                        <h3 class="mb-0 text-danger">{{ parcela.saldo_aberto|currency }}</h3>
+                    </div>
+
+                    {% if parcela.titulo.projeto %}
+                    <hr>
+                    <div class="mb-0">
+                        <label class="text-muted small">Projeto</label>
+                        <div><i class="bi bi-folder text-primary"></i> {{ parcela.titulo.projeto.codigo }} - {{ parcela.titulo.projeto.descricao }}</div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Formulário de Baixa -->
+        <div class="col-md-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-wallet2 me-2"></i>Dados do Pagamento
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" id="formBaixa">
+                        {% csrf_token %}
+
+                        <div class="row g-3">
+                            <!-- Data do Pagamento -->
+                            <div class="col-md-4">
+                                <label for="data_pagamento" class="form-label">
+                                    Data do Pagamento <span class="text-danger">*</span>
+                                </label>
+                                <input type="date" 
+                                       class="form-control" 
+                                       id="data_pagamento" 
+                                       name="data_pagamento" 
+                                       value="{{ hoje|date:'Y-m-d' }}"
+                                       required>
+                            </div>
+
+                            <!-- Conta Financeira -->
+                            <div class="col-md-8">
+                                <label for="conta_financeira" class="form-label">
+                                    Conta/Banco <span class="text-danger">*</span>
+                                </label>
+                                <div class="input-group">
+                                    <select class="form-select" id="conta_financeira" name="conta_financeira" required>
+                                        <option value="">Selecione...</option>
+                                        {% for conta in contas %}
+                                        <option value="{{ conta.id }}" 
+                                                {% if parcela.titulo.conta_financeira_padrao_id == conta.id %}selected{% endif %}>
+                                            {{ conta.nome }}{% if conta.banco %} - {{ conta.banco }}{% endif %} ({{ conta.get_tipo_display }})
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                    <a href="{% url 'financeiro:listar_contas_financeiras' %}" 
+                                       target="_blank" 
+                                       class="btn btn-outline-secondary"
+                                       title="Gerenciar contas">
+                                        <i class="bi bi-box-arrow-up-right"></i>
+                                    </a>
+                                </div>
+                                {% if parcela.titulo.conta_financeira_padrao %}
+                                <small class="text-muted">
+                                    <i class="bi bi-info-circle"></i>
+                                    Conta padrão do título pré-selecionada
+                                </small>
+                                {% endif %}
+                            </div>
+
+                            <!-- Forma de Pagamento -->
+                            <div class="col-md-6">
+                                <label for="forma_pagamento" class="form-label">
+                                    Forma de Pagamento <span class="text-danger">*</span>
+                                </label>
+                                <select class="form-select text-dark" id="forma_pagamento" name="forma_pagamento" required>
+                                    <option value="">Selecione...</option>
+                                    {% for forma in formas %}
+                                    <option value="{{ forma.id }}">{{ forma.descricao }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="col-12"><hr></div>
+
+                            <!-- Valores -->
+                            <div class="col-md-6">
+                                <label for="valor_principal" class="form-label">
+                                    Valor Principal <span class="text-danger">*</span>
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text">R$</span>
+                                    <input type="number" 
+                                           class="form-control" 
+                                           id="valor_principal" 
+                                           name="valor_principal" 
+                                           step="0.01" 
+                                           min="0.01"
+                                           max="{{ parcela.saldo_aberto }}"
+                                           value="{{ parcela.saldo_aberto }}"
+                                           required>
+                                </div>
+                                <small class="text-muted">Máximo: {{ parcela.saldo_aberto|currency }}</small>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="juros" class="form-label">Juros</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">R$</span>
+                                    <input type="number" 
+                                           class="form-control" 
+                                           id="juros" 
+                                           name="juros" 
+                                           step="0.01" 
+                                           min="0"
+                                           value="0.00">
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="multa" class="form-label">Multa</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">R$</span>
+                                    <input type="number" 
+                                           class="form-control" 
+                                           id="multa" 
+                                           name="multa" 
+                                           step="0.01" 
+                                           min="0"
+                                           value="0.00">
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="desconto" class="form-label">Desconto</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">R$</span>
+                                    <input type="number" 
+                                           class="form-control" 
+                                           id="desconto" 
+                                           name="desconto" 
+                                           step="0.01" 
+                                           min="0"
+                                           value="0.00">
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="taxas" class="form-label">Taxas</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">R$</span>
+                                    <input type="number" 
+                                           class="form-control" 
+                                           id="taxas" 
+                                           name="taxas" 
+                                           step="0.01" 
+                                           min="0"
+                                           value="0.00">
+                                </div>
+                            </div>
+
+                            <!-- Valor Líquido (calculado) -->
+                            <div class="col-md-6">
+                                <label class="form-label">Valor Líquido</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-success text-white">R$</span>
+                                    <input type="text" 
+                                           class="form-control bg-light fw-bold" 
+                                           id="valor_liquido" 
+                                           readonly 
+                                           value="0.00">
+                                </div>
+                                <small class="text-muted">Calculado automaticamente</small>
+                            </div>
+
+                            <div class="col-12"><hr></div>
+
+                            <!-- Observações -->
+                            <div class="col-12">
+                                <label for="observacao" class="form-label">Observações</label>
+                                <textarea class="form-control" 
+                                          id="observacao" 
+                                          name="observacao" 
+                                          rows="3" 
+                                          placeholder="Informações adicionais sobre o pagamento..."></textarea>
+                            </div>
+                        </div>
+
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <div class="alert alert-info">
+                                    <i class="bi bi-info-circle me-2"></i>
+                                    <strong>Instruções:</strong>
+                                    <ul class="mb-0 mt-2">
+                                        <li>O valor principal pode ser menor que o saldo para pagamento parcial</li>
+                                        <li>Juros e multas aumentam o valor líquido a pagar</li>
+                                        <li>Desconto reduz o valor líquido a pagar</li>
+                                        <li>A conta financeira padrão do título é pré-selecionada quando disponível</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2 mt-4">
+                            <a href="{% url 'financeiro:detalhe_titulo' parcela.titulo.id %}" 
+                               class="btn btn-outline-secondary">
+                                <i class="bi bi-x-circle me-2"></i>Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle me-2"></i>Confirmar Baixa
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const valorPrincipal = document.getElementById('valor_principal');
+    const juros = document.getElementById('juros');
+    const multa = document.getElementById('multa');
+    const desconto = document.getElementById('desconto');
+    const taxas = document.getElementById('taxas');
+    const valorLiquido = document.getElementById('valor_liquido');
+
+    // Calcula valor líquido
+    function calcularValorLiquido() {
+        const principal = parseFloat(valorPrincipal.value) || 0;
+        const jrs = parseFloat(juros.value) || 0;
+        const mlt = parseFloat(multa.value) || 0;
+        const desc = parseFloat(desconto.value) || 0;
+        const txs = parseFloat(taxas.value) || 0;
+
+        const liquido = principal + jrs + mlt - desc + txs;
+        valorLiquido.value = liquido.toFixed(2);
+        
+        // Feedback visual
+        if (liquido > 0) {
+            valorLiquido.classList.remove('text-muted');
+            valorLiquido.classList.add('text-success', 'fw-bold');
+        } else {
+            valorLiquido.classList.add('text-muted');
+            valorLiquido.classList.remove('text-success', 'fw-bold');
+        }
+    }
+
+    // Eventos para recalcular
+    [valorPrincipal, juros, multa, desconto, taxas].forEach(input => {
+        input.addEventListener('input', calcularValorLiquido);
+        input.addEventListener('change', calcularValorLiquido);
+    });
+
+    // Calcula na carga da página e após um pequeno delay
+    setTimeout(function() {
+        calcularValorLiquido();
+    }, 100);
+    
+    calcularValorLiquido();
+
+    // Validação antes de enviar
+    document.getElementById('formBaixa').addEventListener('submit', function(e) {
+        const saldoAberto = {{ parcela.saldo_aberto }};
+        const valorPago = parseFloat(valorPrincipal.value) || 0;
+
+        if (valorPago > saldoAberto) {
+            e.preventDefault();
+            alert('O valor principal não pode ser maior que o saldo em aberto (R$ ' + saldoAberto.toFixed(2) + ')');
+            valorPrincipal.focus();
+            return false;
+        }
+
+        if (valorPago <= 0) {
+            e.preventDefault();
+            alert('O valor principal deve ser maior que zero');
+            valorPrincipal.focus();
+            return false;
+        }
+
+        // Confirma a baixa
+        const confirmMsg = 'Confirma o registro desta baixa?\n\n' +
+                          'Valor Principal: R$ ' + principal.toFixed(2) + '\n' +
+                          'Juros: R$ ' + parseFloat(juros.value || 0).toFixed(2) + '\n' +
+                          'Multa: R$ ' + parseFloat(multa.value || 0).toFixed(2) + '\n' +
+                          'Desconto: R$ ' + parseFloat(desconto.value || 0).toFixed(2) + '\n' +
+                          'Taxas: R$ ' + parseFloat(taxas.value || 0).toFixed(2) + '\n' +
+                          '-------------------\n' +
+                          'TOTAL LÍQUIDO: R$ ' + valorLiquido.value;
+                          
+        if (!confirm(confirmMsg)) {
+            e.preventDefault();
+            return false;
+        }
+    });
+});
+</script>
+{% endblock %}

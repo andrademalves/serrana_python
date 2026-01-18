@@ -1,0 +1,462 @@
+{% extends 'base_with_sidebar.html' %}
+{% load static %}
+{% load financeiro_tags %}
+
+{% block title %}Novo Título - Sistema Serrana{% endblock %}
+
+{% block extra_css %}
+<!-- Select2 CSS -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <h2><i class="bi bi-plus-circle"></i> Novo Título Financeiro</h2>
+            <p class="text-muted">Cadastro de título a pagar ou receber</p>
+        </div>
+        <div class="col-auto">
+            <a href="{% url 'financeiro:listar_titulos' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Voltar
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Dados do Título</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" id="formTitulo">
+                        {% csrf_token %}
+                        
+                        {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {{ form.non_field_errors }}
+                        </div>
+                        {% endif %}
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Tipo *</label>
+                                {{ form.tipo }}
+                                {% if form.tipo.errors %}
+                                <div class="text-danger small">{{ form.tipo.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Nº Documento *</label>
+                                {{ form.numero_documento }}
+                                {% if form.numero_documento.errors %}
+                                <div class="text-danger small">{{ form.numero_documento.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Descrição *</label>
+                            {{ form.descricao }}
+                            {% if form.descricao.errors %}
+                            <div class="text-danger small">{{ form.descricao.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-8">
+                                <label class="form-label">Cliente/Fornecedor</label>
+                                {{ form.pessoa }}
+                                {% if form.pessoa.errors %}
+                                <div class="text-danger small">{{ form.pessoa.errors }}</div>
+                                {% else %}
+                                <small class="text-muted">{{ form.pessoa.help_text }}</small>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">
+                                    <i class="bi bi-list-nested me-1"></i>Plano de Contas
+                                </label>
+                                <div class="input-group">
+                                    {{ form.plano_conta }}
+                                    <a href="{% url 'financeiro:listar_plano_contas' %}" target="_blank" class="btn btn-outline-secondary" title="Gerenciar Plano de Contas">
+                                        <i class="bi bi-box-arrow-up-right"></i>
+                                    </a>
+                                </div>
+                                {% if form.plano_conta.errors %}
+                                <div class="text-danger small">{{ form.plano_conta.errors }}</div>
+                                {% else %}
+                                <small class="text-muted">Classificação contábil (opcional)</small>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">
+                                    <i class="bi bi-folder me-1"></i>Projeto/Obra
+                                </label>
+                                <div class="input-group">
+                                    {{ form.projeto }}
+                                    <a href="{% url 'projetos:listar_projetos' %}" target="_blank" class="btn btn-outline-secondary" title="Gerenciar Projetos">
+                                        <i class="bi bi-box-arrow-up-right"></i>
+                                    </a>
+                                </div>
+                                {% if form.projeto.errors %}
+                                <div class="text-danger small">{{ form.projeto.errors }}</div>
+                                {% else %}
+                                <small class="text-muted">{{ form.projeto.help_text }}</small>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">
+                                    Centro de Custo
+                                </label>
+                                {{ form.centro_custo }}
+                                {% if form.centro_custo.errors %}
+                                <div class="text-danger small">{{ form.centro_custo.errors }}</div>
+                                {% else %}
+                                <small class="text-muted">{{ form.centro_custo.help_text }}</small>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <label class="form-label">
+                                    <i class="bi bi-bank me-1"></i>Banco/Caixa de Onde Sairá o Pagamento
+                                </label>
+                                <div class="input-group">
+                                    {{ form.conta_financeira_padrao }}
+                                    <a href="{% url 'financeiro:listar_contas_financeiras' %}" target="_blank" class="btn btn-outline-secondary" title="Gerenciar Contas">
+                                        <i class="bi bi-box-arrow-up-right"></i>
+                                    </a>
+                                </div>
+                                {% if form.conta_financeira_padrao.errors %}
+                                <div class="text-danger small">{{ form.conta_financeira_padrao.errors }}</div>
+                                {% else %}
+                                <small class="text-muted">{{ form.conta_financeira_padrao.help_text }}</small>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <hr>
+
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Data de Emissão *</label>
+                                {{ form.data_emissao }}
+                                {% if form.data_emissao.errors %}
+                                <div class="text-danger small">{{ form.data_emissao.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Data do 1º Vencimento</label>
+                                {{ form.data_primeiro_vencimento }}
+                                {% if form.data_primeiro_vencimento.errors %}
+                                <div class="text-danger small">{{ form.data_primeiro_vencimento.errors }}</div>
+                                {% else %}
+                                <small class="text-muted">{{ form.data_primeiro_vencimento.help_text }}</small>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Valor Total *</label>
+                                {{ form.valor_total }}
+                                {% if form.valor_total.errors %}
+                                <div class="text-danger small">{{ form.valor_total.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <hr>
+                        <h6 class="mb-3">Parcelamento</h6>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Número de Parcelas *</label>
+                                {{ form.num_parcelas }}
+                                {% if form.num_parcelas.errors %}
+                                <div class="text-danger small">{{ form.num_parcelas.errors }}</div>
+                                {% endif %}
+                                <small class="text-muted">Mínimo: 1 (à vista)</small>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check mt-4">
+                                    <input class="form-check-input" type="checkbox" id="usarIntervalosPersonalizados">
+                                    <label class="form-check-label" for="usarIntervalosPersonalizados">
+                                        <strong>Vencimentos personalizados</strong>
+                                    </label>
+                                </div>
+                                <small class="text-muted">Marque para definir intervalos variáveis (ex: 30/60/90)</small>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6" id="campoIntervaloFixo">
+                                <label class="form-label">Intervalo Fixo (dias) *</label>
+                                {{ form.intervalo_dias }}
+                                {% if form.intervalo_dias.errors %}
+                                <div class="text-danger small">{{ form.intervalo_dias.errors }}</div>
+                                {% endif %}
+                                <small class="text-muted">Dias entre cada parcela</small>
+                            </div>
+                            <div class="col-md-12" id="campoIntervalosPersonalizados" style="display: none;">
+                                <label class="form-label">Intervalos Personalizados</label>
+                                {{ form.intervalos_personalizados }}
+                                {% if form.intervalos_personalizados.errors %}
+                                <div class="text-danger small">{{ form.intervalos_personalizados.errors }}</div>
+                                {% else %}
+                                <small class="text-muted">{{ form.intervalos_personalizados.help_text }}</small>
+                                {% endif %}
+                                <div class="alert alert-info mt-2 small">
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    <strong>Exemplo:</strong> Para 3 parcelas com vencimentos em 30, 60 e 90 dias, digite: <code>30/60/90</code><br>
+                                    <strong>Importante:</strong> Os valores são absolutos (dias desde a data base), não incrementais.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Observações</label>
+                            {{ form.observacao }}
+                            {% if form.observacao.errors %}
+                            <div class="text-danger small">{{ form.observacao.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <hr>
+                        <h6 class="mb-3">
+                            <i class="bi bi-megaphone text-primary"></i> Régua de Cobrança Automática
+                        </h6>
+                        
+                        <div class="alert alert-info small mb-3" id="alerta-regua-receber" style="display: none;">
+                            <i class="bi bi-info-circle"></i> 
+                            Configure uma régua de cobrança para envio automático de lembretes e cobranças por e-mail.
+                        </div>
+                        
+                        <div id="campos-regua" style="display: none;">
+                            <div class="row mb-3">
+                                <div class="col-md-7">
+                                    <label class="form-label">
+                                        <i class="bi bi-gear"></i> Selecionar Régua
+                                    </label>
+                                    <div class="input-group">
+                                        {{ form.regua_cobranca }}
+                                        <a href="{% url 'financeiro:criar_regua' %}" target="_blank" 
+                                           class="btn btn-outline-success" 
+                                           title="Criar Nova Régua">
+                                            <i class="bi bi-plus-circle"></i> Nova
+                                        </a>
+                                        <a href="{% url 'financeiro:listar_reguas' %}" target="_blank" 
+                                           class="btn btn-outline-secondary" 
+                                           title="Gerenciar Réguas">
+                                            <i class="bi bi-list"></i>
+                                        </a>
+                                    </div>
+                                    {% if form.regua_cobranca.errors %}
+                                    <div class="text-danger small">{{ form.regua_cobranca.errors }}</div>
+                                    {% else %}
+                                    <small class="text-muted">{{ form.regua_cobranca.help_text }}</small>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-5">
+                                    <label class="form-label">&nbsp;</label>
+                                    <div class="form-check mt-2">
+                                        {{ form.ativar_regua }}
+                                        <label class="form-check-label" for="id_ativar_regua">
+                                            <strong>{{ form.ativar_regua.label }}</strong>
+                                        </label>
+                                    </div>
+                                    <small class="text-muted">{{ form.ativar_regua.help_text }}</small>
+                                </div>
+                            </div>
+                            
+                            <div class="alert alert-warning small">
+                                <i class="bi bi-exclamation-triangle"></i> 
+                                <strong>Atenção:</strong> A régua será aplicada a todas as parcelas deste título. 
+                                Você pode ativar/desativar individualmente depois no painel de cobrança.
+                            </div>
+                        </div>
+
+                        <hr>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'financeiro:listar_titulos' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-x"></i> Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle"></i> Salvar Título
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Informações de Ajuda -->
+            <div class="card mt-3">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0"><i class="bi bi-info-circle"></i> Informações</h6>
+                </div>
+                <div class="card-body">
+                    <ul class="mb-0">
+                        <li><strong>Título:</strong> Representa o documento original (NF, contrato, etc.)</li>
+                        <li><strong>Projeto:</strong> Vincule diretamente a uma obra/projeto. Use o botão <i class="bi bi-box-arrow-up-right"></i> para gerenciar projetos</li>
+                        <li><strong>Centro de Custo:</strong> Para classificação departamental (opcional se já informou projeto)</li>
+                        <li><strong>Banco/Caixa:</strong> Conta de onde sairá o pagamento. Esta será usada como padrão nas baixas das parcelas</li>
+                        <li><strong>Parcelas:</strong> Serão geradas automaticamente após salvar</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- Próximos Passos -->
+            <div class="alert alert-primary mt-3" role="alert">
+                <h6 class="alert-heading">
+                    <i class="bi bi-lightbulb"></i> Próximos Passos
+                </h6>
+                <hr>
+                <p class="mb-0">
+                    Após criar o título, você poderá:
+                    <br>• <strong>Visualizar as parcelas</strong> geradas automaticamente
+                    <br>• <strong>Realizar baixas</strong> (a conta financeira informada será sugerida automaticamente)
+                    <br>• <strong>Acompanhar</strong> vencimentos no calendário financeiro
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('formTitulo');
+    const numParcelasInput = document.querySelector('input[name="num_parcelas"]');
+    const valorTotalInput = document.querySelector('input[name="valor_total"]');
+    const tipoSelect = document.querySelector('select[name="tipo"]');
+    const camposRegua = document.getElementById('campos-regua');
+    const alertaRegua = document.getElementById('alerta-regua-receber');
+    
+    // Mostrar/ocultar campos de régua baseado no tipo
+    function atualizarCamposRegua() {
+        if (tipoSelect && tipoSelect.value === 'RECEBER') {
+            camposRegua.style.display = 'block';
+            alertaRegua.style.display = 'block';
+        } else {
+            camposRegua.style.display = 'none';
+            alertaRegua.style.display = 'none';
+        }
+    }
+    
+    // Atualizar ao carregar página
+    atualizarCamposRegua();
+    
+    // Atualizar ao mudar tipo
+    if (tipoSelect) {
+        tipoSelect.addEventListener('change', atualizarCamposRegua);
+    }
+    
+    // Calcular valor da parcela
+    function calcularParcela() {
+        const total = parseFloat(valorTotalInput.value) || 0;
+        const parcelas = parseInt(numParcelasInput.value) || 1;
+        
+        if (total > 0 && parcelas > 0) {
+            const valorParcela = total / parcelas;
+            console.log(`Valor por parcela: R$ ${valorParcela.toFixed(2)}`);
+        }
+    }
+    
+    if (numParcelasInput && valorTotalInput) {
+        numParcelasInput.addEventListener('change', calcularParcela);
+        valorTotalInput.addEventListener('change', calcularParcela);
+    }
+    
+    // ========== SISTEMA HÍBRIDO: Intervalos Fixos vs Personalizados ==========
+    
+    // Toggle entre intervalo fixo e personalizado
+    document.getElementById('usarIntervalosPersonalizados').addEventListener('change', function() {
+        const campoFixo = document.getElementById('campoIntervaloFixo');
+        const campoPersonalizado = document.getElementById('campoIntervalosPersonalizados');
+        const inputIntervaloFixo = document.getElementById('{{ form.intervalo_dias.id_for_label }}');
+        const inputIntervalosPersonalizados = document.getElementById('{{ form.intervalos_personalizados.id_for_label }}');
+        
+        if (this.checked) {
+            // Mostrar campo personalizado
+            campoFixo.style.display = 'none';
+            campoPersonalizado.style.display = 'block';
+            inputIntervaloFixo.removeAttribute('required');
+            inputIntervalosPersonalizados.value = '';
+        } else {
+            // Mostrar campo fixo
+            campoFixo.style.display = 'block';
+            campoPersonalizado.style.display = 'none';
+            inputIntervaloFixo.setAttribute('required', 'required');
+            inputIntervalosPersonalizados.value = '';
+        }
+    });
+    
+    // Validação ao submeter
+    form.addEventListener('submit', function(e) {
+        const checkbox = document.getElementById('usarIntervalosPersonalizados');
+        const numParcelas = parseInt(numParcelasInput.value);
+        
+        if (checkbox.checked) {
+            const inputPersonalizado = document.getElementById('{{ form.intervalos_personalizados.id_for_label }}');
+            const valor = inputPersonalizado.value.trim();
+            
+            if (!valor) {
+                e.preventDefault();
+                alert('Por favor, informe os intervalos personalizados ou desmarque a opção.');
+                inputPersonalizado.focus();
+                return false;
+            }
+            
+            // Validar quantidade de intervalos
+            const intervalos = valor.replace(/,/g, '/').replace(/;/g, '/').split('/').filter(d => d.trim());
+            
+            if (intervalos.length !== numParcelas) {
+                e.preventDefault();
+                const exemplo = Array.from({length: numParcelas}, (_, i) => 30 * (i + 1)).join('/');
+                alert(`Você informou ${numParcelas} parcelas, mas forneceu ${intervalos.length} intervalos.\n\nExemplo correto para ${numParcelas} parcelas: ${exemplo}`);
+                inputPersonalizado.focus();
+                return false;
+            }
+            
+            // Limpar campo intervalo_dias quando usar personalizado
+            document.getElementById('{{ form.intervalo_dias.id_for_label }}').value = '30';
+        } else {
+            // Limpar campo personalizado quando usar fixo
+            document.getElementById('{{ form.intervalos_personalizados.id_for_label }}').value = '';
+        }
+    });
+});
+</script>
+
+<!-- jQuery (necessário para Select2) -->
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
+<!-- Select2 JS -->
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+$(document).ready(function() {
+    // Inicializar Select2 em todos os selects
+    $('select').select2({
+        theme: 'bootstrap-5',
+        width: '100%',
+        language: {
+            noResults: function() {
+                return "Nenhum resultado encontrado";
+            },
+            searching: function() {
+                return "Buscando...";
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

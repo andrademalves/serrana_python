@@ -1,0 +1,216 @@
+{% extends 'base_with_sidebar.html' %}
+{% load static %}
+
+{% block title %}Categorias de Custo - Sistema Serrana{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Cabeçalho -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">
+                <i class="bi bi-tag me-2"></i>Classificação de Custos
+            </h2>
+            <p class="text-muted mb-0">Classificação de variabilidade para cálculo de ponto de equilíbrio</p>
+        </div>
+        <div>
+            <a href="{% url 'financeiro:criar_categoria_custo' %}" class="btn btn-primary">
+                <i class="bi bi-plus-lg me-2"></i>Nova Categoria
+            </a>
+        </div>
+    </div>
+
+    <!-- Estatísticas -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="bg-primary bg-opacity-10 rounded p-3">
+                                <i class="bi bi-pin-angle-fill text-primary fs-4"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="mb-0 text-muted small">Custos Fixos</h6>
+                            <h4 class="mb-0">{{ categorias|length|add:"-2" }}</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="bg-success bg-opacity-10 rounded p-3">
+                                <i class="bi bi-graph-up text-success fs-4"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="mb-0 text-muted small">Custos Variáveis</h6>
+                            <h4 class="mb-0">{{ categorias|length|add:"-2" }}</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="bg-warning bg-opacity-10 rounded p-3">
+                                <i class="bi bi-diagram-3 text-warning fs-4"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="mb-0 text-muted small">Custos Mistos</h6>
+                            <h4 class="mb-0">{{ categorias|length|add:"-2" }}</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="bg-info bg-opacity-10 rounded p-3">
+                                <i class="bi bi-tags-fill text-info fs-4"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="mb-0 text-muted small">Total Categorias</h6>
+                            <h4 class="mb-0">{{ categorias|length }}</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lista de Categorias -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            {% if categorias %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Nome da Categoria</th>
+                            <th style="width: 150px;">Tipo de Custo</th>
+                            <th style="width: 150px;" class="text-center">% Variável</th>
+                            <th>Observação</th>
+                            <th style="width: 200px;" class="text-center">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for categoria in categorias %}
+                        <tr>
+                            <td>
+                                <strong>{{ categoria.nome }}</strong>
+                            </td>
+                            <td>
+                                {% if categoria.tipo == 'FIXO' %}
+                                    <span class="badge bg-primary">
+                                        <i class="bi bi-pin-angle-fill me-1"></i>{{ categoria.get_tipo_display }}
+                                    </span>
+                                {% elif categoria.tipo == 'VARIAVEL' %}
+                                    <span class="badge bg-success">
+                                        <i class="bi bi-graph-up me-1"></i>{{ categoria.get_tipo_display }}
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-warning">
+                                        <i class="bi bi-diagram-3 me-1"></i>{{ categoria.get_tipo_display }}
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                {% if categoria.tipo == 'FIXO' %}
+                                    <span class="text-muted">—</span>
+                                {% elif categoria.tipo == 'VARIAVEL' %}
+                                    <span class="text-muted">100%</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ categoria.percentual_variavel }}%</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <small class="text-muted">{{ categoria.observacao|default:"—"|truncatewords:10 }}</small>
+                            </td>
+                            <td class="text-center">
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <a href="{% url 'financeiro:editar_categoria_custo' categoria.id %}" 
+                                       class="btn btn-outline-primary" 
+                                       title="Editar">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <a href="{% url 'financeiro:excluir_categoria_custo' categoria.id %}" 
+                                       class="btn btn-outline-danger" 
+                                       title="Excluir">
+                                        <i class="bi bi-trash"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-inbox text-muted" style="font-size: 3rem;"></i>
+                <p class="text-muted mt-3">Nenhuma categoria cadastrada.</p>
+                <a href="{% url 'financeiro:criar_categoria_custo' %}" class="btn btn-primary">
+                    <i class="bi bi-plus-lg me-2"></i>Cadastrar Primeira Categoria
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Informações Úteis -->
+    <div class="card border-0 shadow-sm mt-4">
+        <div class="card-body">
+            <h5 class="mb-3"><i class="bi bi-info-circle me-2"></i>Como Classificar Custos</h5>
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="d-flex mb-3">
+                        <span class="badge bg-primary me-2" style="height: fit-content;">
+                            <i class="bi bi-pin-angle-fill"></i>
+                        </span>
+                        <div>
+                            <h6 class="mb-1"><strong>Custo Fixo</strong></h6>
+                            <p class="small text-muted mb-0">Não varia com o volume de vendas. Ex: Aluguel, Salários Administrativos, Seguros.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="d-flex mb-3">
+                        <span class="badge bg-success me-2" style="height: fit-content;">
+                            <i class="bi bi-graph-up"></i>
+                        </span>
+                        <div>
+                            <h6 class="mb-1"><strong>Custo Variável</strong></h6>
+                            <p class="small text-muted mb-0">Varia proporcionalmente às vendas. Ex: Matéria-prima, Comissões, Impostos sobre vendas.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="d-flex mb-3">
+                        <span class="badge bg-warning me-2" style="height: fit-content;">
+                            <i class="bi bi-diagram-3"></i>
+                        </span>
+                        <div>
+                            <h6 class="mb-1"><strong>Custo Misto</strong></h6>
+                            <p class="small text-muted mb-0">Possui parte fixa e parte variável. Ex: Energia elétrica, Telefone. Defina o % variável.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

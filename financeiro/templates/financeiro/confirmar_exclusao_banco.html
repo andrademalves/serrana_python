@@ -1,0 +1,78 @@
+{% extends 'base_with_sidebar.html' %}
+{% load static %}
+{% load financeiro_tags %}
+
+{% block title %}Excluir Banco - Sistema Serrana{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Cabeçalho -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">
+                <i class="bi bi-trash me-2 text-danger"></i>Excluir Banco
+            </h2>
+        </div>
+        <div>
+            <a href="{% url 'financeiro:listar_bancos' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-2"></i>Voltar
+            </a>
+        </div>
+    </div>
+
+    <!-- Confirmação -->
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card border-danger border-2">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>Atenção!
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="lead">Tem certeza que deseja excluir este banco?</p>
+                    
+                    <div class="alert alert-light border">
+                        <div class="row">
+                            <div class="col-4 text-muted">Código COMPE:</div>
+                            <div class="col-8"><strong>{{ banco.codigo_compe }}</strong></div>
+                        </div>
+                        <div class="row mt-2">
+                            <div class="col-4 text-muted">Nome:</div>
+                            <div class="col-8"><strong>{{ banco.nome }}</strong></div>
+                        </div>
+                        <div class="row mt-2">
+                            <div class="col-4 text-muted">Status:</div>
+                            <div class="col-8">
+                                {% if banco.ativo %}
+                                    <span class="badge bg-success">Ativo</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Inativo</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        <strong>Atenção:</strong> Esta ação não pode ser desfeita. 
+                        Se existirem contas financeiras vinculadas a este banco, a exclusão pode falhar.
+                    </div>
+
+                    <form method="post" class="mt-4">
+                        {% csrf_token %}
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'financeiro:listar_bancos' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-x-lg me-2"></i>Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-trash me-2"></i>Confirmar Exclusão
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

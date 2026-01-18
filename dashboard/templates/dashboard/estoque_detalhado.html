@@ -1,0 +1,419 @@
+{% extends 'base_with_sidebar.html' %}
+{% load static %}
+
+{% block title %}Dashboard Estoque Detalhado{% endblock %}
+
+{% block extra_css %}
+<style>
+    .produto-card {
+        transition: all 0.3s;
+        border-left: 4px solid #17a2b8;
+    }
+    
+    .produto-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    
+    .produto-card.critico {
+        border-left-color: #dc3545;
+        background-color: #fff5f5;
+    }
+    
+    .produto-card.atencao {
+        border-left-color: #ffc107;
+        background-color: #fffbf0;
+    }
+    
+    .badge-estoque {
+        font-size: 0.875rem;
+        padding: 0.35em 0.65em;
+    }
+    
+    .grafico-movimentacao {
+        height: 300px;
+    }
+    
+    .tabela-produtos {
+        font-size: 0.9rem;
+    }
+    
+    .filtro-rapido {
+        background: #f8f9fa;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        margin-bottom: 1.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2><i class="bi bi-box-seam"></i> Dashboard Estoque Detalhado</h2>
+            <p class="text-muted">Análise completa do estoque e movimentações</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <button class="btn btn-outline-primary" onclick="atualizarDados()">
+                <i class="bi bi-arrow-clockwise"></i> Atualizar
+            </button>
+            <button class="btn btn-success" onclick="exportarExcel()">
+                <i class="bi bi-file-earmark-excel"></i> Excel
+            </button>
+            <a href="{% url 'dashboard:principal' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Voltar
+            </a>
+        </div>
+    </div>
+
+    <!-- KPIs Resumo -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h6 class="text-muted">Valor Total Estoque</h6>
+                    <h3 class="text-primary" id="valor-total">R$ 0,00</h3>
+                    <small class="text-success" id="var-valor">+0%</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h6 class="text-muted">Itens Críticos</h6>
+                    <h3 class="text-danger" id="itens-criticos">0</h3>
+                    <small id="perc-criticos">0% do total</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h6 class="text-muted">Giro Médio</h6>
+                    <h3 class="text-info" id="giro-medio">0x</h3>
+                    <small id="dias-cobertura">0 dias</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h6 class="text-muted">Total de Itens</h6>
+                    <h3 id="total-itens">0</h3>
+                    <small id="itens-ativos">0 ativos</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="filtro-rapido">
+        <div class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">Grupo</label>
+                <select class="form-select" id="filtro-grupo">
+                    <option value="">Todos os grupos</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Status</label>
+                <select class="form-select" id="filtro-status">
+                    <option value="">Todos</option>
+                    <option value="critico">Crítico</option>
+                    <option value="atencao">Atenção</option>
+                    <option value="normal">Normal</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Buscar</label>
+                <input type="text" class="form-control" id="busca-produto" placeholder="Código ou descrição">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">&nbsp;</label>
+                <button class="btn btn-primary w-100" onclick="aplicarFiltros()">
+                    <i class="bi bi-funnel"></i> Filtrar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <ul class="nav nav-tabs mb-3" role="tablist">
+        <li class="nav-item">
+            <a class="nav-link active" data-bs-toggle="tab" href="#tab-produtos">
+                <i class="bi bi-list-ul"></i> Produtos
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="tab" href="#tab-curva-abc">
+                <i class="bi bi-bar-chart"></i> Curva ABC
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="tab" href="#tab-movimentacao">
+                <i class="bi bi-arrow-left-right"></i> Movimentação
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="tab" href="#tab-previsao">
+                <i class="bi bi-graph-up"></i> Previsão
+            </a>
+        </li>
+    </ul>
+
+    <!-- Tab Content -->
+    <div class="tab-content">
+        <!-- Produtos -->
+        <div class="tab-pane fade show active" id="tab-produtos">
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover tabela-produtos" id="table-produtos">
+                            <thead>
+                                <tr>
+                                    <th>Código</th>
+                                    <th>Descrição</th>
+                                    <th>Grupo</th>
+                                    <th class="text-end">Saldo</th>
+                                    <th class="text-end">Mínimo</th>
+                                    <th class="text-end">Valor Unit.</th>
+                                    <th class="text-end">Valor Total</th>
+                                    <th class="text-center">Status</th>
+                                    <th class="text-center">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody-produtos">
+                                <tr>
+                                    <td colspan="9" class="text-center">
+                                        <div class="spinner-border text-primary" role="status">
+                                            <span class="visually-hidden">Carregando...</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Curva ABC -->
+        <div class="tab-pane fade" id="tab-curva-abc">
+            <div class="card">
+                <div class="card-body">
+                    <canvas id="chart-curva-abc"></canvas>
+                </div>
+            </div>
+            <div class="row mt-3">
+                <div class="col-md-4">
+                    <div class="card border-danger">
+                        <div class="card-body">
+                            <h5>Classe A <span class="badge bg-danger">Alta</span></h5>
+                            <p class="mb-1"><strong>20% dos itens</strong></p>
+                            <p class="mb-1">80% do valor</p>
+                            <p class="text-muted small mb-0">Maior controle necessário</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card border-warning">
+                        <div class="card-body">
+                            <h5>Classe B <span class="badge bg-warning">Média</span></h5>
+                            <p class="mb-1"><strong>30% dos itens</strong></p>
+                            <p class="mb-1">15% do valor</p>
+                            <p class="text-muted small mb-0">Controle moderado</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card border-success">
+                        <div class="card-body">
+                            <h5>Classe C <span class="badge bg-success">Baixa</span></h5>
+                            <p class="mb-1"><strong>50% dos itens</strong></p>
+                            <p class="mb-1">5% do valor</p>
+                            <p class="text-muted small mb-0">Controle simplificado</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Movimentação -->
+        <div class="tab-pane fade" id="tab-movimentacao">
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h5>Movimentação nos Últimos 30 Dias</h5>
+                    <canvas id="chart-movimentacao" class="grafico-movimentacao"></canvas>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="mb-3">Últimas Movimentações</h5>
+                    <div class="table-responsive">
+                        <table class="table table-sm" id="table-movimentacoes">
+                            <thead>
+                                <tr>
+                                    <th>Data</th>
+                                    <th>Produto</th>
+                                    <th>Tipo</th>
+                                    <th class="text-end">Quantidade</th>
+                                    <th>Usuário</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody-movimentacoes">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Previsão -->
+        <div class="tab-pane fade" id="tab-previsao">
+            <div class="card">
+                <div class="card-body">
+                    <h5>Itens com Previsão de Ruptura (< 7 dias)</h5>
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Produto</th>
+                                    <th class="text-end">Saldo Atual</th>
+                                    <th class="text-end">Consumo Médio/Dia</th>
+                                    <th class="text-end">Dias Restantes</th>
+                                    <th class="text-center">Urgência</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody-previsao">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Overlay -->
+<div class="loading-overlay" id="loading">
+    <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;"></div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+    let chartCurvaABC = null;
+    let chartMovimentacao = null;
+
+    document.addEventListener('DOMContentLoaded', function() {
+        carregarDados();
+    });
+
+    function carregarDados() {
+        mostrarLoading(true);
+        
+        Promise.all([
+            fetch('/dashboard/api/kpis/estoque/'),
+            fetch('/dashboard/api/curva-abc/'),
+            fetch('/estoque/api/produtos/')  // Ajustar conforme sua API
+        ])
+        .then(responses => Promise.all(responses.map(r => r.json())))
+        .then(([kpis, curvaABC, produtos]) => {
+            atualizarKPIs(kpis);
+            atualizarCurvaABC(curvaABC);
+            atualizarTabelaProdutos(produtos);
+            mostrarLoading(false);
+        })
+        .catch(error => {
+            console.error('Erro:', error);
+            mostrarLoading(false);
+        });
+    }
+
+    function atualizarKPIs(data) {
+        document.getElementById('valor-total').textContent = 
+            'R$ ' + (data.valor_total || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2});
+        document.getElementById('itens-criticos').textContent = data.itens_criticos || 0;
+        document.getElementById('giro-medio').textContent = (data.giro || 0).toFixed(1) + 'x';
+        document.getElementById('total-itens').textContent = data.total_itens || 0;
+    }
+
+    function atualizarCurvaABC(data) {
+        const ctx = document.getElementById('chart-curva-abc');
+        if (chartCurvaABC) chartCurvaABC.destroy();
+        
+        chartCurvaABC = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: data.produtos || [],
+                datasets: [{
+                    label: 'Valor (R$)',
+                    data: data.valores || [],
+                    backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: true }
+                }
+            }
+        });
+    }
+
+    function atualizarTabelaProdutos(produtos) {
+        const tbody = document.getElementById('tbody-produtos');
+        tbody.innerHTML = '';
+        
+        produtos.forEach(produto => {
+            const tr = document.createElement('tr');
+            const status = produto.saldo < produto.minimo ? 
+                '<span class="badge bg-danger">Crítico</span>' : 
+                '<span class="badge bg-success">Normal</span>';
+                
+            tr.innerHTML = `
+                <td>${produto.codigo}</td>
+                <td>${produto.descricao}</td>
+                <td>${produto.grupo || '-'}</td>
+                <td class="text-end">${produto.saldo || 0}</td>
+                <td class="text-end">${produto.minimo || 0}</td>
+                <td class="text-end">R$ ${(produto.custo_medio || 0).toFixed(2)}</td>
+                <td class="text-end">R$ ${((produto.saldo || 0) * (produto.custo_medio || 0)).toFixed(2)}</td>
+                <td class="text-center">${status}</td>
+                <td class="text-center">
+                    <button class="btn btn-sm btn-outline-primary" onclick="verDetalhes(${produto.id})">
+                        <i class="bi bi-eye"></i>
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function mostrarLoading(show) {
+        document.getElementById('loading').classList.toggle('active', show);
+    }
+
+    function atualizarDados() {
+        carregarDados();
+    }
+
+    function aplicarFiltros() {
+        carregarDados();
+    }
+
+    function exportarExcel() {
+        window.location.href = '/dashboard/exportar/excel/?tipo=estoque';
+    }
+
+    function verDetalhes(id) {
+        alert('Detalhes do produto ' + id);
+    }
+</script>
+{% endblock %}

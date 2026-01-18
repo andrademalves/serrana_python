@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relatório Gerencial - {{ empresa.nome }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            margin: 0 0 10px 0;
+            font-size: 28px;
+        }
+        
+        .header p {
+            margin: 0;
+            opacity: 0.9;
+        }
+        
+        .kpi-section {
+            margin-bottom: 30px;
+        }
+        
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .kpi-card {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            border-radius: 5px;
+        }
+        
+        .kpi-card.estoque { border-left-color: #17a2b8; }
+        .kpi-card.obras { border-left-color: #ffc107; }
+        .kpi-card.financeiro { border-left-color: #28a745; }
+        .kpi-card.critico { border-left-color: #dc3545; }
+        
+        .kpi-label {
+            font-size: 12px;
+            color: #6c757d;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+        
+        .kpi-valor {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .kpi-variacao {
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        
+        .positivo { color: #28a745; }
+        .negativo { color: #dc3545; }
+        
+        .section-title {
+            color: #667eea;
+            font-size: 20px;
+            margin: 30px 0 15px 0;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+        
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            background: white;
+        }
+        
+        .table thead {
+            background: #f8f9fa;
+        }
+        
+        .table th,
+        .table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        .table th {
+            font-weight: 600;
+            color: #495057;
+            font-size: 14px;
+        }
+        
+        .table td {
+            font-size: 13px;
+        }
+        
+        .table tr:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .alert {
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+        }
+        
+        .alert-warning {
+            background-color: #fff3cd;
+            border-left: 4px solid #ffc107;
+            color: #856404;
+        }
+        
+        .alert-danger {
+            background-color: #f8d7da;
+            border-left: 4px solid #dc3545;
+            color: #721c24;
+        }
+        
+        .alert-info {
+            background-color: #d1ecf1;
+            border-left: 4px solid #17a2b8;
+            color: #0c5460;
+        }
+        
+        .footer {
+            margin-top: 40px;
+            padding: 20px;
+            background: #f8f9fa;
+            text-align: center;
+            border-radius: 5px;
+            font-size: 12px;
+            color: #6c757d;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            font-size: 11px;
+            font-weight: 600;
+            border-radius: 3px;
+            text-transform: uppercase;
+        }
+        
+        .badge-success { background: #28a745; color: white; }
+        .badge-danger { background: #dc3545; color: white; }
+        .badge-warning { background: #ffc107; color: #333; }
+        .badge-info { background: #17a2b8; color: white; }
+        
+        .summary-box {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        
+        @media print {
+            body {
+                max-width: 100%;
+            }
+            
+            .no-print {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <h1>📊 Relatório Gerencial Semanal</h1>
+        <p>{{ empresa.nome }}</p>
+        <p>Período: {{ data_inicio|date:"d/m/Y" }} a {{ data_fim|date:"d/m/Y" }}</p>
+    </div>
+
+    <!-- Resumo Executivo -->
+    <div class="summary-box">
+        <h3 style="margin-top: 0;">📈 Resumo Executivo</h3>
+        <p>Este relatório apresenta os principais indicadores de desempenho da empresa na última semana, 
+        abrangendo estoque, obras em andamento e situação financeira.</p>
+    </div>
+
+    <!-- KPIs Principais -->
+    <div class="kpi-section">
+        <h2 class="section-title">📊 Indicadores Principais</h2>
+        <div class="kpi-grid">
+            <div class="kpi-card financeiro">
+                <div class="kpi-label">Saldo em Caixa</div>
+                <div class="kpi-valor">R$ {{ saldo_caixa|floatformat:2 }}</div>
+                <div class="kpi-variacao {{ variacao_caixa_classe }}">
+                    {{ variacao_caixa }}
+                </div>
+            </div>
+            
+            <div class="kpi-card estoque">
+                <div class="kpi-label">Valor Estoque</div>
+                <div class="kpi-valor">R$ {{ valor_estoque|floatformat:2 }}</div>
+                <div class="kpi-variacao">
+                    {{ total_itens }} itens
+                </div>
+            </div>
+            
+            <div class="kpi-card obras">
+                <div class="kpi-label">Obras Ativas</div>
+                <div class="kpi-valor">{{ obras_ativas }}</div>
+                <div class="kpi-variacao">
+                    R$ {{ valor_obras|floatformat:2 }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alertas Críticos -->
+    {% if alertas %}
+    <div class="kpi-section">
+        <h2 class="section-title">⚠️ Alertas e Ações Necessárias</h2>
+        
+        {% for alerta in alertas %}
+        <div class="alert alert-{{ alerta.tipo }}">
+            <strong>{{ alerta.titulo }}</strong><br>
+            {{ alerta.mensagem }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Estoque -->
+    <div class="kpi-section">
+        <h2 class="section-title">📦 Estoque</h2>
+        
+        <div class="kpi-grid">
+            <div class="kpi-card estoque">
+                <div class="kpi-label">Itens Críticos</div>
+                <div class="kpi-valor negativo">{{ itens_criticos }}</div>
+                <div class="kpi-variacao">Abaixo do mínimo</div>
+            </div>
+            
+            <div class="kpi-card estoque">
+                <div class="kpi-label">Giro de Estoque</div>
+                <div class="kpi-valor">{{ giro_estoque }}x</div>
+                <div class="kpi-variacao">Últimos 30 dias</div>
+            </div>
+            
+            <div class="kpi-card estoque">
+                <div class="kpi-label">Cobertura</div>
+                <div class="kpi-valor">{{ dias_cobertura }}</div>
+                <div class="kpi-variacao">dias</div>
+            </div>
+        </div>
+        
+        {% if produtos_criticos %}
+        <h3>Produtos Críticos (Necessitam Reposição)</h3>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Produto</th>
+                    <th>Saldo</th>
+                    <th>Mínimo</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for produto in produtos_criticos %}
+                <tr>
+                    <td>{{ produto.codigo }} - {{ produto.descricao }}</td>
+                    <td>{{ produto.saldo }}</td>
+                    <td>{{ produto.minimo }}</td>
+                    <td><span class="badge badge-danger">Crítico</span></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+    </div>
+
+    <!-- Obras/Projetos -->
+    <div class="kpi-section">
+        <h2 class="section-title">🏗️ Obras e Projetos</h2>
+        
+        <div class="kpi-grid">
+            <div class="kpi-card obras">
+                <div class="kpi-label">Lucro Competência</div>
+                <div class="kpi-valor positivo">R$ {{ lucro_competencia|floatformat:2 }}</div>
+                <div class="kpi-variacao">Margem: {{ margem_competencia }}%</div>
+            </div>
+            
+            <div class="kpi-card obras">
+                <div class="kpi-label">Lucro Caixa</div>
+                <div class="kpi-valor">R$ {{ lucro_caixa|floatformat:2 }}</div>
+                <div class="kpi-variacao">Margem: {{ margem_caixa }}%</div>
+            </div>
+            
+            <div class="kpi-card obras">
+                <div class="kpi-label">Obras Atrasadas</div>
+                <div class="kpi-valor negativo">{{ obras_atrasadas }}</div>
+                <div class="kpi-variacao">Requer atenção</div>
+            </div>
+        </div>
+        
+        {% if obras_destaque %}
+        <h3>Obras em Destaque</h3>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Obra</th>
+                    <th>Cliente</th>
+                    <th>Status</th>
+                    <th>Progresso</th>
+                    <th>Margem</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for obra in obras_destaque %}
+                <tr>
+                    <td>{{ obra.codigo }}</td>
+                    <td>{{ obra.cliente }}</td>
+                    <td><span class="badge badge-{{ obra.status_badge }}">{{ obra.status }}</span></td>
+                    <td>{{ obra.progresso }}%</td>
+                    <td>{{ obra.margem }}%</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+    </div>
+
+    <!-- Financeiro -->
+    <div class="kpi-section">
+        <h2 class="section-title">💰 Financeiro</h2>
+        
+        <div class="kpi-grid">
+            <div class="kpi-card financeiro">
+                <div class="kpi-label">A Receber</div>
+                <div class="kpi-valor positivo">R$ {{ total_receber|floatformat:2 }}</div>
+                <div class="kpi-variacao negativo">Vencido: R$ {{ vencido_receber|floatformat:2 }}</div>
+            </div>
+            
+            <div class="kpi-card financeiro">
+                <div class="kpi-label">A Pagar</div>
+                <div class="kpi-valor negativo">R$ {{ total_pagar|floatformat:2 }}</div>
+                <div class="kpi-variacao negativo">Vencido: R$ {{ vencido_pagar|floatformat:2 }}</div>
+            </div>
+            
+            <div class="kpi-card financeiro">
+                <div class="kpi-label">Inadimplência</div>
+                <div class="kpi-valor">{{ taxa_inadimplencia }}%</div>
+                <div class="kpi-variacao">{{ clientes_inadimplentes }} clientes</div>
+            </div>
+        </div>
+        
+        <h3>DRE - Mês Atual</h3>
+        <table class="table">
+            <tbody>
+                <tr>
+                    <td><strong>Receita Bruta</strong></td>
+                    <td style="text-align: right;"><strong>R$ {{ dre_receita|floatformat:2 }}</strong></td>
+                </tr>
+                <tr>
+                    <td>(-) Impostos</td>
+                    <td style="text-align: right; color: #dc3545;">R$ {{ dre_impostos|floatformat:2 }}</td>
+                </tr>
+                <tr style="background: #f8f9fa;">
+                    <td><strong>Receita Líquida</strong></td>
+                    <td style="text-align: right;"><strong>R$ {{ dre_receita_liquida|floatformat:2 }}</strong></td>
+                </tr>
+                <tr>
+                    <td>(-) Despesas Operacionais</td>
+                    <td style="text-align: right; color: #dc3545;">R$ {{ dre_despesas|floatformat:2 }}</td>
+                </tr>
+                <tr style="background: #d4edda;">
+                    <td><strong>Lucro/Prejuízo</strong></td>
+                    <td style="text-align: right;"><strong>R$ {{ dre_lucro|floatformat:2 }}</strong></td>
+                </tr>
+                <tr>
+                    <td><strong>Margem Líquida</strong></td>
+                    <td style="text-align: right;"><strong>{{ dre_margem }}%</strong></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Recomendações -->
+    {% if recomendacoes %}
+    <div class="kpi-section">
+        <h2 class="section-title">💡 Recomendações</h2>
+        <ul>
+            {% for rec in recomendacoes %}
+            <li>{{ rec }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <!-- Footer -->
+    <div class="footer">
+        <p><strong>{{ empresa.nome }}</strong></p>
+        <p>Relatório gerado automaticamente em {{ data_geracao|date:"d/m/Y H:i" }}</p>
+        <p>Este é um relatório confidencial destinado exclusivamente à gestão da empresa.</p>
+        <p style="margin-top: 10px;">
+            <a href="{{ link_dashboard }}" style="color: #667eea;">Acessar Dashboard Completo</a>
+        </p>
+    </div>
+</body>
+</html>

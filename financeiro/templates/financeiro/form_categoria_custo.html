@@ -1,0 +1,178 @@
+{% extends 'base_with_sidebar.html' %}
+{% load static %}
+
+{% block title %}{{ titulo }} - Sistema Serrana{% endblock %}
+
+{% block extra_head %}
+<style>
+    #div_percentual_variavel {
+        display: none;
+    }
+    #div_percentual_variavel.show {
+        display: block;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Cabeçalho -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">
+                <i class="bi bi-tag me-2"></i>{{ titulo }}
+            </h2>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item"><a href="{% url 'financeiro:listar_categorias_custo' %}">Categorias de Custo</a></li>
+                    <li class="breadcrumb-item active">{{ titulo }}</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Formulário -->
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+                        
+                        {% if form.non_field_errors %}
+                        <div class="alert alert-danger" role="alert">
+                            {{ form.non_field_errors }}
+                        </div>
+                        {% endif %}
+
+                        <!-- Nome -->
+                        <div class="mb-3">
+                            <label for="{{ form.nome.id_for_label }}" class="form-label">
+                                {{ form.nome.label }}
+                                <span class="text-danger">*</span>
+                            </label>
+                            {{ form.nome }}
+                            {% if form.nome.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.nome.errors }}
+                                </div>
+                            {% endif %}
+                            <small class="text-muted">Ex: Material de Construção, Salários, Energia Elétrica</small>
+                        </div>
+
+                        <!-- Tipo -->
+                        <div class="mb-3">
+                            <label for="{{ form.tipo.id_for_label }}" class="form-label">
+                                {{ form.tipo.label }}
+                                <span class="text-danger">*</span>
+                            </label>
+                            {{ form.tipo }}
+                            {% if form.tipo.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.tipo.errors }}
+                                </div>
+                            {% endif %}
+                            <small class="text-muted">Selecione se o custo é fixo, variável ou misto</small>
+                        </div>
+
+                        <!-- Percentual Variável (aparece apenas para tipo MISTO) -->
+                        <div class="mb-3" id="div_percentual_variavel">
+                            <label for="{{ form.percentual_variavel.id_for_label }}" class="form-label">
+                                {{ form.percentual_variavel.label }}
+                            </label>
+                            {{ form.percentual_variavel }}
+                            {% if form.percentual_variavel.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.percentual_variavel.errors }}
+                                </div>
+                            {% endif %}
+                            <small class="text-muted">{{ form.percentual_variavel.help_text }}</small>
+                        </div>
+
+                        <!-- Observação -->
+                        <div class="mb-4">
+                            <label for="{{ form.observacao.id_for_label }}" class="form-label">
+                                {{ form.observacao.label }}
+                            </label>
+                            {{ form.observacao }}
+                            {% if form.observacao.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.observacao.errors }}
+                                </div>
+                            {% endif %}
+                            <small class="text-muted">Informações adicionais sobre esta categoria</small>
+                        </div>
+
+                        <!-- Botões -->
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-lg me-2"></i>Salvar
+                            </button>
+                            <a href="{% url 'financeiro:listar_categorias_custo' %}" class="btn btn-secondary">
+                                <i class="bi bi-x-lg me-2"></i>Cancelar
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Informações Auxiliares -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-body">
+                    <h5 class="mb-3"><i class="bi bi-lightbulb me-2"></i>Dica</h5>
+                    <p class="small text-muted">
+                        A classificação de custos é fundamental para o cálculo do <strong>Ponto de Equilíbrio</strong> do seu negócio.
+                    </p>
+                    <p class="small text-muted mb-0">
+                        Classifique corretamente cada tipo de custo para obter análises precisas.
+                    </p>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h6 class="mb-3"><strong>Exemplos de Classificação</strong></h6>
+                    <div class="small">
+                        <p class="mb-2">
+                            <span class="badge bg-primary me-1">Fixo</span>
+                            Aluguel, Contador, Seguros
+                        </p>
+                        <p class="mb-2">
+                            <span class="badge bg-success me-1">Variável</span>
+                            Matéria-prima, Comissões
+                        </p>
+                        <p class="mb-0">
+                            <span class="badge bg-warning me-1">Misto</span>
+                            Energia (40% variável)
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const tipoSelect = document.getElementById('{{ form.tipo.id_for_label }}');
+    const divPercentual = document.getElementById('div_percentual_variavel');
+    
+    function togglePercentualVariavel() {
+        const tipo = tipoSelect.value;
+        if (tipo === 'MISTO') {
+            divPercentual.classList.add('show');
+        } else {
+            divPercentual.classList.remove('show');
+        }
+    }
+    
+    // Executar ao carregar
+    togglePercentualVariavel();
+    
+    // Executar ao mudar
+    tipoSelect.addEventListener('change', togglePercentualVariavel);
+});
+</script>
+{% endblock %}

@@ -1,0 +1,247 @@
+{% extends 'base_with_sidebar.html' %}
+{% load static %}
+{% load financeiro_tags %}
+
+{% block title %}Fluxo de Caixa - {{ mes_nome }}/{{ ano }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Cabeçalho -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="bi bi-cash-stack"></i> Fluxo de Caixa</h2>
+            <p class="text-muted mb-0">Projeção de entradas e saídas - {{ mes_nome }}/{{ ano }}</p>
+        </div>
+        <div>
+            <a href="{% url 'financeiro:dashboard' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Voltar
+            </a>
+        </div>
+    </div>
+
+    <!-- Filtro de Período -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label for="mes" class="form-label">Mês</label>
+                    <select name="mes" id="mes" class="form-select">
+                        <option value="1" {% if mes == 1 %}selected{% endif %}>Janeiro</option>
+                        <option value="2" {% if mes == 2 %}selected{% endif %}>Fevereiro</option>
+                        <option value="3" {% if mes == 3 %}selected{% endif %}>Março</option>
+                        <option value="4" {% if mes == 4 %}selected{% endif %}>Abril</option>
+                        <option value="5" {% if mes == 5 %}selected{% endif %}>Maio</option>
+                        <option value="6" {% if mes == 6 %}selected{% endif %}>Junho</option>
+                        <option value="7" {% if mes == 7 %}selected{% endif %}>Julho</option>
+                        <option value="8" {% if mes == 8 %}selected{% endif %}>Agosto</option>
+                        <option value="9" {% if mes == 9 %}selected{% endif %}>Setembro</option>
+                        <option value="10" {% if mes == 10 %}selected{% endif %}>Outubro</option>
+                        <option value="11" {% if mes == 11 %}selected{% endif %}>Novembro</option>
+                        <option value="12" {% if mes == 12 %}selected{% endif %}>Dezembro</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="ano" class="form-label">Ano</label>
+                    <input type="number" name="ano" id="ano" class="form-control" value="{{ ano }}" min="2020" max="2030">
+                </div>
+                <div class="col-md-6 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary me-2">
+                        <i class="bi bi-funnel"></i> Filtrar
+                    </button>
+                    <a href="{% url 'financeiro:relatorio_fluxo_caixa_pdf' %}?{{ request.GET.urlencode }}" class="btn btn-danger" target="_blank">
+                        <i class="bi bi-file-pdf"></i> Gerar PDF
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Cards de Resumo -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card border-primary">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-calendar-check"></i> Previsto</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-6">
+                            <p class="text-muted mb-1">Entradas</p>
+                            <h4 class="mb-0 text-success">{{ dados.previsto.receber|currency }}</h4>
+                        </div>
+                        <div class="col-6">
+                            <p class="text-muted mb-1">Saídas</p>
+                            <h4 class="mb-0 text-danger">{{ dados.previsto.pagar|currency }}</h4>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <strong>Saldo Previsto:</strong>
+                        <h5 class="mb-0 {% if dados.previsto.saldo >= 0 %}text-primary{% else %}text-warning{% endif %}">
+                            {{ dados.previsto.saldo|currency }}
+                        </h5>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card border-success">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="bi bi-check-circle"></i> Realizado</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-6">
+                            <p class="text-muted mb-1">Entradas</p>
+                            <h4 class="mb-0 text-success">{{ dados.realizado.receber|currency }}</h4>
+                        </div>
+                        <div class="col-6">
+                            <p class="text-muted mb-1">Saídas</p>
+                            <h4 class="mb-0 text-danger">{{ dados.realizado.pagar|currency }}</h4>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <strong>Saldo Realizado:</strong>
+                        <h5 class="mb-0 {% if dados.realizado.saldo >= 0 %}text-success{% else %}text-danger{% endif %}">
+                            {{ dados.realizado.saldo|currency }}
+                        </h5>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Comparativo Previsto x Realizado -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="bi bi-bar-chart-line"></i> Comparativo: Previsto x Realizado</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered">
+                    <thead class="table-light">
+                        <tr>
+                            <th></th>
+                            <th class="text-end">Previsto</th>
+                            <th class="text-end">Realizado</th>
+                            <th class="text-end">Diferença</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong class="text-success">Entradas (Receber)</strong></td>
+                            <td class="text-end">{{ dados.previsto.receber|currency }}</td>
+                            <td class="text-end">{{ dados.realizado.receber|currency }}</td>
+                            <td class="text-end {% if dados.diferenca.receber >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                {{ dados.diferenca.receber|currency }}
+                                {% if dados.diferenca.receber >= 0 %}
+                                    <i class="bi bi-arrow-up"></i>
+                                {% else %}
+                                    <i class="bi bi-arrow-down"></i>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong class="text-danger">Saídas (Pagar)</strong></td>
+                            <td class="text-end">{{ dados.previsto.pagar|currency }}</td>
+                            <td class="text-end">{{ dados.realizado.pagar|currency }}</td>
+                            <td class="text-end {% if dados.diferenca.pagar <= 0 %}text-success{% else %}text-danger{% endif %}">
+                                {{ dados.diferenca.pagar|currency }}
+                                {% if dados.diferenca.pagar >= 0 %}
+                                    <i class="bi bi-arrow-up"></i>
+                                {% else %}
+                                    <i class="bi bi-arrow-down"></i>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr class="table-primary">
+                            <td><strong>Saldo</strong></td>
+                            <td class="text-end"><strong>{{ dados.previsto.saldo|currency }}</strong></td>
+                            <td class="text-end"><strong>{{ dados.realizado.saldo|currency }}</strong></td>
+                            <td class="text-end {% if dados.realizado.saldo >= dados.previsto.saldo %}text-success{% else %}text-warning{% endif %}">
+                                <strong>
+                                    {% widthratio dados.realizado.saldo dados.previsto.saldo 100 %}%
+                                </strong>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráfico Comparativo -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="bi bi-graph-up"></i> Gráfico Comparativo</h5>
+        </div>
+        <div class="card-body">
+            <canvas id="graficoFluxoCaixa" height="80"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('graficoFluxoCaixa');
+    
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['Entradas', 'Saídas', 'Saldo'],
+            datasets: [
+                {
+                    label: 'Previsto',
+                    data: [
+                        {{ dados.previsto.receber|default:0 }},
+                        {{ dados.previsto.pagar|default:0 }},
+                        {{ dados.previsto.saldo|default:0 }}
+                    ],
+                    backgroundColor: 'rgba(13, 110, 253, 0.5)',
+                    borderColor: 'rgba(13, 110, 253, 1)',
+                    borderWidth: 1
+                },
+                {
+                    label: 'Realizado',
+                    data: [
+                        {{ dados.realizado.receber|default:0 }},
+                        {{ dados.realizado.pagar|default:0 }},
+                        {{ dados.realizado.saldo|default:0 }}
+                    ],
+                    backgroundColor: 'rgba(25, 135, 84, 0.5)',
+                    borderColor: 'rgba(25, 135, 84, 1)',
+                    borderWidth: 1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    position: 'top',
+                },
+                title: {
+                    display: true,
+                    text: 'Fluxo de Caixa - {{ mes_nome }}/{{ ano }}'
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return 'R$ ' + value.toLocaleString('pt-BR', {minimumFractionDigits: 2});
+                        }
+                    }
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

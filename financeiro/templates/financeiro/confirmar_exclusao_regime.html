@@ -1,0 +1,51 @@
+{% extends 'base_with_sidebar.html' %}
+{% load static %}
+
+{% block title %}Excluir Regime Tributário - Sistema Serrana{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="text-center mb-4">
+                        <i class="bi bi-exclamation-triangle text-danger" style="font-size: 3rem;"></i>
+                        <h3 class="mt-3">Confirmar Exclusão</h3>
+                    </div>
+
+                    <div class="alert alert-warning">
+                        <strong>Atenção!</strong> Você está prestes a excluir o regime tributário:
+                    </div>
+
+                    <div class="card bg-light mb-4">
+                        <div class="card-body">
+                            <h5 class="mb-2">{{ regime.get_nome_display }}</h5>
+                            {% if regime.descricao %}
+                            <p class="text-muted mb-0">{{ regime.descricao }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <p class="text-muted">
+                        <i class="bi bi-info-circle me-2"></i>
+                        Esta ação não poderá ser desfeita. Todas as informações relacionadas serão perdidas.
+                    </p>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-flex gap-2 justify-content-end">
+                            <a href="{% url 'financeiro:listar_regimes_tributarios' %}" class="btn btn-secondary">
+                                <i class="bi bi-x-lg me-2"></i>Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-trash me-2"></i>Confirmar Exclusão
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

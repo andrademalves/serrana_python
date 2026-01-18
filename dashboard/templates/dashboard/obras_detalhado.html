@@ -1,0 +1,422 @@
+{% extends 'base_with_sidebar.html' %}
+{% load static %}
+
+{% block title %}Dashboard Obras/Projetos{% endblock %}
+
+{% block extra_css %}
+<style>
+    .obra-card {
+        transition: all 0.3s;
+        border-left: 4px solid #ffc107;
+        margin-bottom: 1rem;
+    }
+    
+    .obra-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    
+    .obra-card.orcamento { border-left-color: #6c757d; }
+    .obra-card.execucao { border-left-color: #17a2b8; }
+    .obra-card.concluido { border-left-color: #28a745; }
+    .obra-card.atrasado { border-left-color: #dc3545; }
+    
+    .progress-obra {
+        height: 25px;
+        font-size: 0.875rem;
+    }
+    
+    .badge-lucro {
+        font-size: 0.95rem;
+        padding: 0.4em 0.7em;
+    }
+    
+    .chart-container {
+        height: 350px;
+        position: relative;
+    }
+    
+    .comparativo-budgets {
+        background: #f8f9fa;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        margin-bottom: 1rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2><i class="bi bi-building"></i> Dashboard Obras e Projetos</h2>
+            <p class="text-muted">Análise financeira e acompanhamento de projetos</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <button class="btn btn-outline-primary" onclick="atualizarDados()">
+                <i class="bi bi-arrow-clockwise"></i> Atualizar
+            </button>
+            <button class="btn btn-success" onclick="exportarRelatorio()">
+                <i class="bi bi-file-earmark-pdf"></i> PDF
+            </button>
+            <a href="{% url 'dashboard:principal' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Voltar
+            </a>
+        </div>
+    </div>
+
+    <!-- KPIs Resumo -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h6 class="text-muted">Obras Ativas</h6>
+                    <h3 class="text-primary" id="obras-ativas">0</h3>
+                    <small id="valor-obras">R$ 0,00</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h6 class="text-muted">Lucro Competência</h6>
+                    <h3 class="text-success" id="lucro-competencia">R$ 0,00</h3>
+                    <small id="margem-competencia">0% margem</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h6 class="text-muted">Lucro Caixa</h6>
+                    <h3 class="text-info" id="lucro-caixa">R$ 0,00</h3>
+                    <small id="margem-caixa">0% margem</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h6 class="text-muted">Obras Atrasadas</h6>
+                    <h3 class="text-danger" id="obras-atrasadas">0</h3>
+                    <small id="perc-atrasadas">0% do total</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="comparativo-budgets">
+        <div class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">Status</label>
+                <select class="form-select" id="filtro-status">
+                    <option value="">Todos</option>
+                    <option value="orcamento">Orçamento</option>
+                    <option value="execucao">Em Execução</option>
+                    <option value="concluido">Concluído</option>
+                    <option value="atrasado">Atrasado</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Cliente</label>
+                <select class="form-select" id="filtro-cliente">
+                    <option value="">Todos os clientes</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Período</label>
+                <select class="form-select" id="filtro-periodo">
+                    <option value="mes">Mês Atual</option>
+                    <option value="trimestre">Trimestre</option>
+                    <option value="ano">Ano</option>
+                    <option value="todos">Todos</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">&nbsp;</label>
+                <button class="btn btn-primary w-100" onclick="aplicarFiltros()">
+                    <i class="bi bi-funnel"></i> Filtrar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <ul class="nav nav-tabs mb-3" role="tablist">
+        <li class="nav-item">
+            <a class="nav-link active" data-bs-toggle="tab" href="#tab-lista">
+                <i class="bi bi-list-ul"></i> Lista de Obras
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="tab" href="#tab-analise">
+                <i class="bi bi-graph-up"></i> Análise Financeira
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="tab" href="#tab-budget">
+                <i class="bi bi-wallet2"></i> Budget x Realizado
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="tab" href="#tab-ranking">
+                <i class="bi bi-trophy"></i> Ranking
+            </a>
+        </li>
+    </ul>
+
+    <!-- Tab Content -->
+    <div class="tab-content">
+        <!-- Lista de Obras -->
+        <div class="tab-pane fade show active" id="tab-lista">
+            <div id="obras-container">
+                <!-- Cards de obras serão inseridos aqui -->
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Carregando...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Análise Financeira -->
+        <div class="tab-pane fade" id="tab-analise">
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5>Lucro por Competência x Caixa</h5>
+                            <canvas id="chart-lucro-comparativo" class="chart-container"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5>Distribuição por Status</h5>
+                            <canvas id="chart-status" class="chart-container"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="mb-3">Análise Detalhada por Obra</h5>
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Obra</th>
+                                    <th>Cliente</th>
+                                    <th class="text-end">Valor Contrato</th>
+                                    <th class="text-end">Custo Total</th>
+                                    <th class="text-end">Lucro Competência</th>
+                                    <th class="text-end">Lucro Caixa</th>
+                                    <th class="text-end">Margem %</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody-analise">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Budget x Realizado -->
+        <div class="tab-pane fade" id="tab-budget">
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i>
+                <strong>Budget:</strong> Comparação entre valores orçados e realizados para controle de custos.
+            </div>
+            
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="mb-3">Obras com Estouros de Budget</h5>
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Obra</th>
+                                    <th class="text-end">Budget Previsto</th>
+                                    <th class="text-end">Realizado</th>
+                                    <th class="text-end">Diferença</th>
+                                    <th class="text-end">% Uso</th>
+                                    <th class="text-center">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody-budget">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row mt-3">
+                <div class="col-md-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5>Evolução do Budget</h5>
+                            <canvas id="chart-budget" class="chart-container"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ranking -->
+        <div class="tab-pane fade" id="tab-ranking">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card mb-3">
+                        <div class="card-header bg-success text-white">
+                            <h5 class="mb-0"><i class="bi bi-trophy"></i> Top 10 - Maior Margem</h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="ranking-melhor"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card mb-3">
+                        <div class="card-header bg-danger text-white">
+                            <h5 class="mb-0"><i class="bi bi-exclamation-triangle"></i> Bottom 10 - Menor Margem</h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="ranking-pior"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Detalhes Obra -->
+<div class="modal fade" id="modalDetalhes" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Detalhes da Obra</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="modal-body-content">
+                <!-- Conteúdo carregado dinamicamente -->
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+    let charts = {};
+
+    document.addEventListener('DOMContentLoaded', function() {
+        carregarDados();
+    });
+
+    function carregarDados() {
+        fetch('/dashboard/api/kpis/obras/')
+            .then(response => response.json())
+            .then(data => {
+                atualizarKPIs(data);
+                atualizarObras(data.obras || []);
+                criarGraficos(data);
+            })
+            .catch(error => console.error('Erro:', error));
+    }
+
+    function atualizarKPIs(data) {
+        document.getElementById('obras-ativas').textContent = data.ativas || 0;
+        document.getElementById('lucro-competencia').textContent = 
+            'R$ ' + (data.lucro_competencia || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2});
+        document.getElementById('lucro-caixa').textContent = 
+            'R$ ' + (data.lucro_caixa || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2});
+        document.getElementById('obras-atrasadas').textContent = data.atrasadas || 0;
+    }
+
+    function atualizarObras(obras) {
+        const container = document.getElementById('obras-container');
+        container.innerHTML = '';
+        
+        obras.forEach(obra => {
+            const card = criarCardObra(obra);
+            container.appendChild(card);
+        });
+    }
+
+    function criarCardObra(obra) {
+        const div = document.createElement('div');
+        div.className = `obra-card card ${obra.status}`;
+        
+        const statusBadge = {
+            'orcamento': '<span class="badge bg-secondary">Orçamento</span>',
+            'execucao': '<span class="badge bg-info">Em Execução</span>',
+            'concluido': '<span class="badge bg-success">Concluído</span>',
+            'atrasado': '<span class="badge bg-danger">Atrasado</span>'
+        }[obra.status] || '<span class="badge bg-secondary">-</span>';
+        
+        div.innerHTML = `
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-8">
+                        <h5>${obra.codigo} - ${obra.cliente}</h5>
+                        <p class="text-muted mb-2">${obra.descricao}</p>
+                        ${statusBadge}
+                        <span class="badge bg-primary ms-2">Margem: ${(obra.margem || 0).toFixed(1)}%</span>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <h4 class="text-success">R$ ${(obra.valor || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</h4>
+                        <small class="text-muted">Valor do Contrato</small>
+                        <div class="mt-2">
+                            <button class="btn btn-sm btn-outline-primary" onclick="verDetalhes(${obra.id})">
+                                <i class="bi bi-eye"></i> Detalhes
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <small>Progresso: ${obra.progresso || 0}%</small>
+                        <small>Budget: ${obra.budget_uso || 0}%</small>
+                    </div>
+                    <div class="progress progress-obra">
+                        <div class="progress-bar bg-success" style="width: ${obra.progresso || 0}%">
+                            ${obra.progresso || 0}%
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        return div;
+    }
+
+    function criarGraficos(data) {
+        // Implementar criação de gráficos Chart.js
+    }
+
+    function atualizarDados() {
+        carregarDados();
+    }
+
+    function aplicarFiltros() {
+        carregarDados();
+    }
+
+    function exportarRelatorio() {
+        window.location.href = '/dashboard/exportar/pdf/?tipo=obras';
+    }
+
+    function verDetalhes(id) {
+        // Carregar detalhes da obra
+        const modal = new bootstrap.Modal(document.getElementById('modalDetalhes'));
+        modal.show();
+    }
+</script>
+{% endblock %}

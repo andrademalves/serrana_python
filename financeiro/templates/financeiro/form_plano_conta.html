@@ -1,0 +1,166 @@
+{% extends 'base_with_sidebar.html' %}
+{% load static %}
+{% load financeiro_tags %}
+
+{% block title %}{{ titulo }} - Sistema Serrana{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">
+                <i class="bi bi-folder-plus me-2"></i>{{ titulo }}
+            </h2>
+            <p class="text-muted mb-0">Preencha os dados da conta contábil</p>
+        </div>
+        <div>
+            <a href="{% url 'financeiro:listar_plano_contas' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-2"></i>Voltar
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-file-earmark-text me-2"></i>Dados da Conta
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label for="{{ form.codigo.id_for_label }}" class="form-label">
+                                    Código <span class="text-danger">*</span>
+                                </label>
+                                {{ form.codigo }}
+                                {% if form.codigo.errors %}
+                                    <div class="text-danger small mt-1">{{ form.codigo.errors }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-md-8">
+                                <label for="{{ form.nome.id_for_label }}" class="form-label">
+                                    Nome <span class="text-danger">*</span>
+                                </label>
+                                {{ form.nome }}
+                                {% if form.nome.errors %}
+                                    <div class="text-danger small mt-1">{{ form.nome.errors }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="{{ form.tipo.id_for_label }}" class="form-label">
+                                    Tipo <span class="text-danger">*</span>
+                                </label>
+                                {{ form.tipo }}
+                                <small class="text-muted">Classificação contábil</small>
+                                {% if form.tipo.errors %}
+                                    <div class="text-danger small mt-1">{{ form.tipo.errors }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="{{ form.natureza.id_for_label }}" class="form-label">
+                                    Natureza <span class="text-danger">*</span>
+                                </label>
+                                {{ form.natureza }}
+                                <small class="text-muted">Sintética ou Analítica</small>
+                                {% if form.natureza.errors %}
+                                    <div class="text-danger small mt-1">{{ form.natureza.errors }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-12"><hr></div>
+
+                            <div class="col-12">
+                                <label for="{{ form.conta_pai.id_for_label }}" class="form-label">
+                                    Conta Pai (Opcional)
+                                </label>
+                                <div class="input-group">
+                                    {{ form.conta_pai }}
+                                    <a href="{% url 'financeiro:listar_plano_contas' %}" 
+                                       target="_blank" 
+                                       class="btn btn-outline-secondary"
+                                       title="Ver contas">
+                                        <i class="bi bi-box-arrow-up-right"></i>
+                                    </a>
+                                </div>
+                                <small class="text-muted">Para criar hierarquia, selecione a conta pai</small>
+                                {% if form.conta_pai.errors %}
+                                    <div class="text-danger small mt-1">{{ form.conta_pai.errors }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-12"><hr></div>
+
+                            <div class="col-12">
+                                <div class="form-check form-switch">
+                                    {{ form.ativo }}
+                                    <label class="form-check-label" for="{{ form.ativo.id_for_label }}">
+                                        <strong>Conta Ativa</strong>
+                                    </label>
+                                    <div class="form-text">
+                                        Contas inativas não aparecerão nas opções de lançamento
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2 mt-4">
+                            <a href="{% url 'financeiro:listar_plano_contas' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-x-circle me-2"></i>Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle me-2"></i>Salvar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0">
+                        <i class="bi bi-lightbulb me-2"></i>Natureza das Contas
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <p class="small mb-2">
+                        <strong>Sintética (Totalizadora):</strong><br>
+                        Agrupa outras contas. Não recebe lançamentos diretos.
+                        Ex: "Despesas Administrativas"
+                    </p>
+                    <p class="small mb-0">
+                        <strong>Analítica (Movimentável):</strong><br>
+                        Recebe lançamentos. É a "folha" da árvore contábil.
+                        Ex: "Material de Escritório"
+                    </p>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-warning text-dark">
+                    <h6 class="mb-0">
+                        <i class="bi bi-exclamation-triangle me-2"></i>Exemplos de Códigos
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled small mb-0">
+                        <li class="mb-2"><code>1</code> - Ativo (nível 1)</li>
+                        <li class="mb-2"><code>1.1</code> - Circulante (nível 2)</li>
+                        <li class="mb-2"><code>1.1.01</code> - Caixa (nível 3)</li>
+                        <li class="mb-2"><code>3.1.01.001</code> - Vendas Produto A (nível 4)</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

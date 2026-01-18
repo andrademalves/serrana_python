@@ -1,0 +1,109 @@
+{% extends 'base_with_sidebar.html' %}
+{% load static %}
+
+{% block title %}Regimes Tributários - Sistema Serrana{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Cabeçalho -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">
+                <i class="bi bi-file-earmark-text me-2"></i>Regimes Tributários
+            </h2>
+            <p class="text-muted mb-0">Gerenciamento de regimes e alíquotas tributárias</p>
+        </div>
+        <div>
+            <a href="{% url 'financeiro:criar_regime_tributario' %}" class="btn btn-primary">
+                <i class="bi bi-plus-lg me-2"></i>Novo Regime
+            </a>
+        </div>
+    </div>
+
+    <!-- Lista de Regimes -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            {% if regimes %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Regime Tributário</th>
+                            <th>Descrição</th>
+                            <th style="width: 120px;" class="text-center">Status</th>
+                            <th style="width: 200px;" class="text-center">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for regime in regimes %}
+                        <tr>
+                            <td>
+                                <strong>{{ regime.get_nome_display }}</strong>
+                            </td>
+                            <td>
+                                <small class="text-muted">{{ regime.descricao|default:"—"|truncatewords:15 }}</small>
+                            </td>
+                            <td class="text-center">
+                                {% if regime.ativo %}
+                                    <span class="badge bg-success">Ativo</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Inativo</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <a href="{% url 'financeiro:editar_regime_tributario' regime.id %}" 
+                                       class="btn btn-outline-primary" 
+                                       title="Editar">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <a href="{% url 'financeiro:excluir_regime_tributario' regime.id %}" 
+                                       class="btn btn-outline-danger" 
+                                       title="Excluir">
+                                        <i class="bi bi-trash"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-inbox text-muted" style="font-size: 3rem;"></i>
+                <p class="text-muted mt-3">Nenhum regime tributário cadastrado.</p>
+                <a href="{% url 'financeiro:criar_regime_tributario' %}" class="btn btn-primary">
+                    <i class="bi bi-plus-lg me-2"></i>Cadastrar Primeiro Regime
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Informações Úteis -->
+    <div class="card border-0 shadow-sm mt-4">
+        <div class="card-body">
+            <h5 class="mb-3"><i class="bi bi-info-circle me-2"></i>Informações sobre Regimes Tributários</h5>
+            <div class="row">
+                <div class="col-md-6">
+                    <h6><strong>Simples Nacional</strong></h6>
+                    <p class="small text-muted">Regime simplificado para empresas com faturamento até R$ 4,8 milhões/ano.</p>
+                </div>
+                <div class="col-md-6">
+                    <h6><strong>Lucro Presumido</strong></h6>
+                    <p class="small text-muted">Base de cálculo presunta sobre o faturamento, ideal para empresas com margem de lucro alta.</p>
+                </div>
+                <div class="col-md-6">
+                    <h6><strong>Lucro Real</strong></h6>
+                    <p class="small text-muted">Tributação sobre o lucro efetivo, obrigatório para empresas com faturamento acima de R$ 78 milhões/ano.</p>
+                </div>
+                <div class="col-md-6">
+                    <h6><strong>MEI</strong></h6>
+                    <p class="small text-muted">Microempreendedor Individual com faturamento até R$ 81 mil/ano.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

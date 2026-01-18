@@ -1,0 +1,416 @@
+{% extends 'base_with_sidebar.html' %}
+{% load static %}
+
+{% block title %}{{ orcamento.numero }} - Serrana{% endblock %}
+
+{% block extra_css %}
+<style>
+    .status-badge-lg {
+        font-size: 1.1rem;
+        padding: 0.5rem 1rem;
+    }
+    .timeline-item {
+        border-left: 2px solid #dee2e6;
+        padding-left: 1rem;
+        margin-bottom: 1rem;
+    }
+    .item-row:hover {
+        background-color: #f8f9fa;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- CABEÇALHO -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="fas fa-file-invoice-dollar"></i> {{ orcamento.numero }}</h2>
+            <p class="text-muted mb-0">
+                Cliente: <strong>{{ orcamento.cliente.nome_razao }}</strong> | 
+                Vendedor: <strong>{{ orcamento.vendedor.get_full_name }}</strong>
+            </p>
+        </div>
+        <div>
+            {% if orcamento.status == 'RASCUNHO' %}
+            <span class="status-badge-lg badge bg-secondary">Rascunho</span>
+            {% elif orcamento.status == 'ENVIADO' %}
+            <span class="status-badge-lg badge bg-info">Enviado</span>
+            {% elif orcamento.status == 'NEGOCIACAO' %}
+            <span class="status-badge-lg badge bg-warning">Negociação</span>
+            {% elif orcamento.status == 'APROVADO' %}
+            <span class="status-badge-lg badge bg-success">Aprovado</span>
+            {% elif orcamento.status == 'REPROVADO' %}
+            <span class="status-badge-lg badge bg-danger">Reprovado</span>
+            {% elif orcamento.status == 'CANCELADO' %}
+            <span class="status-badge-lg badge bg-dark">Cancelado</span>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- COLUNA PRINCIPAL -->
+        <div class="col-md-8">
+            <!-- INFORMAÇÕES GERAIS -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <i class="fas fa-info-circle"></i> Informações Gerais
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <strong>Data do Orçamento:</strong><br>
+                            {{ orcamento.data_orcamento|date:"d/m/Y" }}
+                        </div>
+                        <div class="col-md-4">
+                            <strong>Validade:</strong><br>
+                            {{ orcamento.validade_ate|date:"d/m/Y" }}
+                            {% if orcamento.esta_vencido %}
+                            <span class="badge bg-danger">VENCIDO</span>
+                            {% else %}
+                            <span class="badge bg-success">{{ orcamento.dias_ate_vencimento }} dias</span>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <strong>Prazo Execução:</strong><br>
+                            {{ orcamento.prazo_execucao_dias }} dias corridos
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <strong>Endereço de Execução:</strong><br>
+                            {{ orcamento.endereco_completo_execucao }}
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <strong>Condição de Pagamento:</strong><br>
+                            {{ orcamento.condicao_pagamento.descricao }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ITENS DO ORÇAMENTO -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white d-flex justify-content-between">
+                    <span><i class="fas fa-list"></i> Itens do Orçamento</span>
+                    {% if orcamento.pode_editar %}
+                    <a href="{% url 'vendas:orcamento_edit' orcamento.pk %}" class="btn btn-sm btn-light">
+                        <i class="fas fa-plus"></i> Adicionar Itens
+                    </a>
+                    {% endif %}
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-sm mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Descrição</th>
+                                    <th>Qtd</th>
+                                    <th>Un</th>
+                                    <th>Preço Unit.</th>
+                                    <th>Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in itens %}
+                                <tr class="item-row">
+                                    <td>{{ forloop.counter }}</td>
+                                    <td>
+                                        <strong>{{ item.descricao }}</strong>
+                                        {% if item.largura and item.altura %}
+                                        <br><small class="text-muted">
+                                            Dimensões: {{ item.largura }}m x {{ item.altura }}m 
+                                            ({{ item.m2_calculado }} m²)
+                                        </small>
+                                        {% endif %}
+                                        {% if item.cor %}
+                                        <br><small class="text-muted">Cor: {{ item.cor }}</small>
+                                        {% endif %}
+                                        {% if item.linha %}
+                                        <br><small class="text-muted">Linha: {{ item.linha }}</small>
+                                        {% endif %}
+                                        {% if item.vidro %}
+                                        <br><small class="text-muted">Vidro: {{ item.vidro }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ item.quantidade }}</td>
+                                    <td>{{ item.unidade }}</td>
+                                    <td>R$ {{ item.preco_unitario|floatformat:2 }}</td>
+                                    <td><strong>R$ {{ item.total_item|floatformat:2 }}</strong></td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted py-4">
+                                        <i class="fas fa-inbox fa-2x mb-2"></i>
+                                        <p>Nenhum item adicionado</p>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot class="table-light">
+                                <tr>
+                                    <td colspan="5" class="text-end"><strong>Subtotal:</strong></td>
+                                    <td><strong>R$ {{ orcamento.subtotal|floatformat:2 }}</strong></td>
+                                </tr>
+                                {% if orcamento.desconto > 0 %}
+                                <tr>
+                                    <td colspan="5" class="text-end">Desconto:</td>
+                                    <td class="text-danger">- R$ {{ orcamento.desconto|floatformat:2 }}</td>
+                                </tr>
+                                {% endif %}
+                                {% if orcamento.frete > 0 %}
+                                <tr>
+                                    <td colspan="5" class="text-end">Frete:</td>
+                                    <td>R$ {{ orcamento.frete|floatformat:2 }}</td>
+                                </tr>
+                                {% endif %}
+                                {% if orcamento.outras_despesas > 0 %}
+                                <tr>
+                                    <td colspan="5" class="text-end">Outras Despesas:</td>
+                                    <td>R$ {{ orcamento.outras_despesas|floatformat:2 }}</td>
+                                </tr>
+                                {% endif %}
+                                <tr class="table-primary">
+                                    <td colspan="5" class="text-end"><strong>TOTAL:</strong></td>
+                                    <td><strong style="font-size: 1.2rem;">R$ {{ orcamento.total|floatformat:2 }}</strong></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- OBSERVAÇÕES -->
+            {% if orcamento.observacoes %}
+            <div class="card mb-4">
+                <div class="card-header bg-secondary text-white">
+                    <i class="fas fa-comment"></i> Observações
+                </div>
+                <div class="card-body">
+                    {{ orcamento.observacoes|linebreaks }}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- HISTÓRICO -->
+            <div class="card mb-4">
+                <div class="card-header bg-secondary text-white">
+                    <i class="fas fa-history"></i> Histórico
+                </div>
+                <div class="card-body">
+                    {% for hist in historico %}
+                    <div class="timeline-item">
+                        <div class="d-flex justify-content-between">
+                            <strong>
+                                {% if hist.status_anterior %}
+                                {{ hist.status_anterior }} → {{ hist.status_novo }}
+                                {% else %}
+                                {{ hist.status_novo }}
+                                {% endif %}
+                            </strong>
+                            <small class="text-muted">
+                                {{ hist.criado_em|date:"d/m/Y H:i" }} - {{ hist.criado_por.get_full_name }}
+                            </small>
+                        </div>
+                        {% if hist.observacao %}
+                        <p class="mb-0 text-muted">{{ hist.observacao }}</p>
+                        {% endif %}
+                    </div>
+                    {% empty %}
+                    <p class="text-muted mb-0">Sem histórico</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- COLUNA LATERAL -->
+        <div class="col-md-4">
+            <!-- AÇÕES -->
+            <div class="card mb-4">
+                <div class="card-header bg-dark text-white">
+                    <i class="fas fa-bolt"></i> Ações
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <!-- PDF -->
+                        <a href="{% url 'vendas:orcamento_pdf' orcamento.pk %}" 
+                           class="btn btn-danger" target="_blank">
+                            <i class="fas fa-file-pdf"></i> Gerar PDF
+                        </a>
+
+                        <!-- Editar -->
+                        {% if orcamento.pode_editar %}
+                        <a href="{% url 'vendas:orcamento_edit' orcamento.pk %}" 
+                           class="btn btn-secondary">
+                            <i class="fas fa-edit"></i> Editar Orçamento
+                        </a>
+                        {% endif %}
+
+                        <!-- Aprovar -->
+                        {% if orcamento.pode_aprovar %}
+                        <button type="button" class="btn btn-success" 
+                                data-bs-toggle="modal" data-bs-target="#modalAprovar">
+                            <i class="fas fa-check-circle"></i> Aprovar Orçamento
+                        </button>
+                        {% endif %}
+
+                        <!-- Reprovar -->
+                        {% if orcamento.pode_reprovar %}
+                        <button type="button" class="btn btn-danger" 
+                                data-bs-toggle="modal" data-bs-target="#modalReprovar">
+                            <i class="fas fa-times-circle"></i> Reprovar Orçamento
+                        </button>
+                        {% endif %}
+
+                        <!-- Mudar Status -->
+                        {% if orcamento.status in 'RASCUNHO,ENVIADO,NEGOCIACAO' %}
+                        <hr>
+                        <form method="post" action="{% url 'vendas:orcamento_mudar_status' orcamento.pk %}">
+                            {% csrf_token %}
+                            <label class="form-label">Mudar Status:</label>
+                            <select name="novo_status" class="form-select mb-2">
+                                {% if orcamento.status == 'RASCUNHO' %}
+                                <option value="ENVIADO">Enviar ao Cliente</option>
+                                <option value="CANCELADO">Cancelar</option>
+                                {% elif orcamento.status == 'ENVIADO' %}
+                                <option value="NEGOCIACAO">Em Negociação</option>
+                                <option value="CANCELADO">Cancelar</option>
+                                {% elif orcamento.status == 'NEGOCIACAO' %}
+                                <option value="ENVIADO">Voltar para Enviado</option>
+                                <option value="CANCELADO">Cancelar</option>
+                                {% endif %}
+                            </select>
+                            <button type="submit" class="btn btn-outline-secondary btn-sm w-100">
+                                <i class="fas fa-exchange-alt"></i> Alterar
+                            </button>
+                        </form>
+                        {% endif %}
+
+                        <!-- Voltar -->
+                        <hr>
+                        <a href="{% url 'vendas:orcamento_list' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left"></i> Voltar para Lista
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ANÁLISE FINANCEIRA -->
+            <div class="card mb-4">
+                <div class="card-header bg-success text-white">
+                    <i class="fas fa-chart-line"></i> Análise Financeira
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm">
+                        <tr>
+                            <td><strong>Total Venda:</strong></td>
+                            <td class="text-end">R$ {{ margem.total_venda|floatformat:2 }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Custo Estimado:</strong></td>
+                            <td class="text-end">R$ {{ margem.custo_total|floatformat:2 }}</td>
+                        </tr>
+                        <tr class="table-success">
+                            <td><strong>Lucro Estimado:</strong></td>
+                            <td class="text-end"><strong>R$ {{ margem.lucro|floatformat:2 }}</strong></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Margem:</strong></td>
+                            <td class="text-end">
+                                <span class="badge bg-success">{{ margem.margem_percentual|floatformat:2 }}%</span>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+            <!-- OBRA GERADA -->
+            {% if orcamento.obra_gerada %}
+            <div class="card mb-4 border-success">
+                <div class="card-header bg-success text-white">
+                    <i class="fas fa-hard-hat"></i> Obra Gerada
+                </div>
+                <div class="card-body">
+                    <p><strong>Código:</strong> {{ orcamento.obra_gerada.codigo }}</p>
+                    <p><strong>Status:</strong> {{ orcamento.obra_gerada.get_status_display }}</p>
+                    <a href="{% url 'projetos:obra_detail' orcamento.obra_gerada.pk %}" 
+                       class="btn btn-sm btn-success w-100">
+                        <i class="fas fa-external-link-alt"></i> Ver Obra
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- MODAL APROVAR -->
+<div class="modal fade" id="modalAprovar" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="{% url 'vendas:orcamento_aprovar' orcamento.pk %}">
+                {% csrf_token %}
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title"><i class="fas fa-check-circle"></i> Aprovar Orçamento</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-warning">
+                        <strong>Atenção!</strong> Ao aprovar este orçamento, será criado automaticamente:
+                        <ul>
+                            <li>Uma <strong>Obra</strong></li>
+                            <li>Um <strong>Centro de Custo</strong></li>
+                            <li><strong>Títulos a Receber</strong> conforme condição de pagamento</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Observação (opcional):</label>
+                        <textarea name="observacao" class="form-control" rows="3" 
+                                  placeholder="Ex: Cliente confirmou por telefone..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-check"></i> Confirmar Aprovação
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL REPROVAR -->
+<div class="modal fade" id="modalReprovar" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="{% url 'vendas:orcamento_reprovar' orcamento.pk %}">
+                {% csrf_token %}
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title"><i class="fas fa-times-circle"></i> Reprovar Orçamento</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Motivo da Reprovação *</label>
+                        <textarea name="motivo" class="form-control" rows="3" required
+                                  placeholder="Ex: Cliente achou o preço alto, Cliente optou por concorrente..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-times"></i> Confirmar Reprovação
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,157 @@
+{% extends 'base_with_sidebar.html' %}
+{% load static %}
+{% load financeiro_tags %}
+
+{% block title %}Excluir Conta - Sistema Serrana{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <h2><i class="bi bi-exclamation-triangle text-danger"></i> Confirmar Exclusão</h2>
+            <p class="text-muted">Atenção! Esta ação não pode ser desfeita.</p>
+        </div>
+        <div class="col-auto">
+            <a href="{% url 'financeiro:listar_contas_financeiras' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Voltar
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-trash"></i> Excluir Conta Financeira
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if tem_movimentacoes %}
+                    <!-- Aviso se tem movimentações -->
+                    <div class="alert alert-danger">
+                        <i class="bi bi-x-circle"></i>
+                        <strong>Não é possível excluir esta conta!</strong>
+                        <p class="mb-0 mt-2">
+                            Esta conta possui movimentações financeiras registradas.
+                            Para manter a integridade do sistema, não é permitido excluir contas com histórico.
+                        </p>
+                        <hr>
+                        <p class="mb-0">
+                            <strong>Sugestão:</strong> Se não deseja mais usar esta conta, 
+                            <a href="{% url 'financeiro:editar_conta_financeira' conta.pk %}" class="alert-link">
+                                desative-a clicando aqui
+                            </a> 
+                            (desmarque a opção "Ativo").
+                        </p>
+                    </div>
+
+                    <div class="mt-4">
+                        <a href="{% url 'financeiro:listar_contas_financeiras' %}" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> Voltar para Lista
+                        </a>
+                        <a href="{% url 'financeiro:editar_conta_financeira' conta.pk %}" class="btn btn-warning">
+                            <i class="bi bi-pencil"></i> Desativar Conta
+                        </a>
+                    </div>
+
+                    {% else %}
+                    <!-- Confirmação de exclusão -->
+                    <p class="lead">Tem certeza que deseja excluir a conta abaixo?</p>
+
+                    <div class="card bg-light mb-4">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p class="mb-2">
+                                        <strong>Nome:</strong> {{ conta.nome }}
+                                    </p>
+                                    <p class="mb-2">
+                                        <strong>Tipo:</strong> 
+                                        <span class="badge bg-{% if conta.tipo == 'BANCO' %}primary{% else %}success{% endif %}">
+                                            {{ conta.get_tipo_display }}
+                                        </span>
+                                    </p>
+                                    {% if conta.banco %}
+                                    <p class="mb-2">
+                                        <strong>Banco:</strong> {{ conta.banco }}
+                                    </p>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-6">
+                                    {% if conta.agencia %}
+                                    <p class="mb-2">
+                                        <strong>Agência:</strong> {{ conta.agencia }}
+                                    </p>
+                                    <p class="mb-2">
+                                        <strong>Conta:</strong> {{ conta.conta }}
+                                    </p>
+                                    {% endif %}
+                                    <p class="mb-2">
+                                        <strong>Saldo Inicial:</strong> {{ conta.saldo_inicial|currency }}
+                                    </p>
+                                    <p class="mb-0">
+                                        <strong>Saldo Atual:</strong> 
+                                        <span class="text-{% if conta.saldo_atual >= 0 %}success{% else %}danger{% endif %}">
+                                            {{ conta.saldo_atual|currency }}
+                                        </span>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <strong>Atenção:</strong> Esta ação é permanente e não pode ser desfeita!
+                    </div>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger">
+                            <i class="bi bi-trash"></i> Sim, Excluir Conta
+                        </button>
+                        <a href="{% url 'financeiro:listar_contas_financeiras' %}" class="btn btn-secondary">
+                            <i class="bi bi-x-lg"></i> Cancelar
+                        </a>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar com Informações -->
+        <div class="col-lg-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="bi bi-info-circle"></i> Informações</h5>
+                </div>
+                <div class="card-body">
+                    <h6>Quando posso excluir?</h6>
+                    <p class="small">
+                        Você só pode excluir contas que nunca tiveram movimentações
+                        (entradas, saídas ou transferências).
+                    </p>
+
+                    <h6 class="mt-3">Por que não posso excluir?</h6>
+                    <p class="small">
+                        Excluir uma conta com histórico causaria inconsistências nos
+                        relatórios e balanços. Isso violaria as boas práticas contábeis.
+                    </p>
+
+                    <h6 class="mt-3">Alternativa: Desativar</h6>
+                    <p class="small">
+                        Ao desativar uma conta, ela não aparecerá mais nas listagens
+                        e seleções, mas o histórico será preservado para consultas futuras.
+                    </p>
+
+                    <div class="alert alert-info small mb-0">
+                        <i class="bi bi-shield-check"></i>
+                        Este bloqueio protege a integridade dos seus dados financeiros.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

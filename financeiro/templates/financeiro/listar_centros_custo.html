@@ -1,0 +1,144 @@
+{% extends 'base_with_sidebar.html' %}
+{% load static %}
+{% load financeiro_tags %}
+
+{% block title %}Centros de Custo - Sistema Serrana{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Cabeçalho -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">
+                <i class="bi bi-diagram-3 me-2"></i>Centros de Custo
+            </h2>
+            <p class="text-muted mb-0">Gerenciamento de centros de custo, departamentos e obras</p>
+        </div>
+        <div>
+            <a href="{% url 'financeiro:criar_centro_custo' %}" class="btn btn-primary">
+                <i class="bi bi-plus-lg me-2"></i>Novo Centro de Custo
+            </a>
+        </div>
+    </div>
+
+    <!-- Lista de Centros de Custo -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            {% if centros %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 100px;">Código</th>
+                            <th>Nome</th>
+                            <th style="width: 150px;">Tipo</th>
+                            <th>Projeto Vinculado</th>
+                            <th>Responsável</th>
+                            <th style="width: 100px;" class="text-center">Status</th>
+                            <th style="width: 200px;" class="text-center">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for centro in centros %}
+                        <tr>
+                            <td>
+                                <span class="badge bg-secondary">{{ centro.codigo }}</span>
+                            </td>
+                            <td>
+                                <strong>{{ centro.nome }}</strong>
+                            </td>
+                            <td>
+                                {% if centro.tipo == 'OBRA' %}
+                                    <span class="badge bg-primary">{{ centro.get_tipo_display }}</span>
+                                {% elif centro.tipo == 'ADMINISTRATIVO' %}
+                                    <span class="badge bg-info">{{ centro.get_tipo_display }}</span>
+                                {% elif centro.tipo == 'PRODUCAO' %}
+                                    <span class="badge bg-warning text-dark">{{ centro.get_tipo_display }}</span>
+                                {% elif centro.tipo == 'COMERCIAL' %}
+                                    <span class="badge bg-success">{{ centro.get_tipo_display }}</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ centro.get_tipo_display }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if centro.projeto %}
+                                    <i class="bi bi-link-45deg text-primary"></i>
+                                    {{ centro.projeto.nome }}
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if centro.responsavel %}
+                                    <i class="bi bi-person-fill text-muted"></i>
+                                    {{ centro.responsavel.get_full_name|default:centro.responsavel.username }}
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                {% if centro.ativo %}
+                                    <span class="badge bg-success">Ativo</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Inativo</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <a href="{% url 'financeiro:editar_centro_custo' centro.id %}" 
+                                       class="btn btn-outline-primary" 
+                                       title="Editar">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <a href="{% url 'financeiro:excluir_centro_custo' centro.id %}" 
+                                       class="btn btn-outline-danger" 
+                                       title="Excluir">
+                                        <i class="bi bi-trash"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-info mb-0">
+                <i class="bi bi-info-circle me-2"></i>
+                Nenhum centro de custo cadastrado. 
+                <a href="{% url 'financeiro:criar_centro_custo' %}" class="alert-link">Cadastre o primeiro centro de custo</a>.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Informações -->
+    <div class="card border-0 shadow-sm mt-4">
+        <div class="card-header bg-primary text-white">
+            <h6 class="mb-0">
+                <i class="bi bi-info-circle me-2"></i>Sobre Centros de Custo
+            </h6>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>Para que servem?</h6>
+                    <p class="small mb-0">
+                        Centros de Custo permitem organizar e rastrear receitas e despesas por departamento, 
+                        obra, projeto ou qualquer outra divisão organizacional. Isso facilita análises gerenciais 
+                        e controle de custos por área.
+                    </p>
+                </div>
+                <div class="col-md-6">
+                    <h6>Vinculação com Projetos</h6>
+                    <p class="small mb-0">
+                        Ao vincular um Centro de Custo a um Projeto (do módulo de Obras), todos os títulos 
+                        financeiros associados a este centro serão automaticamente relacionados ao projeto, 
+                        permitindo análises financeiras por obra.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

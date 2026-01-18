@@ -1,0 +1,1132 @@
+﻿{% extends 'base_with_sidebar.html' %}
+
+{% block title %}Nova Pessoa - Sistema Serrana{% endblock %}
+
+{% block sidebar %}
+    <a class="nav-link" href="{% url 'usuarios:home_modulos' %}">
+        <i class="bi bi-grid"></i> Módulos
+    </a>
+    <hr>
+    <h6 class="text-muted text-uppercase px-3 mb-2">Cadastros</h6>
+    <a class="nav-link" href="{% url 'cadastros:dashboard_cadastros' %}">
+        <i class="bi bi-speedometer2"></i> Dashboard
+    </a>
+    <a class="nav-link active" href="{% url 'cadastros:listar_pessoas' %}">
+        <i class="bi bi-person-lines-fill"></i> Pessoas
+    </a>
+    <a class="nav-link" href="{% url 'cadastros:listar_produtos' %}">
+        <i class="bi bi-box-seam"></i> Produtos
+    </a>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-plus-circle"></i> Nova Pessoa</h2>
+    <a href="{% url 'cadastros:listar_pessoas' %}" class="btn btn-secondary">
+        <i class="bi bi-arrow-left"></i> Voltar
+    </a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form method="post" id="formPessoa">
+            {% csrf_token %}
+            
+            <!-- Informações Básicas -->
+            <h5 class="mb-3">Informações Básicas</h5>
+            <div class="row mb-3">
+                <div class="col-md-2">
+                    <label class="form-label">Tipo *</label>
+                    <select class="form-select" name="tipo" id="tipo" required>
+                        <option value="F">Pessoa Física</option>
+                        <option value="J">Pessoa Jurídica</option>
+                    </select>
+                </div>
+                <div class="col-md-5">
+                    <label class="form-label"><span id="labelNome">Nome</span> *</label>
+                    <input type="text" class="form-control" name="nome" id="nome" required>
+                </div>
+                <div class="col-md-5" id="divNomeFantasia">
+                    <label class="form-label">Nome Fantasia</label>
+                    <input type="text" class="form-control" name="nome_fantasia" id="nome_fantasia">
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-md-3" id="divCpf">
+                    <label class="form-label">CPF *</label>
+                    <input type="text" class="form-control" name="cpf_cnpj" id="cpf" maxlength="14">
+                    <div class="invalid-feedback">CPF inválido</div>
+                </div>
+                <div class="col-md-3" id="divCnpj" style="display:none;">
+                    <label class="form-label">CNPJ *</label>
+                    <input type="text" class="form-control" name="cpf_cnpj" id="cnpj" maxlength="18">
+                    <div class="invalid-feedback">CNPJ inválido</div>
+                </div>
+                <div class="col-md-3" id="divRg">
+                    <label class="form-label">RG</label>
+                    <input type="text" class="form-control" name="rg" id="rg">
+                </div>
+                <div class="col-md-3" id="divIe" style="display:none;">
+                    <label class="form-label">Inscrição Estadual</label>
+                    <input type="text" class="form-control" name="ie" id="ie">
+                </div>
+                <div class="col-md-3" id="divDataEmissaoRg">
+                    <label class="form-label">Data Emissão RG</label>
+                    <input type="date" class="form-control" name="data_emissao_rg">
+                </div>
+                <div class="col-md-3" id="divOrgaoEmissor">
+                    <label class="form-label">Órgão Emissor</label>
+                    <input type="text" class="form-control" name="orgao_emissor">
+                </div>
+            </div>
+
+            <div class="row mb-3" id="divSexo">
+                <div class="col-md-3">
+                    <label class="form-label">Sexo</label>
+                    <select class="form-select" name="sexo">
+                        <option value="">Selecione...</option>
+                        <option value="M">Masculino</option>
+                        <option value="F">Feminino</option>
+                        <option value="O">Outro</option>
+                    </select>
+                </div>
+            </div>
+
+            <hr>
+
+            <!-- Endereço -->
+            <h5 class="mb-3">Endereço</h5>
+            <div class="row mb-3">
+                <div class="col-md-3">
+                    <label class="form-label">CEP</label>
+                    <input type="text" class="form-control" name="cep" id="cep" maxlength="9">
+                    <small class="text-muted">Ex: 12345-678</small>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Logradouro</label>
+                    <input type="text" class="form-control" name="logradouro" id="logradouro">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Número</label>
+                    <input type="text" class="form-control" name="numero" id="numero">
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <label class="form-label">Complemento</label>
+                    <input type="text" class="form-control" name="complemento">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Bairro</label>
+                    <input type="text" class="form-control" name="bairro" id="bairro">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Cidade</label>
+                    <input type="text" class="form-control" name="cidade" id="cidade">
+                </div>
+                <div class="col-md-1">
+                    <label class="form-label">UF</label>
+                    <input type="text" class="form-control" name="uf" id="uf" maxlength="2">
+                </div>
+            </div>
+
+            <hr>
+
+            <!-- Contato -->
+            <h5 class="mb-3">Contato</h5>
+            <div class="row mb-3">
+                <div class="col-md-3">
+                    <label class="form-label">Telefone</label>
+                    <input type="text" class="form-control" name="telefone">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Celular 1</label>
+                    <input type="text" class="form-control" name="celular1">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Celular 2</label>
+                    <input type="text" class="form-control" name="celular2">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">E-mail</label>
+                    <input type="email" class="form-control" name="email">
+                </div>
+            </div>
+
+            <hr>
+
+            <!-- Classificação -->
+            <h5 class="mb-3">Classificação</h5>
+            <div class="row mb-3">
+                <div class="col-md-12">
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" name="cliente" id="cliente">
+                        <label class="form-check-label" for="cliente">Cliente</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" name="fornecedor" id="fornecedor">
+                        <label class="form-check-label" for="fornecedor">Fornecedor</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" name="funcionario" id="checkFuncionario">
+                        <label class="form-check-label" for="checkFuncionario">Funcionário</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" name="terceiro" id="terceiro">
+                        <label class="form-check-label" for="terceiro">Terceiro</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" name="vendedor" id="checkVendedor">
+                        <label class="form-check-label" for="checkVendedor">Vendedor</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dados de Cliente/Fornecedor -->
+            <div id="divClienteFornecedor" style="display:none;">
+                <hr>
+                <h5 class="mb-3">Dados de Cliente/Fornecedor</h5>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Ramo de Atividade</label>
+                        <input type="text" class="form-control" name="ramo_atividade">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Descrição do Ramo</label>
+                        <input type="text" class="form-control" name="descricao_ramo">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dados de Funcionário -->
+            <div id="divFuncionario" style="display:none;">
+                <hr>
+                <h5 class="mb-3">Dados de Funcionário</h5>
+                
+                <!-- Documentos -->
+                <h6 class="mb-2">Documentos</h6>
+                <div class="row mb-3">
+                    <div class="col-md-3">
+                        <label class="form-label">Título de Eleitor</label>
+                        <input type="text" class="form-control" name="titulo_eleitoral">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Zona</label>
+                        <input type="text" class="form-control" name="zona">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Seção</label>
+                        <input type="text" class="form-control" name="secao">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">CTPS</label>
+                        <input type="text" class="form-control" name="ctps">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Série</label>
+                        <input type="text" class="form-control" name="serie">
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-2">
+                        <label class="form-label">UF CTPS</label>
+                        <input type="text" class="form-control" name="uf_ctps" maxlength="2">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Data Expedição CTPS</label>
+                        <input type="date" class="form-control" name="data_expedicao_ctps">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">CNH</label>
+                        <input type="text" class="form-control" name="cnh">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Categoria CNH</label>
+                        <select class="form-select" name="cnh_categoria">
+                            <option value="">Selecione...</option>
+                            <option value="A">A</option>
+                            <option value="B">B</option>
+                            <option value="AB">AB</option>
+                            <option value="C">C</option>
+                            <option value="D">D</option>
+                            <option value="E">E</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Dados Profissionais -->
+                <h6 class="mb-2 mt-4">Dados Profissionais</h6>
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Escolaridade</label>
+                        <select class="form-select" name="escolaridade">
+                            <option value="">Selecione...</option>
+                            <option value="fundamental_incompleto">Fundamental Incompleto</option>
+                            <option value="fundamental_completo">Fundamental Completo</option>
+                            <option value="medio_incompleto">Médio Incompleto</option>
+                            <option value="medio_completo">Médio Completo</option>
+                            <option value="superior_incompleto">Superior Incompleto</option>
+                            <option value="superior_completo">Superior Completo</option>
+                            <option value="pos_graduacao">Pós-Graduação</option>
+                            <option value="mestrado">Mestrado</option>
+                            <option value="doutorado">Doutorado</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Cargo</label>
+                        <input type="text" class="form-control" name="cargo">
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-check mt-4">
+                            <input class="form-check-input" type="checkbox" name="deficiencia" id="deficiencia">
+                            <label class="form-check-label" for="deficiencia">Possui Deficiência</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Data Admissão</label>
+                        <input type="date" class="form-control" name="data_admissao">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Data Demissão</label>
+                        <input type="date" class="form-control" name="data_demissao">
+                    </div>
+                </div>
+            </div>
+
+            <hr>
+
+            <!-- Observações -->
+            <h5 class="mb-3">Observações</h5>
+            <div class="row mb-3">
+                <div class="col-md-12">
+                    <textarea class="form-control" name="observacoes" rows="3"></textarea>
+                </div>
+            </div>
+
+            <div class="text-end">
+                <a href="{% url 'cadastros:listar_pessoas' %}" class="btn btn-secondary">Cancelar</a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-save"></i> Salvar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const tipo = document.getElementById('tipo');
+    const checkFuncionario = document.getElementById('checkFuncionario');
+    const checkCliente = document.getElementById('cliente');
+    const checkFornecedor = document.getElementById('fornecedor');
+    const cepInput = document.getElementById('cep');
+    const cpfInput = document.getElementById('cpf');
+    const cnpjInput = document.getElementById('cnpj');
+
+    // Função para aplicar máscara de CPF
+    function aplicarMascaraCPF(valor) {
+        valor = valor.replace(/\D/g, '');
+        if (valor.length > 11) valor = valor.substring(0, 11);
+        if (valor.length > 9) {
+            return valor.substring(0, 3) + '.' + valor.substring(3, 6) + '.' + valor.substring(6, 9) + '-' + valor.substring(9);
+        } else if (valor.length > 6) {
+            return valor.substring(0, 3) + '.' + valor.substring(3, 6) + '.' + valor.substring(6);
+        } else if (valor.length > 3) {
+            return valor.substring(0, 3) + '.' + valor.substring(3);
+        }
+        return valor;
+    }
+
+    // Função para aplicar máscara de CNPJ
+    function aplicarMascaraCNPJ(valor) {
+        valor = valor.replace(/\D/g, '');
+        if (valor.length > 14) valor = valor.substring(0, 14);
+        if (valor.length > 12) {
+            return valor.substring(0, 2) + '.' + valor.substring(2, 5) + '.' + valor.substring(5, 8) + '/' + valor.substring(8, 12) + '-' + valor.substring(12);
+        } else if (valor.length > 8) {
+            return valor.substring(0, 2) + '.' + valor.substring(2, 5) + '.' + valor.substring(5, 8) + '/' + valor.substring(8);
+        } else if (valor.length > 5) {
+            return valor.substring(0, 2) + '.' + valor.substring(2, 5) + '.' + valor.substring(5);
+        } else if (valor.length > 2) {
+            return valor.substring(0, 2) + '.' + valor.substring(2);
+        }
+        return valor;
+    }
+
+    // Alternar entre Pessoa Física e Jurídica
+    tipo.addEventListener('change', function() {
+        const isPF = this.value === 'F';
+        
+        // Nome/Razão Social
+        document.getElementById('labelNome').textContent = isPF ? 'Nome' : 'Razão Social';
+        
+        // Nome Fantasia (só para PJ)
+        document.getElementById('divNomeFantasia').style.display = isPF ? 'none' : 'block';
+        
+        // CPF ou CNPJ - transferir valor antes de ocultar
+        if (isPF) {
+            // Mudando para PF, copiar CNPJ para CPF se CPF estiver vazio
+            if (!cpfInput.value && cnpjInput.value) {
+                cpfInput.value = cnpjInput.value.replace(/\D/g, '');
+            }
+        } else {
+            // Mudando para PJ, copiar CPF para CNPJ se CNPJ estiver vazio
+            if (!cnpjInput.value && cpfInput.value) {
+                cnpjInput.value = cpfInput.value.replace(/\D/g, '');
+            }
+        }
+        
+        // CPF ou CNPJ
+        document.getElementById('divCpf').style.display = isPF ? 'block' : 'none';
+        document.getElementById('divCnpj').style.display = isPF ? 'none' : 'block';
+        
+        // RG ou IE
+        document.getElementById('divRg').style.display = isPF ? 'block' : 'none';
+        document.getElementById('divIe').style.display = isPF ? 'none' : 'block';
+        document.getElementById('divDataEmissaoRg').style.display = isPF ? 'block' : 'none';
+        document.getElementById('divOrgaoEmissor').style.display = isPF ? 'block' : 'none';
+        
+        // Sexo (só para PF)
+        document.getElementById('divSexo').style.display = isPF ? 'block' : 'none';
+    });
+
+    // Mostrar/ocultar dados de funcionário
+    checkFuncionario.addEventListener('change', function() {
+        document.getElementById('divFuncionario').style.display = this.checked ? 'block' : 'none';
+    });
+
+    // Mostrar/ocultar dados de cliente/fornecedor
+    function toggleClienteFornecedor() {
+        const show = checkCliente.checked || checkFornecedor.checked;
+        document.getElementById('divClienteFornecedor').style.display = show ? 'block' : 'none';
+    }
+    checkCliente.addEventListener('change', toggleClienteFornecedor);
+    checkFornecedor.addEventListener('change', toggleClienteFornecedor);
+
+    // Buscar CEP
+    cepInput.addEventListener('blur', function() {
+        const cep = this.value.replace(/\D/g, '');
+        
+        if (cep.length === 8) {
+            fetch(`https://viacep.com.br/ws/${cep}/json/`)
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.erro) {
+                        document.getElementById('logradouro').value = data.logradouro;
+                        document.getElementById('bairro').value = data.bairro;
+                        document.getElementById('cidade').value = data.localidade;
+                        document.getElementById('uf').value = data.uf;
+                        document.getElementById('numero').focus();
+                    } else {
+                        alert('CEP não encontrado!');
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro ao buscar CEP:', error);
+                });
+        }
+    });
+
+    // Validar CPF
+    cpfInput.addEventListener('blur', function() {
+        const cpf = this.value.replace(/\D/g, '');
+        if (cpf.length === 11 && !validarCPF(cpf)) {
+            this.classList.add('is-invalid');
+        } else {
+            this.classList.remove('is-invalid');
+        }
+    });
+
+    // Validar CNPJ
+    cnpjInput.addEventListener('blur', function() {
+        const cnpj = this.value.replace(/\D/g, '');
+        if (cnpj.length === 14 && !validarCNPJ(cnpj)) {
+            this.classList.add('is-invalid');
+        } else {
+            this.classList.remove('is-invalid');
+        }
+    });
+
+    // Máscaras
+    cepInput.addEventListener('input', function(e) {
+        let value = e.target.value.replace(/\D/g, '');
+        if (value.length > 5) {
+            value = value.substring(0, 5) + '-' + value.substring(5, 8);
+        }
+        e.target.value = value;
+    });
+
+    cpfInput.addEventListener('input', function(e) {
+        e.target.value = aplicarMascaraCPF(e.target.value);
+    });
+
+    cnpjInput.addEventListener('input', function(e) {
+        e.target.value = aplicarMascaraCNPJ(e.target.value);
+    });
+
+    // Função de validação de CPF
+    function validarCPF(cpf) {
+        if (cpf.length !== 11 || /^(\d)\1{10}$/.test(cpf)) return false;
+        
+        let soma = 0;
+        for (let i = 0; i < 9; i++) soma += parseInt(cpf.charAt(i)) * (10 - i);
+        let resto = (soma * 10) % 11;
+        if (resto === 10 || resto === 11) resto = 0;
+        if (resto !== parseInt(cpf.charAt(9))) return false;
+        
+        soma = 0;
+        for (let i = 0; i < 10; i++) soma += parseInt(cpf.charAt(i)) * (11 - i);
+        resto = (soma * 10) % 11;
+        if (resto === 10 || resto === 11) resto = 0;
+        if (resto !== parseInt(cpf.charAt(10))) return false;
+        
+        return true;
+    }
+
+    // Função de validação de CNPJ
+    function validarCNPJ(cnpj) {
+        if (cnpj.length !== 14 || /^(\d)\1{13}$/.test(cnpj)) return false;
+        
+        let tamanho = cnpj.length - 2;
+        let numeros = cnpj.substring(0, tamanho);
+        let digitos = cnpj.substring(tamanho);
+        let soma = 0;
+        let pos = tamanho - 7;
+        
+        for (let i = tamanho; i >= 1; i--) {
+            soma += numeros.charAt(tamanho - i) * pos--;
+            if (pos < 2) pos = 9;
+        }
+        
+        let resultado = soma % 11 < 2 ? 0 : 11 - soma % 11;
+        if (resultado != digitos.charAt(0)) return false;
+        
+        tamanho = tamanho + 1;
+        numeros = cnpj.substring(0, tamanho);
+        soma = 0;
+        pos = tamanho - 7;
+        
+        for (let i = tamanho; i >= 1; i--) {
+            soma += numeros.charAt(tamanho - i) * pos--;
+            if (pos < 2) pos = 9;
+        }
+        
+        resultado = soma % 11 < 2 ? 0 : 11 - soma % 11;
+        if (resultado != digitos.charAt(1)) return false;
+        
+        return true;
+    }
+
+    // Validar antes de enviar
+    document.getElementById('formPessoa').addEventListener('submit', function(e) {
+        const tipoValue = tipo.value;
+        let valid = true;
+        
+        // Garantir que o valor do campo visível seja copiado para ambos os campos
+        // para que sempre seja enviado no POST
+        if (tipoValue === 'F') {
+            // Se é PF, garantir que o valor está no campo CPF
+            const cpfValue = cpfInput.value.replace(/\D/g, '');
+            if (cpfValue) {
+                cpfInput.value = cpfValue; // Garantir que tem o valor
+                if (!validarCPF(cpfValue)) {
+                    cpfInput.classList.add('is-invalid');
+                    valid = false;
+                    e.preventDefault();
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'CPF Inválido',
+                        text: 'Por favor, corrija o CPF informado.'
+                    });
+                    return;
+                }
+            } else {
+                e.preventDefault();
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Campo Obrigatório',
+                    text: 'O CPF é obrigatório.'
+                });
+                return;
+            }
+            cnpjInput.value = cpfValue; // Copiar para o campo oculto
+        } else {
+            // Se é PJ, garantir que o valor está no campo CNPJ
+            const cnpjValue = cnpjInput.value.replace(/\D/g, '');
+            if (cnpjValue) {
+                cnpjInput.value = cnpjValue; // Garantir que tem o valor
+                if (!validarCNPJ(cnpjValue)) {
+                    cnpjInput.classList.add('is-invalid');
+                    valid = false;
+                    e.preventDefault();
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'CNPJ Inválido',
+                        text: 'Por favor, corrija o CNPJ informado.'
+                    });
+                    return;
+                }
+            } else {
+                e.preventDefault();
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Campo Obrigatório',
+                    text: 'O CNPJ é obrigatório.'
+                });
+                return;
+            }
+            cpfInput.value = cnpjValue; // Copiar para o campo oculto
+        }
+    });
+});
+</script>
+{% endblock %}
+
+{% extends 'base_with_sidebar.html' %}
+
+{% block title %}Nova Pessoa - Sistema Serrana{% endblock %}
+
+{% block sidebar %}
+    <a class="nav-link" href="{% url 'usuarios:home_modulos' %}">
+        <i class="bi bi-grid"></i> Módulos
+    </a>
+    <hr>
+    <h6 class="text-muted text-uppercase px-3 mb-2">Cadastros</h6>
+    <a class="nav-link" href="{% url 'cadastros:dashboard_cadastros' %}">
+        <i class="bi bi-speedometer2"></i> Dashboard
+    </a>
+    <a class="nav-link active" href="{% url 'cadastros:listar_pessoas' %}">
+        <i class="bi bi-person-lines-fill"></i> Pessoas
+    </a>
+    <a class="nav-link" href="{% url 'cadastros:listar_produtos' %}">
+        <i class="bi bi-box-seam"></i> Produtos
+    </a>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-plus-circle"></i> Nova Pessoa</h2>
+    <a href="{% url 'cadastros:listar_pessoas' %}" class="btn btn-secondary">
+        <i class="bi bi-arrow-left"></i> Voltar
+    </a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+            
+            <!-- Informações Básicas -->
+            <h5 class="mb-3">Informações Básicas</h5>
+            <div class="row mb-3">
+                <div class="col-md-2">
+                    <label class="form-label">Tipo *</label>
+                    <select class="form-select" name="tipo" required>
+                        <option value="F">Pessoa Física</option>
+                        <option value="J">Pessoa Jurídica</option>
+                    </select>
+                </div>
+                <div class="col-md-5">
+                    <label class="form-label">Nome/Razão Social *</label>
+                    <input type="text" class="form-control" name="nome" required>
+                </div>
+                <div class="col-md-5">
+                    <label class="form-label">Nome Fantasia</label>
+                    <input type="text" class="form-control" name="nome_fantasia">
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <label class="form-label">CPF/CNPJ *</label>
+                    <input type="text" class="form-control" name="cpf_cnpj" required>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">RG/Inscrição Estadual</label>
+                    <input type="text" class="form-control" name="rg_ie">
+                </div>
+            </div>
+
+            <hr>
+
+            <!-- Endereço -->
+            <h5 class="mb-3">Endereço</h5>
+            <div class="row mb-3">
+                <div class="col-md-3">
+                    <label class="form-label">CEP</label>
+                    <input type="text" class="form-control" name="cep">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Logradouro</label>
+                    <input type="text" class="form-control" name="logradouro">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Número</label>
+                    <input type="text" class="form-control" name="numero">
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <label class="form-label">Complemento</label>
+                    <input type="text" class="form-control" name="complemento">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Bairro</label>
+                    <input type="text" class="form-control" name="bairro">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Cidade</label>
+                    <select class="form-select" name="cidade">
+                        <option value="">Selecione...</option>
+                        {% for estado in estados %}
+                            <optgroup label="{{ estado.nome }}">
+                                {% for cidade in estado.cidades.all %}
+                                    <option value="{{ cidade.id }}">{{ cidade.nome }}</option>
+                                {% endfor %}
+                            </optgroup>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <hr>
+
+            <!-- Contato -->
+            <h5 class="mb-3">Contato</h5>
+            <div class="row mb-3">
+                <div class="col-md-3">
+                    <label class="form-label">Telefone</label>
+                    <input type="text" class="form-control" name="telefone">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Celular</label>
+                    <input type="text" class="form-control" name="celular">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">E-mail</label>
+                    <input type="email" class="form-control" name="email">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Site</label>
+                    <input type="url" class="form-control" name="site">
+                </div>
+            </div>
+
+            <hr>
+
+            <!-- Classificação -->
+            <h5 class="mb-3">Classificação</h5>
+            <div class="row mb-3">
+                <div class="col-md-12">
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" name="cliente" id="cliente">
+                        <label class="form-check-label" for="cliente">Cliente</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" name="fornecedor" id="fornecedor">
+                        <label class="form-check-label" for="fornecedor">Fornecedor</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" name="funcionario" id="funcionario">
+                        <label class="form-check-label" for="funcionario">Funcionário</label>
+                    </div>
+                </div>
+            </div>
+
+            <hr>
+
+            <!-- Observações -->
+            <h5 class="mb-3">Observações</h5>
+            <div class="row mb-3">
+                <div class="col-md-12">
+                    <textarea class="form-control" name="observacoes" rows="3"></textarea>
+                </div>
+            </div>
+
+            <div class="text-end">
+                <a href="{% url 'cadastros:listar_pessoas' %}" class="btn btn-secondary">Cancelar</a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-save"></i> Salvar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% extends 'base_with_sidebar.html' %}
+
+{% block title %}Novo Produto - Sistema Serrana{% endblock %}
+
+{% block sidebar %}
+    <a class="nav-link" href="{% url 'usuarios:home_modulos' %}">
+        <i class="bi bi-grid"></i> Módulos
+    </a>
+    <hr>
+    <h6 class="text-muted text-uppercase px-3 mb-2">Cadastros</h6>
+    <a class="nav-link" href="{% url 'cadastros:dashboard_cadastros' %}">
+        <i class="bi bi-speedometer2"></i> Dashboard
+    </a>
+    <a class="nav-link" href="{% url 'cadastros:listar_pessoas' %}">
+        <i class="bi bi-person-lines-fill"></i> Pessoas
+    </a>
+    <a class="nav-link active" href="{% url 'cadastros:listar_produtos' %}">
+        <i class="bi bi-box-seam"></i> Produtos
+    </a>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-plus-circle"></i> Novo Produto</h2>
+    <a href="{% url 'cadastros:listar_produtos' %}" class="btn btn-secondary">
+        <i class="bi bi-arrow-left"></i> Voltar
+    </a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+            
+            <!-- Informações Básicas -->
+            <h5 class="mb-3">Informações Básicas</h5>
+            <div class="row mb-3">
+                <div class="col-md-2">
+                    <label class="form-label">Tipo *</label>
+                    <select class="form-select" name="tipo" required>
+                        <option value="produto">Produto</option>
+                        <option value="servico">Serviço</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Código *</label>
+                    <input type="text" class="form-control" name="codigo" required>
+                </div>
+                <div class="col-md-5">
+                    <label class="form-label">Descrição *</label>
+                    <input type="text" class="form-control" name="descricao" required>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Unidade *</label>
+                    <select class="form-select" name="unidade" required>
+                        <option value="UN">Unidade</option>
+                        <option value="KG">Quilograma</option>
+                        <option value="M">Metro</option>
+                        <option value="M2">Metro Quadrado</option>
+                        <option value="M3">Metro Cúbico</option>
+                        <option value="LT">Litro</option>
+                        <option value="CX">Caixa</option>
+                        <option value="PC">Peça</option>
+                        <option value="HR">Hora</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-md-12">
+                    <label class="form-label">Descrição Detalhada</label>
+                    <textarea class="form-control" name="descricao_detalhada" rows="3"></textarea>
+                </div>
+            </div>
+
+            <hr>
+
+            <!-- Estoque -->
+            <h5 class="mb-3">Estoque</h5>
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">Estoque Atual</label>
+                    <input type="number" step="0.01" class="form-control" name="estoque_atual" value="0">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Estoque Mínimo</label>
+                    <input type="number" step="0.01" class="form-control" name="estoque_minimo" value="0">
+                </div>
+            </div>
+
+            <hr>
+
+            <!-- Valores -->
+            <h5 class="mb-3">Valores</h5>
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">Custo (R$)</label>
+                    <input type="number" step="0.01" class="form-control" name="custo" value="0.00">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Preço de Venda (R$)</label>
+                    <input type="number" step="0.01" class="form-control" name="preco_venda" value="0.00">
+                </div>
+            </div>
+
+            <hr>
+
+            <!-- Fornecedor -->
+            <h5 class="mb-3">Fornecedor</h5>
+            <div class="row mb-3">
+                <div class="col-md-12">
+                    <label class="form-label">Fornecedor Padrão</label>
+                    <select class="form-select" name="fornecedor">
+                        <option value="">Selecione...</option>
+                        {% for fornecedor in fornecedores %}
+                            <option value="{{ fornecedor.id }}">{{ fornecedor.nome }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="text-end">
+                <a href="{% url 'cadastros:listar_produtos' %}" class="btn btn-secondary">Cancelar</a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-save"></i> Salvar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% extends 'base_with_sidebar.html' %}
+
+{% block title %}Dashboard Cadastros - Sistema Serrana{% endblock %}
+
+{% block sidebar %}
+    <a class="nav-link" href="{% url 'usuarios:home_modulos' %}">
+        <i class="bi bi-grid"></i> Módulos
+    </a>
+    <hr>
+    <h6 class="text-muted text-uppercase px-3 mb-2">Cadastros</h6>
+    <a class="nav-link active" href="{% url 'cadastros:dashboard_cadastros' %}">
+        <i class="bi bi-speedometer2"></i> Dashboard
+    </a>
+    <a class="nav-link" href="{% url 'cadastros:listar_pessoas' %}">
+        <i class="bi bi-person-lines-fill"></i> Pessoas
+    </a>
+    <a class="nav-link" href="{% url 'cadastros:listar_produtos' %}">
+        <i class="bi bi-box-seam"></i> Produtos
+    </a>
+{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <h2><i class="bi bi-speedometer2"></i> Dashboard - Cadastros</h2>
+    <p class="text-muted">Visão geral dos cadastros do sistema</p>
+</div>
+
+<!-- Cards de Estatísticas -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-subtitle mb-2">Total de Pessoas</h6>
+                        <h2 class="card-title mb-0">{{ total_pessoas }}</h2>
+                    </div>
+                    <div>
+                        <i class="bi bi-people" style="font-size: 3rem; opacity: 0.5;"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer bg-transparent border-0">
+                <a href="{% url 'cadastros:listar_pessoas' %}" class="text-white text-decoration-none">
+                    Ver todas <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-subtitle mb-2">Clientes</h6>
+                        <h2 class="card-title mb-0">{{ total_clientes }}</h2>
+                    </div>
+                    <div>
+                        <i class="bi bi-person-check" style="font-size: 3rem; opacity: 0.5;"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer bg-transparent border-0">
+                <a href="{% url 'cadastros:listar_pessoas' %}?classificacao=cliente" class="text-white text-decoration-none">
+                    Ver clientes <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-subtitle mb-2">Fornecedores</h6>
+                        <h2 class="card-title mb-0">{{ total_fornecedores }}</h2>
+                    </div>
+                    <div>
+                        <i class="bi bi-truck" style="font-size: 3rem; opacity: 0.5;"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer bg-transparent border-0">
+                <a href="{% url 'cadastros:listar_pessoas' %}?classificacao=fornecedor" class="text-white text-decoration-none">
+                    Ver fornecedores <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-subtitle mb-2">Produtos</h6>
+                        <h2 class="card-title mb-0">{{ total_produtos }}</h2>
+                    </div>
+                    <div>
+                        <i class="bi bi-box-seam" style="font-size: 3rem; opacity: 0.5;"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer bg-transparent border-0">
+                <a href="{% url 'cadastros:listar_produtos' %}" class="text-white text-decoration-none">
+                    Ver todos <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Alertas -->
+{% if produtos_estoque_baixo > 0 %}
+<div class="alert alert-warning">
+    <i class="bi bi-exclamation-triangle"></i>
+    <strong>Atenção!</strong> Existem {{ produtos_estoque_baixo }} produto(s) com estoque abaixo do mínimo.
+    <a href="{% url 'cadastros:listar_produtos' %}" class="alert-link">Ver produtos</a>
+</div>
+{% endif %}
+
+<!-- Ações Rápidas -->
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-lightning"></i> Ações Rápidas - Pessoas</h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group">
+                    <a href="{% url 'cadastros:criar_pessoa' %}" class="list-group-item list-group-item-action">
+                        <i class="bi bi-plus-circle text-primary"></i> Cadastrar Nova Pessoa
+                    </a>
+                    <a href="{% url 'cadastros:listar_pessoas' %}" class="list-group-item list-group-item-action">
+                        <i class="bi bi-list text-primary"></i> Listar Todas as Pessoas
+                    </a>
+                    <a href="{% url 'cadastros:listar_pessoas' %}?classificacao=cliente" class="list-group-item list-group-item-action">
+                        <i class="bi bi-person-check text-success"></i> Ver Clientes
+                    </a>
+                    <a href="{% url 'cadastros:listar_pessoas' %}?classificacao=fornecedor" class="list-group-item list-group-item-action">
+                        <i class="bi bi-truck text-warning"></i> Ver Fornecedores
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="bi bi-lightning"></i> Ações Rápidas - Produtos</h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group">
+                    <a href="{% url 'cadastros:criar_produto' %}" class="list-group-item list-group-item-action">
+                        <i class="bi bi-plus-circle text-info"></i> Cadastrar Novo Produto
+                    </a>
+                    <a href="{% url 'cadastros:listar_produtos' %}" class="list-group-item list-group-item-action">
+                        <i class="bi bi-list text-info"></i> Listar Todos os Produtos
+                    </a>
+                    <a href="{% url 'cadastros:listar_produtos' %}?tipo=produto" class="list-group-item list-group-item-action">
+                        <i class="bi bi-box text-primary"></i> Ver Produtos
+                    </a>
+                    <a href="{% url 'cadastros:listar_produtos' %}?tipo=servico" class="list-group-item list-group-item-action">
+                        <i class="bi bi-tools text-secondary"></i> Ver Serviços
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% extends 'base_with_sidebar.html' %}
+
+{% block title %}Editar Pessoa - Sistema Serrana{% endblock %}
+
+{% block sidebar %}
+    <a class="nav-link" href="{% url 'usuarios:home_modulos' %}">
+        <i class="bi bi-grid"></i> Módulos
+    </a>
+    <hr>
+    <h6 class="text-muted text-uppercase px-3 mb-2">Cadastros</h6>
+    <a class="nav-link" href="{% url 'cadastros:dashboard_cadastros' %}">
+        <i class="bi bi-speedometer2"></i> Dashboard
+    </a>
+    <a class="nav-link active" href="{% url 'cadastros:listar_pessoas' %}">
+        <i class="bi bi-person-lines-fill"></i> Pessoas
+    </a>
+    <a class="nav-link" href="{% url 'cadastros:listar_produtos' %}">
+        <i class="bi bi-box-seam"></i> Produtos
+    </a>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-pencil"></i> Editar Pessoa</h2>
+    <a href="{% url 'cadastros:listar_pessoas' %}" class="btn btn-secondary">
+        <i class="bi bi-arrow-left"></i> Voltar
+    </a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form method="post" id="formPessoa">
+            {% csrf_token %}
+            
+            <!-- Informações Básicas -->
+            <h5 class="mb-3">Informações Básicas</h5>
+            <div class="row mb-3">
+                <div class="col-md-2">
+                    <label class="form-label">Tipo *</label>
+                    <select class="form-select" name="tipo" id="tipo" required>
+                        <option value="F" {% if pessoa.tipo == 'F' %}selected{% endif %}>Pessoa Física</option>
+                        <option value="J" {% if pessoa.tipo == 'J' %}selected{% endif %}>Pessoa Jurídica</option>
+                    </select>
+                </div>
+                <div class="col-md-5">
+                    <label class="form-label"><span id="labelNome">{% if pessoa.tipo == 'J' %}Razão Social{% else %}Nome{% endif %}</span> *</label>
+                    <input type="text" class="form-control" name="nome" id="nome" required value="{{ pessoa.nome|default:'' }}">
+                </div>
+                <div class="col-md-5" id="divNomeFantasia" {% if pessoa.tipo == 'F' %}style="display:none;"{% endif %}>
+                    <label class="form-label">Nome Fantasia</label>
+                    <input type="text" class="form-control" name="nome_fantasia" id="nome_fantasia" value="{{ pessoa.nome_fantasia|default:'' }}">
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-md-3" id="divCpf" {% if pessoa.tipo == 'J' %}style="display:none;"{% endif %}>
+                    <label class="form-label">CPF *</label>
+                    <input type="text" class="form-control" name="cpf_cnpj" id="cpf" maxlength="14" value="{% if pessoa.tipo == 'F' %}{{ pessoa.cpf_cnpj|default:'' }}{% endif %}">
+                    <div class="invalid-feedback">CPF inválido</div>
+   

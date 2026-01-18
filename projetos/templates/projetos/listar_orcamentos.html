@@ -1,0 +1,318 @@
+{% extends 'base_with_sidebar.html' %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2><i class="bi bi-file-earmark-text"></i> {{ titulo }}</h2>
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-12">
+            <a href="{% url 'projetos:criar_orcamento' %}" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Novo Orçamento
+            </a>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="bi bi-funnel"></i> Filtros
+                        <button class="btn btn-sm btn-link float-end" type="button" data-bs-toggle="collapse" data-bs-target="#filtrosCollapse">
+                            <i class="bi bi-chevron-down"></i>
+                        </button>
+                    </h6>
+                </div>
+                <div class="collapse show" id="filtrosCollapse">
+                    <div class="card-body">
+                        <form method="get" action="" id="formFiltros">
+                            <div class="row g-3">
+                                <div class="col-md-2">
+                                    <label for="numero" class="form-label">Número do Orçamento</label>
+                                    <input type="text" class="form-control" id="numero" name="numero" value="{{ filtros.numero }}" placeholder="Ex: ORC-2026-0001">
+                                </div>
+                                
+                                <div class="col-md-2">
+                                    <label for="cliente" class="form-label">Cliente</label>
+                                    <select class="form-select" id="cliente" name="cliente">
+                                        <option value="">Todos</option>
+                                        {% for cliente in clientes %}
+                                            <option value="{{ cliente.id }}" {% if filtros.cliente == cliente.id|stringformat:"s" %}selected{% endif %}>
+                                                {{ cliente.nome }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                
+                                <div class="col-md-2">
+                                    <label for="vendedor" class="form-label">Vendedor</label>
+                                    <select class="form-select" id="vendedor" name="vendedor">
+                                        <option value="">Todos</option>
+                                        {% for vendedor in vendedores %}
+                                            <option value="{{ vendedor.id }}" {% if filtros.vendedor == vendedor.id|stringformat:"s" %}selected{% endif %}>
+                                                {{ vendedor.nome }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                
+                                <div class="col-md-2">
+                                    <label for="status" class="form-label">Status</label>
+                                    <select class="form-select" id="status" name="status">
+                                        <option value="">Todos</option>
+                                        {% for value, label in status_choices %}
+                                            <option value="{{ value }}" {% if filtros.status == value %}selected{% endif %}>
+                                                {{ label }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                
+                                <div class="col-md-2">
+                                    <label for="data_inicial" class="form-label">Data Inicial</label>
+                                    <input type="date" class="form-control" id="data_inicial" name="data_inicial" value="{{ filtros.data_inicial }}">
+                                </div>
+                                
+                                <div class="col-md-2">
+                                    <label for="data_final" class="form-label">Data Final</label>
+                                    <input type="date" class="form-control" id="data_final" name="data_final" value="{{ filtros.data_final }}">
+                                </div>
+                                
+                                <div class="col-md-4">
+                                    <label class="form-label d-block">&nbsp;</label>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bi bi-search"></i> Filtrar
+                                    </button>
+                                    <a href="{% url 'projetos:listar_orcamentos' %}" class="btn btn-secondary">
+                                        <i class="bi bi-x-circle"></i> Limpar
+                                    </a>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-list-ul"></i> Lista de Orçamentos ({{ total_registros }} registro{{ total_registros|pluralize }})</h5>
+                    <div>
+                        <label class="me-2">Exibir:</label>
+                        <select class="form-select form-select-sm d-inline-block w-auto" id="porPagina" name="por_pagina" onchange="alterarPorPagina(this.value)">
+                            <option value="10" {% if filtros.por_pagina == 10 %}selected{% endif %}>10</option>
+                            <option value="20" {% if filtros.por_pagina == 20 %}selected{% endif %}>20</option>
+                            <option value="30" {% if filtros.por_pagina == 30 %}selected{% endif %}>30</option>
+                            <option value="40" {% if filtros.por_pagina == 40 %}selected{% endif %}>40</option>
+                            <option value="50" {% if filtros.por_pagina == 50 %}selected{% endif %}>50</option>
+                            <option value="100" {% if filtros.por_pagina == 100 %}selected{% endif %}>100</option>
+                        </select>
+                        <label class="ms-2">registros</label>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if orcamentos %}
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Número</th>
+                                        <th>Cliente</th>
+                                        <th>Vendedor</th>
+                                        <th>Obra</th>
+                                        <th>Valor Total</th>
+                                        <th>Status</th>
+                                        <th>Data</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for orcamento in orcamentos %}
+                                        <tr>
+                                            <td><strong>{{ orcamento.codigo }}</strong></td>
+                                            <td>{{ orcamento.cliente.nome }}</td>
+                                            <td>{{ orcamento.vendedor.nome }}</td>
+                                            <td>{{ orcamento.nome_obra }}</td>
+                                            <td>R$ {{ orcamento.valor_total|floatformat:2 }}</td>
+                                            <td>
+                                                <span class="badge bg-{% if orcamento.status == 'APROVADO' %}success{% elif orcamento.status == 'PENDENTE' %}warning{% else %}secondary{% endif %}">
+                                                    {{ orcamento.get_status_display }}
+                                                </span>
+                                            </td>
+                                            <td>{{ orcamento.data_orcamento|date:"d/m/Y" }}</td>
+                                            <td>
+                                                <a href="{% url 'projetos:visualizar_orcamento' orcamento.pk %}" class="btn btn-sm btn-info" title="Visualizar">
+                                                    <i class="bi bi-eye"></i>
+                                                </a>
+                                                <a href="{% url 'projetos:editar_orcamento' orcamento.pk %}" class="btn btn-sm btn-warning" title="Editar">
+                                                    <i class="bi bi-pencil"></i>
+                                                </a>
+                                                {% if orcamento.status == 'PENDENTE' %}
+                                                <button class="btn btn-sm btn-success" title="Aprovar" onclick="aprovarOrcamento({{ orcamento.pk }}, '{{ orcamento.codigo }}')">
+                                                    <i class="bi bi-check-circle"></i>
+                                                </button>
+                                                <button class="btn btn-sm btn-danger" title="Rejeitar" onclick="rejeitarOrcamento({{ orcamento.pk }}, '{{ orcamento.codigo }}')">
+                                                    <i class="bi bi-x-circle"></i>
+                                                </button>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- Paginação -->
+                        {% if orcamentos.has_other_pages %}
+                        <nav aria-label="Navegação de página">
+                            <ul class="pagination justify-content-center">
+                                {% if orcamentos.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?{% for key, value in filtros.items %}{% if value and key != 'por_pagina' %}{{ key }}={{ value }}&{% endif %}{% endfor %}por_pagina={{ filtros.por_pagina }}&page=1">
+                                        <i class="bi bi-chevron-double-left"></i>
+                                    </a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?{% for key, value in filtros.items %}{% if value and key != 'por_pagina' %}{{ key }}={{ value }}&{% endif %}{% endfor %}por_pagina={{ filtros.por_pagina }}&page={{ orcamentos.previous_page_number }}">
+                                        <i class="bi bi-chevron-left"></i>
+                                    </a>
+                                </li>
+                                {% endif %}
+                                
+                                {% for num in orcamentos.paginator.page_range %}
+                                    {% if orcamentos.number == num %}
+                                    <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                                    {% elif num > orcamentos.number|add:'-3' and num < orcamentos.number|add:'3' %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?{% for key, value in filtros.items %}{% if value and key != 'por_pagina' %}{{ key }}={{ value }}&{% endif %}{% endfor %}por_pagina={{ filtros.por_pagina }}&page={{ num }}">{{ num }}</a>
+                                    </li>
+                                    {% endif %}
+                                {% endfor %}
+                                
+                                {% if orcamentos.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?{% for key, value in filtros.items %}{% if value and key != 'por_pagina' %}{{ key }}={{ value }}&{% endif %}{% endfor %}por_pagina={{ filtros.por_pagina }}&page={{ orcamentos.next_page_number }}">
+                                        <i class="bi bi-chevron-right"></i>
+                                    </a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?{% for key, value in filtros.items %}{% if value and key != 'por_pagina' %}{{ key }}={{ value }}&{% endif %}{% endfor %}por_pagina={{ filtros.por_pagina }}&page={{ orcamentos.paginator.num_pages }}">
+                                        <i class="bi bi-chevron-double-right"></i>
+                                    </a>
+                                </li>
+                                {% endif %}
+                            </ul>
+                            <p class="text-center text-muted">
+                                Página {{ orcamentos.number }} de {{ orcamentos.paginator.num_pages }} 
+                                ({{ orcamentos.start_index }} - {{ orcamentos.end_index }} de {{ total_registros }} registros)
+                            </p>
+                        </nav>
+                        {% endif %}
+                    {% else %}
+                        <p class="text-muted">Nenhum orçamento cadastrado ainda.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Inicializar Select2
+$(document).ready(function() {
+    // Aplicar Select2 em todos os selects do formulário de filtros
+    $('#cliente').select2({
+        theme: 'bootstrap-5',
+        placeholder: 'Selecione um cliente',
+        allowClear: true,
+        language: {
+            noResults: function() {
+                return 'Nenhum cliente encontrado';
+            },
+            searching: function() {
+                return 'Buscando...';
+            }
+        }
+    });
+    
+    $('#vendedor').select2({
+        theme: 'bootstrap-5',
+        placeholder: 'Selecione um vendedor',
+        allowClear: true,
+        language: {
+            noResults: function() {
+                return 'Nenhum vendedor encontrado';
+            },
+            searching: function() {
+                return 'Buscando...';
+            }
+        }
+    });
+    
+    $('#status').select2({
+        theme: 'bootstrap-5',
+        placeholder: 'Selecione um status',
+        allowClear: true,
+        minimumResultsForSearch: -1, // Desabilita busca para poucos itens
+        language: {
+            noResults: function() {
+                return 'Nenhum status encontrado';
+            }
+        }
+    });
+});
+
+function aprovarOrcamento(orcamentoId, orcamentoCodigo) {
+    Swal.fire({
+        title: 'Confirmar Aprovação',
+        text: `Confirma a aprovação do orçamento ${orcamentoCodigo}?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#198754',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Sim, aprovar!',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            window.location.href = `/projetos/orcamentos/${orcamentoId}/aprovar/`;
+        }
+    });
+}
+
+function rejeitarOrcamento(orcamentoId, orcamentoCodigo) {
+    Swal.fire({
+        title: 'Confirmar Rejeição',
+        text: `Confirma a rejeição do orçamento ${orcamentoCodigo}?`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Sim, rejeitar!',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            window.location.href = `/projetos/orcamentos/${orcamentoId}/rejeitar/`;
+        }
+    });
+}
+
+function alterarPorPagina(valor) {
+    const urlParams = new URLSearchParams(window.location.search);
+    urlParams.set('por_pagina', valor);
+    urlParams.set('page', '1'); // Volta para primeira página
+    window.location.search = urlParams.toString();
+}
+</script>
+{% endblock %}

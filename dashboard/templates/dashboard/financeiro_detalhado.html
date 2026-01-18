@@ -1,0 +1,492 @@
+{% extends 'base_with_sidebar.html' %}
+{% load static %}
+
+{% block title %}Dashboard Financeiro{% endblock %}
+
+{% block extra_css %}
+<style>
+    .financeiro-card {
+        transition: all 0.3s;
+        border-left: 4px solid #28a745;
+    }
+    
+    .financeiro-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    
+    .financeiro-card.receber { border-left-color: #28a745; }
+    .financeiro-card.pagar { border-left-color: #dc3545; }
+    .financeiro-card.vencido { border-left-color: #ff6b6b; background-color: #fff5f5; }
+    
+    .saldo-positivo { color: #28a745; font-weight: bold; }
+    .saldo-negativo { color: #dc3545; font-weight: bold; }
+    
+    .grafico-fluxo { height: 400px; }
+    .grafico-dre { height: 350px; }
+    
+    .titulo-row:hover {
+        background-color: #f8f9fa;
+        cursor: pointer;
+    }
+    
+    .filtros-financeiro {
+        background: #f8f9fa;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        margin-bottom: 1.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2><i class="bi bi-cash-stack"></i> Dashboard Financeiro</h2>
+            <p class="text-muted">Análise completa de fluxo de caixa, DRE e contas</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <button class="btn btn-outline-primary" onclick="atualizarDados()">
+                <i class="bi bi-arrow-clockwise"></i> Atualizar
+            </button>
+            <button class="btn btn-success" onclick="exportarDRE()">
+                <i class="bi bi-file-earmark-excel"></i> DRE Excel
+            </button>
+            <a href="{% url 'dashboard:principal' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Voltar
+            </a>
+        </div>
+    </div>
+
+    <!-- KPIs Resumo -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h6 class="text-muted">Saldo em Caixa</h6>
+                    <h3 id="saldo-caixa" class="saldo-positivo">R$ 0,00</h3>
+                    <small id="var-caixa">+0% vs. ontem</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-success">
+                <div class="card-body text-center">
+                    <h6 class="text-muted">A Receber</h6>
+                    <h3 class="text-success" id="total-receber">R$ 0,00</h3>
+                    <small class="text-danger" id="vencido-receber">Vencido: R$ 0,00</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-danger">
+                <div class="card-body text-center">
+                    <h6 class="text-muted">A Pagar</h6>
+                    <h3 class="text-danger" id="total-pagar">R$ 0,00</h3>
+                    <small class="text-danger" id="vencido-pagar">Vencido: R$ 0,00</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h6 class="text-muted">Saldo Projetado (30d)</h6>
+                    <h3 id="saldo-projetado">R$ 0,00</h3>
+                    <small id="tendencia">Tendência: --</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alertas -->
+    <div class="row mb-3" id="alertas-container">
+        <!-- Alertas dinâmicos -->
+    </div>
+
+    <!-- Filtros -->
+    <div class="filtros-financeiro">
+        <div class="row g-3">
+            <div class="col-md-2">
+                <label class="form-label">Período</label>
+                <select class="form-select" id="filtro-periodo">
+                    <option value="hoje">Hoje</option>
+                    <option value="7dias">Próximos 7 dias</option>
+                    <option value="30dias" selected>Próximos 30 dias</option>
+                    <option value="90dias">Próximos 90 dias</option>
+                    <option value="mes">Mês Atual</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Conta</label>
+                <select class="form-select" id="filtro-conta">
+                    <option value="">Todas as contas</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Status</label>
+                <select class="form-select" id="filtro-status">
+                    <option value="">Todos</option>
+                    <option value="pendente">Pendentes</option>
+                    <option value="pago">Pagos</option>
+                    <option value="vencido">Vencidos</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Buscar</label>
+                <input type="text" class="form-control" id="busca" placeholder="Cliente, fornecedor ou descrição">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">&nbsp;</label>
+                <button class="btn btn-primary w-100" onclick="aplicarFiltros()">
+                    <i class="bi bi-funnel"></i> Filtrar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <ul class="nav nav-tabs mb-3" role="tablist">
+        <li class="nav-item">
+            <a class="nav-link active" data-bs-toggle="tab" href="#tab-fluxo">
+                <i class="bi bi-graph-up"></i> Fluxo de Caixa
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="tab" href="#tab-receber">
+                <i class="bi bi-arrow-down-circle"></i> A Receber
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="tab" href="#tab-pagar">
+                <i class="bi bi-arrow-up-circle"></i> A Pagar
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="tab" href="#tab-dre">
+                <i class="bi bi-bar-chart"></i> DRE
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="tab" href="#tab-inadimplencia">
+                <i class="bi bi-exclamation-triangle"></i> Inadimplência
+            </a>
+        </li>
+    </ul>
+
+    <!-- Tab Content -->
+    <div class="tab-content">
+        <!-- Fluxo de Caixa -->
+        <div class="tab-pane fade show active" id="tab-fluxo">
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h5>Fluxo de Caixa Projetado (90 dias)</h5>
+                    <canvas id="chart-fluxo" class="grafico-fluxo"></canvas>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <h6 class="text-muted">Entradas Previstas</h6>
+                            <h4 class="text-success" id="entradas-previstas">R$ 0,00</h4>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <h6 class="text-muted">Saídas Previstas</h6>
+                            <h4 class="text-danger" id="saidas-previstas">R$ 0,00</h4>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <h6 class="text-muted">Saldo Final Projetado</h6>
+                            <h4 id="saldo-final">R$ 0,00</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- A Receber -->
+        <div class="tab-pane fade" id="tab-receber">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="mb-3">Contas a Receber</h5>
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Vencimento</th>
+                                    <th>Cliente</th>
+                                    <th>Descrição</th>
+                                    <th class="text-end">Valor</th>
+                                    <th class="text-center">Status</th>
+                                    <th class="text-center">Dias</th>
+                                    <th class="text-center">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody-receber">
+                                <tr>
+                                    <td colspan="7" class="text-center">
+                                        <div class="spinner-border text-primary"></div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- A Pagar -->
+        <div class="tab-pane fade" id="tab-pagar">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="mb-3">Contas a Pagar</h5>
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Vencimento</th>
+                                    <th>Fornecedor</th>
+                                    <th>Descrição</th>
+                                    <th class="text-end">Valor</th>
+                                    <th class="text-center">Status</th>
+                                    <th class="text-center">Dias</th>
+                                    <th class="text-center">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody-pagar">
+                                <tr>
+                                    <td colspan="7" class="text-center">
+                                        <div class="spinner-border text-primary"></div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- DRE -->
+        <div class="tab-pane fade" id="tab-dre">
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5>DRE - Últimos 6 Meses</h5>
+                            <canvas id="chart-dre" class="grafico-dre"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5>DRE - Mês Atual</h5>
+                            <table class="table table-sm">
+                                <tbody id="tbody-dre-atual">
+                                    <tr>
+                                        <td><strong>Receita Bruta</strong></td>
+                                        <td class="text-end" id="dre-receita">R$ 0,00</td>
+                                    </tr>
+                                    <tr>
+                                        <td>(-) Impostos</td>
+                                        <td class="text-end text-danger" id="dre-impostos">R$ 0,00</td>
+                                    </tr>
+                                    <tr class="table-light">
+                                        <td><strong>Receita Líquida</strong></td>
+                                        <td class="text-end" id="dre-receita-liquida">R$ 0,00</td>
+                                    </tr>
+                                    <tr>
+                                        <td>(-) Despesas Operacionais</td>
+                                        <td class="text-end text-danger" id="dre-despesas">R$ 0,00</td>
+                                    </tr>
+                                    <tr class="table-success">
+                                        <td><strong>Lucro/Prejuízo</strong></td>
+                                        <td class="text-end" id="dre-lucro"><strong>R$ 0,00</strong></td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Margem Líquida</strong></td>
+                                        <td class="text-end" id="dre-margem">0%</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Inadimplência -->
+        <div class="tab-pane fade" id="tab-inadimplencia">
+            <div class="row mb-3">
+                <div class="col-md-3">
+                    <div class="card border-danger">
+                        <div class="card-body text-center">
+                            <h6 class="text-muted">Taxa de Inadimplência</h6>
+                            <h3 class="text-danger" id="taxa-inadimplencia">0%</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <h6 class="text-muted">Total Vencido</h6>
+                            <h4 class="text-danger" id="total-vencido">R$ 0,00</h4>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <h6 class="text-muted">Clientes Inadimplentes</h6>
+                            <h4 id="clientes-inadimplentes">0</h4>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <h6 class="text-muted">DSO (Dias)</h6>
+                            <h4 id="dso">0</h4>
+                            <small class="text-muted">Prazo médio recebimento</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="mb-3">Clientes com Títulos Vencidos</h5>
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Cliente</th>
+                                    <th class="text-end">Títulos Vencidos</th>
+                                    <th class="text-end">Valor Total</th>
+                                    <th class="text-end">Dias Médio Atraso</th>
+                                    <th class="text-center">Ação</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody-inadimplentes">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+    let charts = {};
+
+    document.addEventListener('DOMContentLoaded', function() {
+        carregarDados();
+    });
+
+    function carregarDados() {
+        Promise.all([
+            fetch('/dashboard/api/kpis/financeiro/'),
+            fetch('/dashboard/api/fluxo-caixa/')
+        ])
+        .then(responses => Promise.all(responses.map(r => r.json())))
+        .then(([kpis, fluxo]) => {
+            atualizarKPIs(kpis);
+            criarGraficoFluxo(fluxo);
+            carregarContas();
+        })
+        .catch(error => console.error('Erro:', error));
+    }
+
+    function atualizarKPIs(data) {
+        document.getElementById('saldo-caixa').textContent = 
+            'R$ ' + (data.saldo_caixa || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2});
+        document.getElementById('total-receber').textContent = 
+            'R$ ' + (data.total_receber || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2});
+        document.getElementById('total-pagar').textContent = 
+            'R$ ' + (data.total_pagar || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2});
+        document.getElementById('saldo-projetado').textContent = 
+            'R$ ' + (data.saldo_projetado || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2});
+        
+        // Aplicar classe de cor ao saldo
+        const saldoElement = document.getElementById('saldo-caixa');
+        saldoElement.className = (data.saldo_caixa || 0) >= 0 ? 'saldo-positivo' : 'saldo-negativo';
+    }
+
+    function criarGraficoFluxo(data) {
+        const ctx = document.getElementById('chart-fluxo');
+        if (charts.fluxo) charts.fluxo.destroy();
+        
+        charts.fluxo = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: data.datas || [],
+                datasets: [
+                    {
+                        label: 'Entradas',
+                        data: data.entradas || [],
+                        borderColor: 'rgb(40, 167, 69)',
+                        backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                        fill: true
+                    },
+                    {
+                        label: 'Saídas',
+                        data: data.saidas || [],
+                        borderColor: 'rgb(220, 53, 69)',
+                        backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                        fill: true
+                    },
+                    {
+                        label: 'Saldo Acumulado',
+                        data: data.saldo || [],
+                        borderColor: 'rgb(0, 123, 255)',
+                        backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                        fill: false,
+                        borderWidth: 2
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: true },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false
+                    }
+                }
+            }
+        });
+    }
+
+    function carregarContas() {
+        // Implementar carregamento de contas a receber e pagar
+    }
+
+    function atualizarDados() {
+        carregarDados();
+    }
+
+    function aplicarFiltros() {
+        carregarDados();
+    }
+
+    function exportarDRE() {
+        window.location.href = '/dashboard/exportar/excel/?tipo=dre';
+    }
+</script>
+{% endblock %}

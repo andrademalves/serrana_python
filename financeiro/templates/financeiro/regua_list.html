@@ -1,0 +1,91 @@
+{% extends 'base_with_sidebar.html' %}
+{% load static %}
+{% load financeiro_tags %}
+
+{% block title %}Réguas de Cobrança{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Cabeçalho -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1"><i class="bi bi-gear"></i> Réguas de Cobrança</h2>
+            <p class="text-muted mb-0">Gerencie todas as réguas da empresa</p>
+        </div>
+        <div>
+            <a href="{% url 'financeiro:criar_regua' %}" class="btn btn-success">
+                <i class="bi bi-plus-circle"></i> Nova Régua
+            </a>
+            <a href="{% url 'financeiro:painel_cobranca' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Voltar
+            </a>
+        </div>
+    </div>
+
+    <!-- Lista de Réguas -->
+    <div class="row">
+        {% for regua in reguas %}
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100 border-0 shadow-sm {% if regua.ativa %}border-start border-4 border-success{% else %}border-start border-4 border-secondary{% endif %}">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <h5 class="card-title mb-0">
+                            {% if regua.ativa %}
+                            <i class="bi bi-check-circle-fill text-success"></i>
+                            {% else %}
+                            <i class="bi bi-pause-circle text-secondary"></i>
+                            {% endif %}
+                            {{ regua.nome }}
+                        </h5>
+                        <span class="badge {% if regua.ativa %}bg-success{% else %}bg-secondary{% endif %}">
+                            {% if regua.ativa %}Ativa{% else %}Inativa{% endif %}
+                        </span>
+                    </div>
+
+                    {% if regua.descricao %}
+                    <p class="card-text text-muted small mb-3">{{ regua.descricao|truncatewords:20 }}</p>
+                    {% else %}
+                    <p class="card-text text-muted small fst-italic mb-3">Sem descrição</p>
+                    {% endif %}
+
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="flex-grow-1">
+                            <small class="text-muted">
+                                <i class="bi bi-list-ol"></i> {{ regua.total_etapas }} etapa{{ regua.total_etapas|pluralize }}
+                            </small>
+                        </div>
+                        <div>
+                            <small class="text-muted">
+                                <i class="bi bi-building"></i> {{ regua.empresa.nome|truncatewords:3 }}
+                            </small>
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'financeiro:editar_regua' regua.id %}" class="btn btn-sm btn-primary">
+                            <i class="bi bi-pencil"></i> Editar
+                        </a>
+                    </div>
+                </div>
+                <div class="card-footer bg-light">
+                    <small class="text-muted">
+                        <i class="bi bi-clock"></i> Atualizada em {{ regua.data_atualizacao|date:"d/m/Y H:i" }}
+                    </small>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="alert alert-info text-center">
+                <i class="bi bi-info-circle fs-1 d-block mb-3"></i>
+                <h5>Nenhuma régua cadastrada</h5>
+                <p class="mb-3">Crie sua primeira régua de cobrança para automatizar o envio de lembretes e cobranças.</p>
+                <a href="{% url 'financeiro:criar_regua' %}" class="btn btn-success">
+                    <i class="bi bi-plus-circle"></i> Criar Primeira Régua
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

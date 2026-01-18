@@ -1,0 +1,508 @@
+<!-- Sidebar Dinâmica por Módulo -->
+<nav class="sidebar bg-dark text-white" id="sidebar">
+    <!-- Seletor de Módulos (topo da sidebar) -->
+    <div class="sidebar-header p-3 border-bottom border-secondary">
+        <h5 class="mb-2">Sistema Serrana</h5>
+        <div class="btn-group-vertical w-100" role="group">
+            <div class="btn-group" role="group">
+                <button type="button" class="btn btn-sm btn-outline-light dropdown-toggle" data-bs-toggle="dropdown">
+                    <i class="bi bi-grid-3x3-gap"></i> Módulos
+                </button>
+                <ul class="dropdown-menu dropdown-menu-dark">
+                    {% if has_financeiro %}
+                    <li><a class="dropdown-item" href="{% url 'financeiro:dashboard' %}"><i class="bi bi-cash-coin"></i> Financeiro</a></li>
+                    {% endif %}
+                    {% if has_estoque %}
+                    <li><a class="dropdown-item" href="{% url 'estoque:dashboard' %}"><i class="bi bi-box-seam"></i> Estoque</a></li>
+                    {% endif %}
+                    {% if has_projetos %}
+                    <li><a class="dropdown-item" href="{% url 'projetos:dashboard' %}"><i class="bi bi-building"></i> Obras</a></li>
+                    {% endif %}
+                    {% if has_financeiro or has_estoque or has_projetos %}
+                    <li><hr class="dropdown-divider"></li>
+                    {% endif %}
+                    {% if has_cadastros %}
+                    <li><a class="dropdown-item" href="/cadastros/"><i class="bi bi-people"></i> Cadastros</a></li>
+                    {% endif %}
+                    {% if is_admin %}
+                    <li><a class="dropdown-item" href="{% url 'usuarios:listar_usuarios' %}"><i class="bi bi-shield-lock"></i> Usuários</a></li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Menu do Módulo Atual -->
+    <div class="sidebar-body p-0">
+        
+        <!-- ========================================= -->
+        <!-- MENU: FINANCEIRO -->
+        <!-- ========================================= -->
+        {% if current_module == 'financeiro' %}
+        <div class="list-group list-group-flush">
+            <div class="list-group-item bg-dark text-white-50 small fw-bold">FINANCEIRO</div>
+            
+            <a href="{% url 'financeiro:dashboard' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'dashboard' in request.path %}active{% endif %}">
+                <i class="bi bi-speedometer2"></i> Dashboard
+            </a>
+            
+            <div class="list-group-item bg-dark text-white-50 small fw-bold mt-2">CONTAS</div>
+            
+            <a href="{% url 'financeiro:contas_pagar' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'contas-pagar' in request.path %}active{% endif %}">
+                <i class="bi bi-arrow-down-circle text-danger"></i> Contas a Pagar
+            </a>
+            
+            <a href="{% url 'financeiro:contas_receber' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'contas-receber' in request.path %}active{% endif %}">
+                <i class="bi bi-arrow-up-circle text-success"></i> Contas a Receber
+            </a>
+            
+            <a href="{% url 'financeiro:listar_titulos' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'titulos' in request.path %}active{% endif %}">
+                <i class="bi bi-file-earmark-text"></i> Títulos
+            </a>
+            
+            <a href="{% url 'financeiro:listar_parcelas' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'parcelas' in request.path %}active{% endif %}">
+                <i class="bi bi-list-ol"></i> Parcelas
+            </a>
+            
+            <div class="list-group-item bg-dark text-white-50 small fw-bold mt-2">BANCOS & CAIXA</div>
+            
+            <a href="{% url 'financeiro:listar_contas_financeiras' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'contas-financeiras' in request.path %}active{% endif %}">
+                <i class="bi bi-bank"></i> Contas Financeiras
+            </a>
+            
+            <!-- TODO: Criar rota 'financeiro:transferencias' -->
+            <a href="#" class="list-group-item list-group-item-action bg-dark text-white disabled">
+                <i class="bi bi-arrow-left-right"></i> Transferências
+            </a>
+            
+            <div class="list-group-item bg-dark text-white-50 small fw-bold mt-2">CADASTROS</div>
+            
+            <a href="{% url 'financeiro:listar_centros_custo' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'centros-custo' in request.path %}active{% endif %}">
+                <i class="bi bi-diagram-3"></i> Centros de Custo
+            </a>
+            
+            <a href="{% url 'financeiro:listar_bancos' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'bancos' in request.path %}active{% endif %}">
+                <i class="bi bi-building"></i> Bancos
+            </a>
+            
+            <a href="{% url 'financeiro:listar_formas_pagamento' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'formas-pagamento' in request.path %}active{% endif %}">
+                <i class="bi bi-credit-card"></i> Formas de Pagamento
+            </a>
+            
+            <a href="{% url 'financeiro:listar_plano_contas' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'plano-contas' in request.path %}active{% endif %}">
+                <i class="bi bi-folder-symlink"></i> Plano de Contas
+            </a>
+            
+            <div class="list-group-item bg-dark text-white-50 small fw-bold mt-2">GESTÃO & ANÁLISE</div>
+            
+            <a href="/financeiro/budget/dashboard/" class="list-group-item list-group-item-action bg-dark text-white {% if 'budget' in request.path %}active{% endif %}">
+                <i class="bi bi-graph-up-arrow"></i> Budget & Lucratividade
+            </a>
+            
+            <a href="{% url 'financeiro:listar_categorias_custo' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'categorias-custo' in request.path %}active{% endif %}">
+                <i class="bi bi-tags"></i> Classificação de Custos
+            </a>
+            
+            <div class="list-group-item bg-dark text-white-50 small fw-bold mt-2">COBRANÇA</div>
+            
+            <a href="{% url 'financeiro:painel_cobranca' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'cobranca' in request.path %}active{% endif %}">
+                <i class="bi bi-bullseye text-warning"></i> Régua de Cobrança
+            </a>
+            
+            <div class="list-group-item bg-dark text-white-50 small fw-bold mt-2">RELATÓRIOS</div>
+            
+            <a href="{% url 'financeiro:calendario' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'calendario' in request.path %}active{% endif %}">
+                <i class="bi bi-calendar3"></i> Calendário Financeiro
+            </a>
+            
+            <a href="{% url 'financeiro:relatorio_fluxo_caixa' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'fluxo-caixa' in request.path %}active{% endif %}">
+                <i class="bi bi-graph-up"></i> Fluxo de Caixa
+            </a>
+            
+            <a href="{% url 'financeiro:relatorio_dre' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'dre' in request.path %}active{% endif %}">
+                <i class="bi bi-file-earmark-spreadsheet"></i> DRE
+            </a>
+            
+            <a href="{% url 'financeiro:relatorio_ponto_equilibrio' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'ponto-equilibrio' in request.path %}active{% endif %}">
+                <i class="bi bi-graph-down"></i> Ponto de Equilíbrio
+            </a>
+            
+            <a href="{% url 'financeiro:relatorio_resultado_centro_custo' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'resultado-centro-custo' in request.path %}active{% endif %}">
+                <i class="bi bi-pie-chart"></i> Resultado por Centro de Custo
+            </a>
+        </div>
+        {% endif %}
+
+        <!-- ========================================= -->
+        <!-- MENU: ESTOQUE -->
+        <!-- ========================================= -->
+        {% if current_module == 'estoque' %}
+        <div class="list-group list-group-flush">
+            <div class="list-group-item bg-dark text-white-50 small fw-bold">ESTOQUE</div>
+            
+            <a href="{% url 'estoque:dashboard' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'dashboard' in request.path %}active{% endif %}">
+                <i class="bi bi-speedometer2"></i> Dashboard
+            </a>
+            
+            <div class="list-group-item bg-dark text-white-50 small fw-bold mt-2">MOVIMENTAÇÕES</div>
+            
+            <a href="{% url 'estoque:listar_movimentacoes' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'movimentacoes' in request.path and 'criar' not in request.path %}active{% endif %}">
+                <i class="bi bi-arrow-left-right"></i> Movimentações
+            </a>
+            
+            <a href="{% url 'estoque:criar_movimentacao' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'criar' in request.path %}active{% endif %}">
+                <i class="bi bi-plus-circle"></i> Nova Movimentação
+            </a>
+            
+            <div class="list-group-item bg-dark text-white-50 small fw-bold mt-2">CADASTROS</div>
+            
+            <a href="{% url 'estoque:listar_itens' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'itens' in request.path %}active{% endif %}">
+                <i class="bi bi-box-seam"></i> Itens
+            </a>
+            
+            <div class="list-group-item bg-dark text-white-50 small fw-bold mt-2">RELATÓRIOS</div>
+            
+            <a href="{% url 'estoque:relatorio_estoque_atual' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'estoque-atual' in request.path %}active{% endif %}">
+                <i class="bi bi-clipboard-data"></i> Estoque Atual
+            </a>
+            
+            <a href="{% url 'estoque:relatorio_movimentacoes' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'relatorio-movimentacoes' in request.path %}active{% endif %}">
+                <i class="bi bi-file-earmark-bar-graph"></i> Movimentações
+            </a>
+            
+            <a href="{% url 'estoque:relatorio_materiais_obra_consolidado' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'materiais-obra-consolidado' in request.path %}active{% endif %}">
+                <i class="bi bi-building"></i> Custos por Obra
+            </a>
+            
+            <a href="{% url 'estoque:relatorio_materiais_obra_analitico' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'materiais-obra-analitico' in request.path %}active{% endif %}">
+                <i class="bi bi-list-ul"></i> Materiais por Obra
+            </a>
+            
+            <a href="{% url 'estoque:listar_itens' %}?estoque_baixo=sim" class="list-group-item list-group-item-action bg-dark text-white">
+                <i class="bi bi-exclamation-triangle text-warning"></i> Estoque Crítico
+            </a>
+        </div>
+        {% endif %}
+
+        <!-- ========================================= -->
+        <!-- MENU: OBRAS/PROJETOS -->
+        <!-- ========================================= -->
+        {% if current_module == 'obras' or current_module == 'projetos' %}
+        <div class="list-group list-group-flush">
+            <div class="list-group-item bg-dark text-white-50 small fw-bold">OBRAS & PROJETOS</div>
+            
+            <a href="{% url 'projetos:dashboard' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'dashboard' in request.path %}active{% endif %}">
+                <i class="bi bi-speedometer2"></i> Dashboard
+            </a>
+            
+            <div class="list-group-item bg-dark text-white-50 small fw-bold mt-2">ORÇAMENTOS</div>
+            
+            <a href="{% url 'projetos:listar_orcamentos' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'orcamentos' in request.path and 'criar' not in request.path %}active{% endif %}">
+                <i class="bi bi-file-earmark-text"></i> Orçamentos
+            </a>
+            
+            <a href="{% url 'projetos:criar_orcamento' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'orcamentos' in request.path and 'criar' in request.path %}active{% endif %}">
+                <i class="bi bi-plus-circle"></i> Novo Orçamento
+            </a>
+            
+            <div class="list-group-item bg-dark text-white-50 small fw-bold mt-2">PROJETOS/OBRAS</div>
+            
+            <a href="{% url 'projetos:listar_projetos' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'projetos' in request.path and 'criar' not in request.path and 'orcamentos' not in request.path %}active{% endif %}">
+                <i class="bi bi-building"></i> Obras
+            </a>
+            
+            <a href="{% url 'projetos:criar_projeto' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'projetos' in request.path and 'criar' in request.path %}active{% endif %}">
+                <i class="bi bi-plus-circle"></i> Nova Obra
+            </a>
+            
+            <div class="list-group-item bg-dark text-white-50 small fw-bold mt-2">VENDAS DIRETAS</div>
+            
+            <a href="{% url 'projetos:listar_vendas' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'vendas' in request.path and 'criar' not in request.path %}active{% endif %}">
+                <i class="bi bi-cart-check"></i> Vendas
+            </a>
+            
+            <a href="{% url 'projetos:criar_venda' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'vendas' in request.path and 'criar' in request.path %}active{% endif %}">
+                <i class="bi bi-plus-circle"></i> Nova Venda
+            </a>
+            
+            <div class="list-group-item bg-dark text-white-50 small fw-bold mt-2">VISITAS TÉCNICAS</div>
+            
+            <a href="{% url 'projetos:listar_visitas_tecnicas' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'visitas-tecnicas' in request.path and 'criar' not in request.path %}active{% endif %}">
+                <i class="bi bi-calendar-check"></i> Visitas Técnicas
+            </a>
+            
+            <a href="{% url 'projetos:criar_visita_tecnica' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'visitas-tecnicas' in request.path and 'criar' in request.path %}active{% endif %}">
+                <i class="bi bi-plus-circle"></i> Agendar Visita
+            </a>
+            
+            <div class="list-group-item bg-dark text-white-50 small fw-bold mt-2">GESTÃO</div>
+            
+            <a href="#" class="list-group-item list-group-item-action bg-dark text-white disabled">
+                <i class="bi bi-journal-text"></i> Diário de Obra
+            </a>
+            
+            <a href="#" class="list-group-item list-group-item-action bg-dark text-white disabled">
+                <i class="bi bi-currency-dollar"></i> Custos da Obra
+            </a>
+            
+            <div class="list-group-item bg-dark text-white-50 small fw-bold mt-2">RELATÓRIOS</div>
+            
+            <a href="#" class="list-group-item list-group-item-action bg-dark text-white disabled">
+                <i class="bi bi-file-earmark-bar-graph"></i> Resultado por Obra
+            </a>
+        </div>
+        {% endif %}
+
+        <!-- ========================================= -->
+        <!-- MENU: VENDAS/ORÇAMENTOS -->
+        <!-- ========================================= -->
+        {% if current_module == 'vendas' or current_module == 'orcamentos' %}
+        <div class="list-group list-group-flush">
+            <div class="list-group-item bg-dark text-white-50 small fw-bold">VENDAS & ORÇAMENTOS</div>
+            
+            <!-- TODO: Criar módulo de vendas/orçamentos -->
+            <a href="#" class="list-group-item list-group-item-action bg-dark text-white disabled">
+                <i class="bi bi-file-earmark-text"></i> Orçamentos
+            </a>
+            
+            <a href="#" class="list-group-item list-group-item-action bg-dark text-white disabled">
+                <i class="bi bi-plus-circle"></i> Novo Orçamento
+            </a>
+            
+            <div class="list-group-item bg-dark text-white-50 small fw-bold mt-2">GESTÃO</div>
+            
+            <a href="#" class="list-group-item list-group-item-action bg-dark text-white disabled">
+                <i class="bi bi-funnel"></i> Funil de Vendas
+            </a>
+            
+            <a href="#" class="list-group-item list-group-item-action bg-dark text-white disabled">
+                <i class="bi bi-file-pdf"></i> Propostas (PDF)
+            </a>
+            
+            <a href="#" class="list-group-item list-group-item-action bg-dark text-white disabled">
+                <i class="bi bi-check-circle"></i> Aprovar Orçamento
+            </a>
+            
+            <div class="list-group-item bg-dark text-white-50 small fw-bold mt-2">RELATÓRIOS</div>
+            
+            <a href="#" class="list-group-item list-group-item-action bg-dark text-white disabled">
+                <i class="bi bi-graph-up"></i> Relatórios Comerciais
+            </a>
+        </div>
+        {% endif %}
+
+        <!-- ========================================= -->
+        <!-- MENU: CADASTROS -->
+        <!-- ========================================= -->
+        {% if current_module == 'cadastros' %}
+        <div class="list-group list-group-flush">
+            <div class="list-group-item bg-dark text-white-50 small fw-bold">CADASTROS</div>
+            
+            <a href="/cadastros/" class="list-group-item list-group-item-action bg-dark text-white {% if request.path == '/cadastros/' %}active{% endif %}">
+                <i class="bi bi-house-door"></i> Início
+            </a>
+            
+            <a href="/cadastros/pessoas/" class="list-group-item list-group-item-action bg-dark text-white {% if 'pessoas' in request.path %}active{% endif %}">
+                <i class="bi bi-people"></i> Pessoas
+            </a>
+            
+            <a href="/cadastros/pessoas/criar/" class="list-group-item list-group-item-action bg-dark text-white {% if 'pessoas/criar' in request.path %}active{% endif %}">
+                <i class="bi bi-person-plus"></i> Nova Pessoa
+            </a>
+            
+            <a href="/cadastros/produtos/" class="list-group-item list-group-item-action bg-dark text-white {% if 'produtos' in request.path %}active{% endif %}">
+                <i class="bi bi-box"></i> Produtos
+            </a>
+            
+            <a href="/cadastros/produtos/criar/" class="list-group-item list-group-item-action bg-dark text-white {% if 'produtos/criar' in request.path %}active{% endif %}">
+                <i class="bi bi-plus-circle"></i> Novo Produto
+            </a>
+            
+            {% if is_admin %}
+            <div class="list-group-item bg-dark text-white-50 small fw-bold mt-2">CONFIGURAÇÕES</div>
+            
+            <!-- TODO: Criar rota para plano de contas -->
+            <a href="#" class="list-group-item list-group-item-action bg-dark text-white disabled">
+                <i class="bi bi-diagram-3"></i> Plano de Contas
+            </a>
+            
+            <!-- TODO: Criar rota para categorias -->
+            <a href="#" class="list-group-item list-group-item-action bg-dark text-white disabled">
+                <i class="bi bi-tags"></i> Categorias
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <!-- ========================================= -->
+        <!-- MENU: USUÁRIOS -->
+        <!-- ========================================= -->
+        {% if current_module == 'usuarios' %}
+        <div class="list-group list-group-flush">
+            <div class="list-group-item bg-dark text-white-50 small fw-bold">USUÁRIOS</div>
+            
+            <a href="{% url 'usuarios:listar_usuarios' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'usuarios' in request.path and 'criar' not in request.path %}active{% endif %}">
+                <i class="bi bi-people"></i> Usuários
+            </a>
+            
+            {% if is_admin %}
+            <a href="{% url 'usuarios:criar_usuario' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'criar' in request.path %}active{% endif %}">
+                <i class="bi bi-person-plus"></i> Novo Usuário
+            </a>
+            
+            <div class="list-group-item bg-dark text-white-50 small fw-bold mt-2">PERMISSÕES</div>
+            
+            <!-- TODO: Criar rota para grupos/permissões -->
+            <a href="#" class="list-group-item list-group-item-action bg-dark text-white disabled">
+                <i class="bi bi-shield-lock"></i> Grupos e Permissões
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
+
+    </div>
+
+    <!-- Rodapé da Sidebar -->
+    <div class="sidebar-footer p-3 border-top border-secondary mt-auto">
+        <div class="dropdown">
+            <a href="#" class="d-flex align-items-center text-white text-decoration-none dropdown-toggle" 
+               id="dropdownUser" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="bi bi-person-circle me-2 fs-5"></i>
+                <div class="small">
+                    <div class="fw-bold">{{ request.user.get_full_name|default:request.user.username }}</div>
+                    <div class="text-white-50">
+                        {% if is_admin %}
+                            <i class="bi bi-star-fill text-warning"></i> Administrador
+                        {% else %}
+                            Usuário
+                        {% endif %}
+                    </div>
+                </div>
+            </a>
+            <ul class="dropdown-menu dropdown-menu-dark text-small shadow" aria-labelledby="dropdownUser">
+                <li>
+                    <a class="dropdown-item" href="{% url 'usuarios:home_modulos' %}">
+                        <i class="bi bi-grid-3x3-gap me-2"></i> Painel Principal
+                    </a>
+                </li>
+                <li><hr class="dropdown-divider"></li>
+                <li>
+                    <a class="dropdown-item" href="{% url 'logout' %}">
+                        <i class="bi bi-box-arrow-right me-2"></i> Sair do Sistema
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<style>
+/* Estilos da Sidebar */
+.sidebar {
+    height: 100vh;
+    max-height: 100vh;
+    width: 280px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar-header {
+    flex-shrink: 0;
+}
+
+.sidebar-body {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    max-height: calc(100vh - 150px); /* Ajusta baseado na altura do header */
+}
+
+.sidebar-footer {
+    flex-shrink: 0;
+    border-top: 1px solid #495057;
+}
+
+.sidebar .list-group-item {
+    border: none;
+    border-radius: 0;
+    padding: 0.75rem 1rem;
+    transition: all 0.2s;
+}
+
+.sidebar .list-group-item:hover:not(.disabled) {
+    background-color: #495057 !important;
+    padding-left: 1.5rem;
+}
+
+.sidebar .list-group-item.active {
+    background-color: #0d6efd !important;
+    border-left: 3px solid #fff;
+}
+
+.sidebar .list-group-item.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.sidebar .list-group-item i {
+    width: 20px;
+    margin-right: 8px;
+}
+
+/* Ajuste do conteúdo principal quando sidebar está presente */
+.main-content {
+    margin-left: 280px;
+    padding: 20px;
+}
+
+/* Responsivo - esconder sidebar em telas pequenas */
+@media (max-width: 768px) {
+    .sidebar {
+        transform: translateX(-100%);
+        transition: transform 0.3s;
+    }
+    
+    .sidebar.show {
+        transform: translateX(0);
+    }
+    
+    .main-content {
+        margin-left: 0;
+    }
+}
+
+/* Scrollbar customizada para a sidebar */
+.sidebar::-webkit-scrollbar,
+.sidebar-body::-webkit-scrollbar {
+    width: 8px;
+}
+
+.sidebar::-webkit-scrollbar-track,
+.sidebar-body::-webkit-scrollbar-track {
+    background: #2d3238;
+}
+
+.sidebar::-webkit-scrollbar-thumb,
+.sidebar-body::-webkit-scrollbar-thumb {
+    background: #6c757d;
+    border-radius: 4px;
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover,
+.sidebar-body::-webkit-scrollbar-thumb:hover {
+    background: #adb5bd;
+}
+
+/* Firefox scrollbar */
+.sidebar,
+.sidebar-body {
+    scrollbar-width: thin;
+    scrollbar-color: #6c757d #2d3238;
+}
+</style>

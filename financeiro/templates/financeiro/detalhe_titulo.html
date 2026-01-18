@@ -1,0 +1,394 @@
+{% extends 'base_with_sidebar.html' %}
+{% load static %}
+{% load financeiro_tags %}
+
+{% block title %}Título {{ titulo.numero_documento }} - Sistema Serrana{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Cabeçalho -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">
+                <i class="bi bi-file-earmark-text me-2"></i>{{ titulo.get_tipo_display }}: {{ titulo.numero_documento }}
+            </h2>
+            <p class="text-muted mb-0">{{ titulo.descricao }}</p>
+        </div>
+        <div>
+            <a href="{% url 'financeiro:listar_titulos' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-2"></i>Voltar
+            </a>
+        </div>
+    </div>
+
+    <!-- Informações do Título -->
+    <div class="row g-3 mb-4">
+        <!-- Card Principal -->
+        <div class="col-md-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-info-circle me-2"></i>Informações do Título
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="text-muted small">Tipo</label>
+                            <div>
+                                {% if titulo.tipo == 'PAGAR' %}
+                                    <span class="badge bg-danger">{{ titulo.get_tipo_display }}</span>
+                                {% else %}
+                                    <span class="badge bg-success">{{ titulo.get_tipo_display }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="text-muted small">Status</label>
+                            <div>
+                                {% if titulo.status == 'QUITADO' %}
+                                    <span class="badge bg-success">{{ titulo.get_status_display }}</span>
+                                {% elif titulo.status == 'PARCIAL' %}
+                                    <span class="badge bg-warning text-dark">{{ titulo.get_status_display }}</span>
+                                {% elif titulo.status == 'CANCELADO' %}
+                                    <span class="badge bg-secondary">{{ titulo.get_status_display }}</span>
+                                {% else %}
+                                    <span class="badge bg-info">{{ titulo.get_status_display }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-12">
+                            <hr>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="text-muted small">{{ titulo.tipo|yesno:'Fornecedor,Cliente' }}</label>
+                            <div><strong>{{ titulo.pessoa.nome }}</strong></div>
+                            {% if titulo.pessoa.cnpj_cpf %}
+                            <small class="text-muted">{{ titulo.pessoa.cnpj_cpf }}</small>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="text-muted small">Data de Emissão</label>
+                            <div><strong>{{ titulo.data_emissao|date:"d/m/Y" }}</strong></div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="text-muted small">Projeto/Obra</label>
+                            <div>
+                                {% if titulo.projeto %}
+                                    <i class="bi bi-folder text-primary"></i> {{ titulo.projeto.codigo }} - {{ titulo.projeto.descricao }}
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="text-muted small">Centro de Custo</label>
+                            <div>
+                                {% if titulo.centro_custo %}
+                                    {{ titulo.centro_custo.nome }}
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-12">
+                            <label class="text-muted small">Banco/Conta Padrão</label>
+                            <div>
+                                {% if titulo.conta_financeira_padrao %}
+                                    <i class="bi bi-bank text-primary"></i> {{ titulo.conta_financeira_padrao.nome }}
+                                    {% if titulo.conta_financeira_padrao.banco %}
+                                        - {{ titulo.conta_financeira_padrao.banco }}
+                                    {% endif %}
+                                {% else %}
+                                    <span class="text-muted">Não definido</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% if titulo.observacao %}
+                        <div class="col-md-12">
+                            <label class="text-muted small">Observações</label>
+                            <div class="alert alert-light border mb-0">
+                                {{ titulo.observacao }}
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card Valores -->
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header {% if titulo.tipo == 'PAGAR' %}bg-danger{% else %}bg-success{% endif %} text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-cash-stack me-2"></i>Valores
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="text-muted small">Valor Total</label>
+                        <h3 class="mb-0">{{ titulo.valor_total|currency }}</h3>
+                    </div>
+                    <hr>
+                    <div class="mb-3">
+                        <label class="text-muted small">Valor Pago</label>
+                        <h4 class="mb-0 text-success">{{ titulo.valor_pago|currency }}</h4>
+                    </div>
+                    <div class="mb-3">
+                        <label class="text-muted small">Saldo em Aberto</label>
+                        <h4 class="mb-0 {% if titulo.saldo_aberto > 0 %}text-danger{% else %}text-muted{% endif %}">
+                            {{ titulo.saldo_aberto|currency }}
+                        </h4>
+                    </div>
+                    <hr>
+                    <div class="mb-0">
+                        <label class="text-muted small">Parcelamento</label>
+                        <div>
+                            <strong>{{ titulo.num_parcelas }}</strong> parcela{{ titulo.num_parcelas|pluralize }}
+                        </div>
+                        <small class="text-muted">Intervalo: {{ titulo.intervalo_dias }} dias</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Parcelas -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white">
+            <h5 class="mb-0">
+                <i class="bi bi-list-ol me-2"></i>Parcelas
+                <span class="badge bg-secondary ms-2">{{ parcelas.count }}</span>
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if parcelas %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 80px;">Parcela</th>
+                            <th>Vencimento</th>
+                            <th class="text-end">Valor Original</th>
+                            <th class="text-end">Valor Pago</th>
+                            <th class="text-end">Saldo</th>
+                            <th style="width: 120px;" class="text-center">Status</th>
+                            <th style="width: 150px;" class="text-center">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for parcela in parcelas %}
+                        <tr {% if parcela.esta_vencida %}class="table-warning"{% endif %}>
+                            <td>
+                                <strong>{{ parcela.numero_parcela }}/{{ titulo.num_parcelas }}</strong>
+                            </td>
+                            <td>
+                                {{ parcela.data_vencimento|date:"d/m/Y" }}
+                                {% if parcela.esta_vencida %}
+                                    <br><small class="text-danger">
+                                        <i class="bi bi-exclamation-triangle-fill"></i>
+                                        Vencida há {{ parcela.dias_atraso }} dias
+                                    </small>
+                                {% endif %}
+                                {% if parcela.status_cobranca == 'PROMESSA' and parcela.data_promessa_pagamento %}
+                                    <br><small class="text-info">
+                                        <i class="bi bi-calendar-check"></i>
+                                        Promessa: {{ parcela.data_promessa_pagamento|date:"d/m/Y" }}
+                                    </small>
+                                {% elif parcela.status_cobranca == 'NEGOCIACAO' %}
+                                    <br><small class="text-success">
+                                        <i class="bi bi-chat-dots"></i>
+                                        Em Negociação
+                                    </small>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                {{ parcela.valor_original|currency }}
+                            </td>
+                            <td class="text-end text-success">
+                                {{ parcela.valor_pago|currency }}
+                            </td>
+                            <td class="text-end {% if parcela.saldo_aberto > 0 %}text-danger{% else %}text-muted{% endif %}">
+                                {{ parcela.saldo_aberto|currency }}
+                            </td>
+                            <td class="text-center">
+                                {% if parcela.status == 'QUITADO' %}
+                                    <span class="badge bg-success">Quitado</span>
+                                {% elif parcela.status == 'PARCIAL' %}
+                                    <span class="badge bg-warning text-dark">Parcial</span>
+                                {% elif parcela.status == 'CANCELADO' %}
+                                    <span class="badge bg-secondary">Cancelado</span>
+                                {% else %}
+                                    <span class="badge bg-info">Aberto</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                {% if parcela.status != 'QUITADO' and parcela.status != 'CANCELADO' %}
+                                <a href="{% url 'financeiro:baixar_parcela' parcela.id %}" 
+                                   class="btn btn-sm btn-primary" 
+                                   title="Baixar/Pagar">
+                                    <i class="bi bi-check-circle"></i> Baixar
+                                </a>
+                                {% endif %}
+                                
+                                {% if parcela.baixas.exists %}
+                                <button class="btn btn-sm btn-outline-info" 
+                                        type="button" 
+                                        data-bs-toggle="collapse" 
+                                        data-bs-target="#baixas-{{ parcela.id }}"
+                                        title="Ver baixas">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                                {% endif %}
+                                
+                                {% if parcela.status_cobranca == 'PROMESSA' or parcela.status_cobranca == 'NEGOCIACAO' %}
+                                <button class="btn btn-sm btn-outline-success" 
+                                        type="button" 
+                                        data-bs-toggle="collapse" 
+                                        data-bs-target="#info-{{ parcela.id }}"
+                                        title="Ver detalhes">
+                                    <i class="bi bi-info-circle"></i>
+                                </button>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        
+                        <!-- Detalhes de Promessa/Negociação -->
+                        {% if parcela.status_cobranca == 'PROMESSA' or parcela.status_cobranca == 'NEGOCIACAO' %}
+                        <tr class="collapse" id="info-{{ parcela.id }}">
+                            <td colspan="7" class="{% if parcela.status_cobranca == 'PROMESSA' %}bg-info{% else %}bg-success{% endif %} bg-opacity-10">
+                                <div class="p-3">
+                                    {% if parcela.status_cobranca == 'PROMESSA' %}
+                                    <h6><i class="bi bi-calendar-check text-info me-2"></i>Promessa de Pagamento</h6>
+                                    <p class="mb-1"><strong>Data Prometida:</strong> {{ parcela.data_promessa_pagamento|date:"d/m/Y" }}</p>
+                                    {% else %}
+                                    <h6><i class="bi bi-chat-dots text-success me-2"></i>Em Negociação</h6>
+                                    {% endif %}
+                                    {% if parcela.observacao_promessa %}
+                                    <p class="mb-0"><strong>Observação:</strong> {{ parcela.observacao_promessa }}</p>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endif %}
+                        
+                        {% if parcela.baixas.exists %}
+                        <tr class="collapse" id="baixas-{{ parcela.id }}">
+                            <td colspan="7" class="bg-light">
+                                <div class="p-3">
+                                    <h6><i class="bi bi-receipt me-2"></i>Baixas da Parcela {{ parcela.numero_parcela }}</h6>
+                                    <table class="table table-sm table-bordered mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th>Data</th>
+                                                <th>Conta</th>
+                                                <th>Forma</th>
+                                                <th class="text-end">Valor</th>
+                                                <th class="text-end">Juros</th>
+                                                <th class="text-end">Desconto</th>
+                                                <th class="text-end">Líquido</th>
+                                                <th>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for baixa in parcela.baixas.all %}
+                                            <tr {% if baixa.estornado %}class="text-muted text-decoration-line-through"{% endif %}>
+                                                <td>{{ baixa.data_pagamento|date:"d/m/Y" }}</td>
+                                                <td>{{ baixa.conta_financeira.nome }}</td>
+                                                <td>{{ baixa.forma_pagamento.nome }}</td>
+                                                <td class="text-end">{{ baixa.valor_principal|currency }}</td>
+                                                <td class="text-end">{{ baixa.juros|currency }}</td>
+                                                <td class="text-end">{{ baixa.desconto|currency }}</td>
+                                                <td class="text-end"><strong>{{ baixa.valor_liquido|currency }}</strong></td>
+                                                <td>
+                                                    {% if baixa.estornado %}
+                                                        <span class="badge bg-danger">Estornado</span>
+                                                    {% else %}
+                                                        <span class="badge bg-success">Pago</span>
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endif %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-info mb-0">
+                <i class="bi bi-info-circle me-2"></i>
+                Nenhuma parcela encontrada.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Informações de Auditoria -->
+    <div class="card border-0 shadow-sm mt-3">
+        <div class="card-body">
+            <div class="row g-3 small text-muted">
+                <div class="col-md-6">
+                    <i class="bi bi-person-fill me-1"></i>
+                    Criado por: <strong>{{ titulo.criado_por.get_full_name|default:titulo.criado_por.username }}</strong>
+                    em {{ titulo.criado_em|date:"d/m/Y H:i" }}
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <i class="bi bi-clock-fill me-1"></i>
+                    Última atualização: {{ titulo.atualizado_em|date:"d/m/Y H:i" }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rodapé com Ações Rápidas -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm bg-light">
+                <div class="card-body py-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <small class="text-muted">Ações Rápidas</small>
+                        </div>
+                        <div class="btn-group" role="group">
+                            <a href="{% url 'financeiro:criar_titulo' %}?tipo=PAGAR" class="btn btn-danger">
+                                <i class="bi bi-plus-circle me-1"></i>Nova Conta a Pagar
+                            </a>
+                            <a href="{% url 'financeiro:criar_titulo' %}?tipo=RECEBER" class="btn btn-success">
+                                <i class="bi bi-plus-circle me-1"></i>Nova Conta a Receber
+                            </a>
+                            <a href="{% url 'financeiro:listar_titulos' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-list-ul me-1"></i>Ver Todos os Títulos
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-colapsar outras baixas ao abrir uma
+    document.querySelectorAll('[data-bs-toggle="collapse"]').forEach(button => {
+        button.addEventListener('click', function() {
+            const targetId = this.getAttribute('data-bs-target');
+            document.querySelectorAll('.collapse.show').forEach(collapse => {
+                if ('#' + collapse.id !== targetId) {
+                    bootstrap.Collapse.getInstance(collapse)?.hide();
+                }
+            });
+        });
+    });
+});
+</script>
+{% endblock %}

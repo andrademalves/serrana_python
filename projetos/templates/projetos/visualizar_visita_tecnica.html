@@ -1,0 +1,184 @@
+{% extends 'base_with_sidebar.html' %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2><i class="bi bi-calendar-check"></i> {{ titulo }}</h2>
+                <div>
+                    {% if visita.status == 'AGENDADA' %}
+                    <a href="{% url 'projetos:editar_visita_tecnica' visita.pk %}" class="btn btn-warning">
+                        <i class="bi bi-pencil"></i> Editar
+                    </a>
+                    <a href="{% url 'projetos:marcar_visita_realizada' visita.pk %}" class="btn btn-success" onclick="return confirm('Confirma que a visita foi realizada?')">
+                        <i class="bi bi-check-circle"></i> Marcar Realizada
+                    </a>
+                    {% endif %}
+                    <a href="{% url 'projetos:listar_visitas_tecnicas' %}" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left"></i> Voltar
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-6">
+            <div class="card mb-3">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-info-circle"></i> Informações da Visita</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm">
+                        <tr>
+                            <th width="40%">Orçamento:</th>
+                            <td>
+                                <a href="{% url 'projetos:visualizar_orcamento' visita.orcamento.pk %}">
+                                    {{ visita.orcamento.codigo }}
+                                </a>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Cliente:</th>
+                            <td>{{ visita.orcamento.cliente.nome }}</td>
+                        </tr>
+                        <tr>
+                            <th>Técnico Responsável:</th>
+                            <td>{{ visita.tecnico.nome }}</td>
+                        </tr>
+                        <tr>
+                            <th>Status:</th>
+                            <td>
+                                <span class="badge bg-{% if visita.status == 'REALIZADA' %}success{% elif visita.status == 'AGENDADA' %}warning{% else %}secondary{% endif %}">
+                                    {{ visita.get_status_display }}
+                                </span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Agendado por:</th>
+                            <td>{{ visita.agendado_por.get_full_name|default:visita.agendado_por.username }}</td>
+                        </tr>
+                        <tr>
+                            <th>Data do Agendamento:</th>
+                            <td>{{ visita.data_agendamento|date:"d/m/Y H:i" }}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card mb-3">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="bi bi-clock"></i> Data e Horários</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm">
+                        <tr>
+                            <th width="40%">Data da Visita:</th>
+                            <td>{{ visita.data_visita|date:"d/m/Y" }}</td>
+                        </tr>
+                        {% if visita.hora_inicio %}
+                        <tr>
+                            <th>Horário Início:</th>
+                            <td>{{ visita.hora_inicio|time:"H:i" }}</td>
+                        </tr>
+                        {% endif %}
+                        {% if visita.hora_fim %}
+                        <tr>
+                            <th>Horário Fim:</th>
+                            <td>{{ visita.hora_fim|time:"H:i" }}</td>
+                        </tr>
+                        {% endif %}
+                        {% if duracao_minutos %}
+                        <tr>
+                            <th>Duração:</th>
+                            <td>
+                                {% if duracao_horas > 0 %}
+                                    {{ duracao_horas }}h {% if duracao_min_resto > 0 %}{{ duracao_min_resto }}min{% endif %}
+                                {% else %}
+                                    {{ duracao_minutos }} minutos
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endif %}
+                    </table>
+                </div>
+            </div>
+
+            <div class="card mb-3">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="bi bi-currency-dollar"></i> Valores</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm">
+                        <tr>
+                            <th width="40%">Custo da Visita:</th>
+                            <td>R$ {{ visita.custo_visita|floatformat:2 }}</td>
+                        </tr>
+                        <tr>
+                            <th>Valor Cobrado:</th>
+                            <td><strong>R$ {{ visita.valor_cobrado|floatformat:2 }}</strong></td>
+                        </tr>
+                        {% if visita.valor_cobrado > 0 and visita.custo_visita > 0 %}
+                        <tr>
+                            <th>Margem:</th>
+                            <td>
+                                {% widthratio visita.valor_cobrado visita.custo_visita 100|floatformat:0 %}%
+                            </td>
+                        </tr>
+                        {% endif %}
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if visita.descricao %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-file-text"></i> Descrição/Objetivo</h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-0">{{ visita.descricao|linebreaks }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if visita.observacoes %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-pencil-square"></i> Observações</h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-0">{{ visita.observacoes|linebreaks }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <small class="text-muted">
+                        <strong>Criado em:</strong> {{ visita.criado_em|date:"d/m/Y H:i" }}
+                        <br>
+                        <strong>Última atualização:</strong> {{ visita.atualizado_em|date:"d/m/Y H:i" }}
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

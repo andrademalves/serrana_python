@@ -1,0 +1,179 @@
+from django import forms
+from django.forms import inlineformset_factory
+from .models import (
+    Orcamento, OrcamentoItem, Projeto, VisitaTecnica,
+    AlocacaoProjeto, VendaDireta, VendaDiretaItem, ContaCorrenteProjeto
+)
+from cadastros.models import Pessoa, Produto
+from estoque.models import Item
+
+
+class OrcamentoForm(forms.ModelForm):
+    class Meta:
+        model = Orcamento
+        fields = [
+            'cliente', 'vendedor', 'data_orcamento', 'validade_dias', 
+            'desconto', 'observacoes'
+        ]
+        widgets = {
+            'cliente': forms.Select(attrs={'class': 'form-control', 'required': True}),
+            'vendedor': forms.Select(attrs={'class': 'form-control'}),
+            'data_orcamento': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'validade_dias': forms.NumberInput(attrs={'class': 'form-control', 'value': 30}),
+            'desconto': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'value': '0.00'}),
+            'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+        }
+
+
+class OrcamentoItemForm(forms.ModelForm):
+    class Meta:
+        model = OrcamentoItem
+        fields = ['tipo', 'item', 'descricao', 'quantidade', 'valor_unitario', 'desconto']
+        widgets = {
+            'tipo': forms.Select(attrs={'class': 'form-control'}),
+            'item': forms.Select(attrs={'class': 'form-control'}),
+            'descricao': forms.TextInput(attrs={'class': 'form-control'}),
+            'quantidade': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.001', 'value': '1.000'}),
+            'valor_unitario': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.0001'}),
+            'desconto': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'value': '0.00'}),
+        }
+
+
+# Formset para itens do orçamento
+OrcamentoItemFormSet = inlineformset_factory(
+    Orcamento,
+    OrcamentoItem,
+    form=OrcamentoItemForm,
+    extra=1,
+    can_delete=True,
+    min_num=1,
+    validate_min=True
+)
+
+
+class ProjetoForm(forms.ModelForm):
+    class Meta:
+        model = Projeto
+        fields = [
+            'orcamento', 'cliente', 'nome_obra', 'endereco_obra', 'cidade', 'estado',
+            'descricao', 'data_inicio', 'data_previsao_termino', 'data_termino_real',
+            'valor_orcado', 'valor_final', 'responsavel_tecnico', 'responsavel_comercial',
+            'observacoes', 'status'
+        ]
+        widgets = {
+            'orcamento': forms.Select(attrs={'class': 'form-control'}),
+            'cliente': forms.Select(attrs={'class': 'form-control', 'required': True}),
+            'nome_obra': forms.TextInput(attrs={'class': 'form-control', 'required': True}),
+            'endereco_obra': forms.TextInput(attrs={'class': 'form-control'}),
+            'cidade': forms.TextInput(attrs={'class': 'form-control'}),
+            'estado': forms.Select(attrs={'class': 'form-control'}),
+            'descricao': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'data_inicio': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'data_previsao_termino': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'data_termino_real': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'valor_orcado': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'valor_final': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'responsavel_tecnico': forms.TextInput(attrs={'class': 'form-control'}),
+            'responsavel_comercial': forms.TextInput(attrs={'class': 'form-control'}),
+            'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'status': forms.Select(attrs={'class': 'form-control'}),
+        }
+
+
+class VisitaTecnicaForm(forms.ModelForm):
+    class Meta:
+        model = VisitaTecnica
+        fields = [
+            'projeto', 'data_visita', 'hora_visita', 'responsavel',
+            'observacoes', 'cobrada', 'valor_cobrado', 'virou_desconto'
+        ]
+        widgets = {
+            'projeto': forms.Select(attrs={'class': 'form-control', 'required': True}),
+            'data_visita': forms.DateInput(attrs={'class': 'form-control', 'type': 'date', 'required': True}),
+            'hora_visita': forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
+            'responsavel': forms.TextInput(attrs={'class': 'form-control'}),
+            'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'cobrada': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'valor_cobrado': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'value': '0.00'}),
+            'virou_desconto': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+
+
+class AlocacaoProjetoForm(forms.ModelForm):
+    class Meta:
+        model = AlocacaoProjeto
+        fields = [
+            'projeto', 'tipo', 'data_alocacao', 'item_estoque', 'produto',
+            'descricao', 'quantidade', 'valor_unitario', 'responsavel', 'observacoes'
+        ]
+        widgets = {
+            'projeto': forms.Select(attrs={'class': 'form-control', 'required': True}),
+            'tipo': forms.Select(attrs={'class': 'form-control', 'required': True}),
+            'data_alocacao': forms.DateInput(attrs={'class': 'form-control', 'type': 'date', 'required': True}),
+            'item_estoque': forms.Select(attrs={'class': 'form-control'}),
+            'produto': forms.Select(attrs={'class': 'form-control'}),
+            'descricao': forms.TextInput(attrs={'class': 'form-control', 'required': True}),
+            'quantidade': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'required': True}),
+            'valor_unitario': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'required': True}),
+            'responsavel': forms.TextInput(attrs={'class': 'form-control'}),
+            'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+        }
+
+
+class VendaDiretaForm(forms.ModelForm):
+    class Meta:
+        model = VendaDireta
+        fields = [
+            'cliente', 'data_venda', 'descricao', 'desconto_percentual',
+            'desconto_valor', 'forma_pagamento', 'observacoes', 'status'
+        ]
+        widgets = {
+            'cliente': forms.Select(attrs={'class': 'form-control', 'required': True}),
+            'data_venda': forms.DateInput(attrs={'class': 'form-control', 'type': 'date', 'required': True}),
+            'descricao': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+            'desconto_percentual': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'value': '0.00'}),
+            'desconto_valor': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'value': '0.00'}),
+            'forma_pagamento': forms.TextInput(attrs={'class': 'form-control'}),
+            'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+            'status': forms.Select(attrs={'class': 'form-control'}),
+        }
+
+
+class VendaDiretaItemForm(forms.ModelForm):
+    class Meta:
+        model = VendaDiretaItem
+        fields = ['item_estoque', 'produto', 'descricao', 'quantidade', 'valor_unitario', 'desconto_item']
+        widgets = {
+            'item_estoque': forms.Select(attrs={'class': 'form-control'}),
+            'produto': forms.Select(attrs={'class': 'form-control'}),
+            'descricao': forms.TextInput(attrs={'class': 'form-control'}),
+            'quantidade': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'value': '1.00'}),
+            'valor_unitario': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'desconto_item': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'value': '0.00'}),
+        }
+
+
+# Formset para itens da venda direta
+VendaDiretaItemFormSet = inlineformset_factory(
+    VendaDireta,
+    VendaDiretaItem,
+    form=VendaDiretaItemForm,
+    extra=1,
+    can_delete=True,
+    min_num=1,
+    validate_min=True
+)
+
+
+class ContaCorrenteProjetoForm(forms.ModelForm):
+    class Meta:
+        model = ContaCorrenteProjeto
+        fields = ['projeto', 'data_lancamento', 'tipo', 'descricao', 'valor', 'observacoes']
+        widgets = {
+            'projeto': forms.Select(attrs={'class': 'form-control', 'required': True}),
+            'data_lancamento': forms.DateInput(attrs={'class': 'form-control', 'type': 'date', 'required': True}),
+            'tipo': forms.Select(attrs={'class': 'form-control', 'required': True}),
+            'descricao': forms.TextInput(attrs={'class': 'form-control', 'required': True}),
+            'valor': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'required': True}),
+            'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+        }

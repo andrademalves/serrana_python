@@ -1,0 +1,160 @@
+{% extends 'base_with_sidebar.html' %}
+
+{% block title %}Dashboard Cadastros - Sistema Serrana{% endblock %}
+
+{% block sidebar %}
+    <a class="nav-link" href="{% url 'usuarios:home_modulos' %}">
+        <i class="bi bi-grid"></i> Módulos
+    </a>
+    <hr>
+    <h6 class="text-muted text-uppercase px-3 mb-2">Cadastros</h6>
+    <a class="nav-link active" href="{% url 'cadastros:dashboard_cadastros' %}">
+        <i class="bi bi-speedometer2"></i> Dashboard
+    </a>
+    <a class="nav-link" href="{% url 'cadastros:listar_pessoas' %}">
+        <i class="bi bi-person-lines-fill"></i> Pessoas
+    </a>
+    <a class="nav-link" href="{% url 'cadastros:listar_produtos' %}">
+        <i class="bi bi-box-seam"></i> Produtos
+    </a>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-speedometer2"></i> Dashboard - Cadastros</h2>
+</div>
+
+<div class="row">
+    <!-- Card Pessoas -->
+    <div class="col-md-4 mb-4">
+        <div class="card border-primary h-100">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-people"></i> Pessoas</h5>
+            </div>
+            <div class="card-body">
+                <h2 class="text-primary mb-3">{{ total_pessoas }}</h2>
+                <div class="mb-2">
+                    <small class="text-muted">Clientes:</small>
+                    <span class="badge bg-info float-end">{{ total_clientes }}</span>
+                </div>
+                <div class="mb-3">
+                    <small class="text-muted">Fornecedores:</small>
+                    <span class="badge bg-warning float-end">{{ total_fornecedores }}</span>
+                </div>
+                <div class="d-grid gap-2">
+                    <a href="{% url 'cadastros:listar_pessoas' %}" class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-list"></i> Ver Todas
+                    </a>
+                    <a href="{% url 'cadastros:criar_pessoa' %}" class="btn btn-primary btn-sm">
+                        <i class="bi bi-plus-circle"></i> Nova Pessoa
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Card Produtos -->
+    <div class="col-md-4 mb-4">
+        <div class="card border-success h-100">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="bi bi-box-seam"></i> Produtos</h5>
+            </div>
+            <div class="card-body">
+                <h2 class="text-success mb-3">{{ total_produtos }}</h2>
+                {% if produtos_estoque_baixo > 0 %}
+                <div class="alert alert-warning py-2 mb-3">
+                    <small>
+                        <i class="bi bi-exclamation-triangle"></i>
+                        {{ produtos_estoque_baixo }} produto{{ produtos_estoque_baixo|pluralize }} com estoque baixo
+                    </small>
+                </div>
+                {% endif %}
+                <div class="d-grid gap-2">
+                    <a href="{% url 'cadastros:listar_produtos' %}" class="btn btn-outline-success btn-sm">
+                        <i class="bi bi-list"></i> Ver Todos
+                    </a>
+                    <a href="{% url 'cadastros:criar_produto' %}" class="btn btn-success btn-sm">
+                        <i class="bi bi-plus-circle"></i> Novo Produto
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Card Ações Rápidas -->
+    <div class="col-md-4 mb-4">
+        <div class="card border-secondary h-100">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0"><i class="bi bi-lightning"></i> Ações Rápidas</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{% url 'cadastros:criar_pessoa' %}" class="btn btn-outline-primary">
+                        <i class="bi bi-person-plus"></i> Cadastrar Pessoa
+                    </a>
+                    <a href="{% url 'cadastros:criar_produto' %}" class="btn btn-outline-success">
+                        <i class="bi bi-box-seam"></i> Cadastrar Produto
+                    </a>
+                    <a href="{% url 'cadastros:listar_pessoas' %}?classificacao=cliente" class="btn btn-outline-info">
+                        <i class="bi bi-person-badge"></i> Ver Clientes
+                    </a>
+                    <a href="{% url 'cadastros:listar_pessoas' %}?classificacao=fornecedor" class="btn btn-outline-warning">
+                        <i class="bi bi-truck"></i> Ver Fornecedores
+                    </a>
+                    {% if produtos_estoque_baixo > 0 %}
+                    <a href="{% url 'cadastros:listar_produtos' %}?estoque_baixo=sim" class="btn btn-outline-danger">
+                        <i class="bi bi-exclamation-triangle"></i> Estoque Baixo
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Resumo Estatísticas -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-graph-up"></i> Resumo</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-3">
+                        <div class="border rounded p-3 mb-3">
+                            <i class="bi bi-people-fill text-primary" style="font-size: 2rem;"></i>
+                            <h3 class="mt-2 mb-0">{{ total_pessoas }}</h3>
+                            <small class="text-muted">Total de Pessoas</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="border rounded p-3 mb-3">
+                            <i class="bi bi-person-badge-fill text-info" style="font-size: 2rem;"></i>
+                            <h3 class="mt-2 mb-0">{{ total_clientes }}</h3>
+                            <small class="text-muted">Clientes</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="border rounded p-3 mb-3">
+                            <i class="bi bi-truck text-warning" style="font-size: 2rem;"></i>
+                            <h3 class="mt-2 mb-0">{{ total_fornecedores }}</h3>
+                            <small class="text-muted">Fornecedores</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="border rounded p-3 mb-3">
+                            <i class="bi bi-box-seam-fill text-success" style="font-size: 2rem;"></i>
+                            <h3 class="mt-2 mb-0">{{ total_produtos }}</h3>
+                            <small class="text-muted">Produtos</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+
+

@@ -1,0 +1,142 @@
+{% extends 'base_with_sidebar.html' %}
+{% load static %}
+{% load financeiro_tags %}
+
+{% block title %}Contas Financeiras - Sistema Serrana{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <h2><i class="bi bi-bank"></i> Contas Financeiras</h2>
+            <p class="text-muted">Gerenciamento de contas bancárias e caixa</p>
+        </div>
+        <div class="col-auto">
+            <a href="{% url 'financeiro:criar_transferencia' %}" class="btn btn-warning me-2">
+                <i class="bi bi-arrow-left-right"></i> Nova Transferência
+            </a>
+            <a href="{% url 'financeiro:criar_conta_financeira' %}" class="btn btn-success me-2">
+                <i class="bi bi-plus-lg"></i> Nova Conta
+            </a>
+            <a href="{% url 'financeiro:dashboard' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Voltar
+            </a>
+        </div>
+    </div>
+
+    <!-- Cards com Resumo -->
+    <div class="row mb-4">
+        {% for conta in contas %}
+        <div class="col-md-6 col-lg-4 mb-3">
+            <div class="card h-100">
+                <div class="card-header bg-{% if conta.tipo == 'BANCO' %}primary{% else %}success{% endif %} text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-{% if conta.tipo == 'BANCO' %}bank{% else %}cash-stack{% endif %}"></i>
+                        {{ conta.nome }}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-2">
+                        <small class="text-muted">Tipo:</small>
+                        <span class="badge bg-{% if conta.tipo == 'BANCO' %}info{% else %}warning{% endif %}">
+                            {{ conta.get_tipo_display }}
+                        </span>
+                    </div>
+                    
+                    {% if conta.banco %}
+                    <div class="mb-2">
+                        <small class="text-muted">Banco:</small>
+                        <strong>{{ conta.banco }}</strong>
+                    </div>
+                    {% endif %}
+                    
+                    {% if conta.agencia %}
+                    <div class="mb-2">
+                        <small class="text-muted">Agência/Conta:</small>
+                        <span>{{ conta.agencia }} / {{ conta.conta }}</span>
+                    </div>
+                    {% endif %}
+                    
+                    <hr>
+                    
+                    <div class="mb-2">
+                        <small class="text-muted">Saldo Inicial:</small>
+                        <div class="h6">{{ conta.saldo_inicial|currency }}</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <small class="text-muted">Saldo Atual:</small>
+                        <div class="h4 mb-0 {% if conta.saldo_atual >= 0 %}text-success{% else %}text-danger{% endif %}">
+                            {{ conta.saldo_atual|currency }}
+                        </div>
+                    </div>
+                    
+                    {% if conta.observacoes %}
+                    <div class="mb-2">
+                        <small class="text-muted">Observações:</small>
+                        <p class="small mb-0">{{ conta.observacoes|truncatewords:15 }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="card-footer">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="badge bg-{% if conta.ativo %}success{% else %}secondary{% endif %}">
+                            {% if conta.ativo %}Ativa{% else %}Inativa{% endif %}
+                        </span>
+                        <div>
+                            <a href="{% url 'financeiro:extrato_conta' conta.id %}" class="btn btn-sm btn-info me-1" title="Ver Extrato">
+                                <i class="bi bi-file-text"></i>
+                            </a>
+                            <a href="{% url 'financeiro:editar_conta_financeira' conta.pk %}" class="btn btn-sm btn-primary me-1" title="Editar">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <a href="{% url 'financeiro:excluir_conta_financeira' conta.pk %}" class="btn btn-sm btn-danger" title="Excluir">
+                                <i class="bi bi-trash"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i> Nenhuma conta financeira cadastrada.
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Totalizadores -->
+    {% if contas %}
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card bg-light">
+                <div class="card-body">
+                    <h6 class="text-muted">Total em Bancos</h6>
+                    <h4 class="text-primary">{{ total_bancos|currency }}</h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-light">
+                <div class="card-body">
+                    <h6 class="text-muted">Total em Caixa</h6>
+                    <h4 class="text-success">{{ total_caixa|currency }}</h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-light">
+                <div class="card-body">
+                    <h6 class="text-muted">Saldo Total</h6>
+                    <h4 class="{% if total_geral >= 0 %}text-success{% else %}text-danger{% endif %}">
+                        {{ total_geral|currency }}
+                    </h4>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

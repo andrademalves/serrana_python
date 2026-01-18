@@ -1,0 +1,469 @@
+{% extends 'base_with_sidebar.html' %}
+{% load static %}
+{% load financeiro_tags %}
+
+{% block title %}Dashboard Financeiro{% endblock %}
+
+{% block extra_css %}
+<style>
+    .card-dashboard {
+        height: 180px;
+    }
+    .card-dashboard .card-body {
+        padding: 1rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <h2 class="mb-4"><i class="bi bi-speedometer2"></i> Dashboard Financeiro</h2>
+    
+    <!-- Cards de Resumo -->
+    <div class="row mb-4">
+        <!-- Caixa Atual -->
+        <div class="col-md-3">
+            <div class="card bg-primary text-white card-dashboard">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-subtitle mb-2">Caixa Atual</h6>
+                            <h3 class="mb-0">{{ dados.caixa.saldo_atual|currency }}</h3>
+                        </div>
+                        <div>
+                            <i class="bi bi-wallet2 fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- A Receber -->
+        <div class="col-md-3">
+            <div class="card bg-success text-white card-dashboard">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-subtitle mb-2">A Receber (Saldo Aberto)</h6>
+                            <h3 class="mb-0">{{ dados.a_receber.total_aberto|currency }}</h3>
+                            <small>Vencido: {{ dados.a_receber.vencido|currency }}</small><br>
+                            <small>Vencer 30d: {{ dados.a_receber.vencer_30d|currency }}</small>
+                        </div>
+                        <div>
+                            <i class="bi bi-arrow-down-circle fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- A Pagar -->
+        <div class="col-md-3">
+            <div class="card bg-danger text-white card-dashboard">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-subtitle mb-2">A Pagar (Saldo Aberto)</h6>
+                            <h3 class="mb-0">{{ dados.a_pagar.total_aberto|currency }}</h3>
+                            <small>Vencido: {{ dados.a_pagar.vencido|currency }}</small><br>
+                            <small>Vencer 30d: {{ dados.a_pagar.vencer_30d|currency }}</small>
+                        </div>
+                        <div>
+                            <i class="bi bi-arrow-up-circle fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Saldo Projetado 30 Dias -->
+        <div class="col-md-3">
+            <div class="card {% if dados.projecoes.30_dias.saldo_previsto >= 0 %}bg-info{% else %}bg-warning{% endif %} text-white card-dashboard">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-subtitle mb-2">Projeção 30 Dias</h6>
+                            <h3 class="mb-0">{{ dados.projecoes.30_dias.saldo_previsto|currency }}</h3>
+                            <small>Entradas - Saídas</small>
+                        </div>
+                        <div>
+                            <i class="bi bi-graph-up fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Cards de Recebimentos e Pagamentos Realizados -->
+    <div class="row mb-4">
+        <!-- Recebido no Mês -->
+        <div class="col-md-3">
+            <div class="card border-success card-dashboard">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-subtitle mb-2 text-success">Recebido no Mês</h6>
+                            <h4 class="mb-0 text-success">{{ dados.a_receber.recebido_mes|currency }}</h4>
+                            <small class="text-muted">Baixas efetuadas</small>
+                        </div>
+                        <div>
+                            <i class="bi bi-check-circle text-success fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Recebido no Ano -->
+        <div class="col-md-3">
+            <div class="card border-success card-dashboard">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-subtitle mb-2 text-success">Recebido no Ano</h6>
+                            <h4 class="mb-0 text-success">{{ dados.a_receber.recebido_ano|currency }}</h4>
+                            <small class="text-muted">Total ano corrente</small>
+                        </div>
+                        <div>
+                            <i class="bi bi-calendar-check text-success fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Pago no Mês -->
+        <div class="col-md-3">
+            <div class="card border-danger card-dashboard">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-subtitle mb-2 text-danger">Pago no Mês</h6>
+                            <h4 class="mb-0 text-danger">{{ dados.a_pagar.pago_mes|currency }}</h4>
+                            <small class="text-muted">Baixas efetuadas</small>
+                        </div>
+                        <div>
+                            <i class="bi bi-check-circle text-danger fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Pago no Ano -->
+        <div class="col-md-3">
+            <div class="card border-danger card-dashboard">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-subtitle mb-2 text-danger">Pago no Ano</h6>
+                            <h4 class="mb-0 text-danger">{{ dados.a_pagar.pago_ano|currency }}</h4>
+                            <small class="text-muted">Total ano corrente</small>
+                        </div>
+                        <div>
+                            <i class="bi bi-calendar-check text-danger fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Contas Bancárias -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="bi bi-bank"></i> Contas Bancárias e Saldos</h5>
+                </div>
+                <div class="card-body">
+                    {% if contas_financeiras %}
+                    <div class="table-responsive">
+                        <table class="table table-hover table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Conta</th>
+                                    <th>Banco</th>
+                                    <th>Agência</th>
+                                    <th>Número da Conta</th>
+                                    <th>Tipo</th>
+                                    <th class="text-end">Saldo Atual</th>
+                                    <th class="text-center">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for conta in contas_financeiras %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ conta.descricao }}</strong>
+                                    </td>
+                                    <td>
+                                        {% if conta.banco %}
+                                            {{ conta.banco.codigo }} - {{ conta.banco.nome }}
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ conta.agencia|default:"-" }}</td>
+                                    <td>{{ conta.numero_conta|default:"-" }}</td>
+                                    <td>
+                                        {% if conta.tipo == 'CONTA_CORRENTE' %}
+                                            <span class="badge bg-primary">Conta Corrente</span>
+                                        {% elif conta.tipo == 'POUPANCA' %}
+                                            <span class="badge bg-success">Poupança</span>
+                                        {% elif conta.tipo == 'CAIXA' %}
+                                            <span class="badge bg-info">Caixa</span>
+                                        {% elif conta.tipo == 'APLICACAO' %}
+                                            <span class="badge bg-warning text-dark">Aplicação</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">{{ conta.get_tipo_display }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end">
+                                        <strong class="{% if conta.saldo_atual >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                            {{ conta.saldo_atual|currency }}
+                                        </strong>
+                                    </td>
+                                    <td class="text-center">
+                                        <a href="{% url 'financeiro:extrato_conta' conta.id %}" class="btn btn-sm btn-outline-primary" title="Ver Extrato">
+                                            <i class="bi bi-list-ul"></i> Extrato
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot>
+                                <tr class="table-secondary">
+                                    <td colspan="5" class="text-end"><strong>SALDO TOTAL</strong></td>
+                                    <td class="text-end">
+                                        <strong class="{% if saldo_total_contas >= 0 %}text-success{% else %}text-danger{% endif %} fs-5">
+                                            {{ saldo_total_contas|currency }}
+                                        </strong>
+                                    </td>
+                                    <td></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted mb-0">
+                        <i class="bi bi-info-circle"></i> Nenhuma conta bancária cadastrada. 
+                        <a href="{% url 'financeiro:criar_conta_financeira' %}">Cadastre sua primeira conta</a>.
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Indicadores de Saúde Financeira -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="bi bi-heart-pulse"></i> Indicadores de Saúde Financeira</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <!-- Inadimplência -->
+                        <div class="col-md-3">
+                            <div class="text-center p-3 border rounded">
+                                <h6>Inadimplência</h6>
+                                <h2 class="{% if dados.indicadores.inadimplencia.status == 'OK' %}text-success{% elif dados.indicadores.inadimplencia.status == 'ALERTA' %}text-warning{% else %}text-danger{% endif %}">
+                                    {{ dados.indicadores.inadimplencia.taxa_inadimplencia }}%
+                                </h2>
+                                <small class="text-muted">Vencido: {{ dados.indicadores.inadimplencia.total_vencido|currency }}</small>
+                            </div>
+                        </div>
+                        
+                        <!-- Liquidez -->
+                        <div class="col-md-3">
+                            <div class="text-center p-3 border rounded">
+                                <h6>Liquidez 30 Dias</h6>
+                                <h2 class="{% if dados.indicadores.liquidez_30d.status == 'OK' %}text-success{% elif dados.indicadores.liquidez_30d.status == 'ALERTA' %}text-warning{% else %}text-danger{% endif %}">
+                                    {{ dados.indicadores.liquidez_30d.indice_liquidez }}
+                                </h2>
+                                <small class="text-muted">Entradas/Saídas</small>
+                            </div>
+                        </div>
+                        
+                        <!-- PMR -->
+                        <div class="col-md-3">
+                            <div class="text-center p-3 border rounded">
+                                <h6>PMR - Prazo Médio Recebimento</h6>
+                                <h2 class="{% if dados.indicadores.pmr.status == 'OK' %}text-success{% elif dados.indicadores.pmr.status == 'ALERTA' %}text-warning{% else %}text-danger{% endif %}">
+                                    {{ dados.indicadores.pmr.prazo_medio_dias }} dias
+                                </h2>
+                                <small class="text-muted">{{ dados.indicadores.pmr.periodo }}</small>
+                            </div>
+                        </div>
+                        
+                        <!-- PMP -->
+                        <div class="col-md-3">
+                            <div class="text-center p-3 border rounded">
+                                <h6>PMP - Prazo Médio Pagamento</h6>
+                                <h2 class="text-info">
+                                    {{ dados.indicadores.pmp.prazo_medio_dias }} dias
+                                </h2>
+                                <small class="text-muted">{{ dados.indicadores.pmp.periodo }}</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Projeções de Fluxo -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="bi bi-calendar-range"></i> Projeções de Fluxo de Caixa</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Período</th>
+                                    <th class="text-end">Entradas Previstas</th>
+                                    <th class="text-end">Saídas Previstas</th>
+                                    <th class="text-end">Saldo Projetado</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong>Próximos 7 dias</strong></td>
+                                    <td class="text-end text-success">{{ dados.projecoes.7_dias.entradas_previstas|currency }}</td>
+                                    <td class="text-end text-danger">{{ dados.projecoes.7_dias.saidas_previstas|currency }}</td>
+                                    <td class="text-end {% if dados.projecoes.7_dias.saldo_previsto >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                        <strong>{{ dados.projecoes.7_dias.saldo_previsto|currency }}</strong>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Próximos 30 dias</strong></td>
+                                    <td class="text-end text-success">{{ dados.projecoes.30_dias.entradas_previstas|currency }}</td>
+                                    <td class="text-end text-danger">{{ dados.projecoes.30_dias.saidas_previstas|currency }}</td>
+                                    <td class="text-end {% if dados.projecoes.30_dias.saldo_previsto >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                        <strong>{{ dados.projecoes.30_dias.saldo_previsto|currency }}</strong>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Próximos 60 dias</strong></td>
+                                    <td class="text-end text-success">{{ dados.projecoes.60_dias.entradas_previstas|currency }}</td>
+                                    <td class="text-end text-danger">{{ dados.projecoes.60_dias.saidas_previstas|currency }}</td>
+                                    <td class="text-end {% if dados.projecoes.60_dias.saldo_previsto >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                        <strong>{{ dados.projecoes.60_dias.saldo_previsto|currency }}</strong>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Próximos 90 dias</strong></td>
+                                    <td class="text-end text-success">{{ dados.projecoes.90_dias.entradas_previstas|currency }}</td>
+                                    <td class="text-end text-danger">{{ dados.projecoes.90_dias.saidas_previstas|currency }}</td>
+                                    <td class="text-end {% if dados.projecoes.90_dias.saldo_previsto >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                        <strong>{{ dados.projecoes.90_dias.saldo_previsto|currency }}</strong>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Resultado do Mês -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="bi bi-bar-chart"></i> Resultado do Mês ({{ dados.indicadores.resultado_mes.mes }})</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 text-center">
+                            <h6>Receitas</h6>
+                            <h3 class="text-success">{{ dados.indicadores.resultado_mes.receitas|currency }}</h3>
+                        </div>
+                        <div class="col-md-4 text-center">
+                            <h6>Despesas</h6>
+                            <h3 class="text-danger">{{ dados.indicadores.resultado_mes.despesas|currency }}</h3>
+                        </div>
+                        <div class="col-md-4 text-center">
+                            <h6>Resultado</h6>
+                            <h3 class="{% if dados.indicadores.resultado_mes.resultado >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                {{ dados.indicadores.resultado_mes.resultado|currency }}
+                            </h3>
+                            <small class="text-muted">Margem: {{ dados.indicadores.resultado_mes.margem }}%</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Links Rápidos -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="bi bi-link-45deg"></i> Acesso Rápido</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-2">
+                            <a href="{% url 'financeiro:criar_titulo' %}" class="btn btn-primary w-100">
+                                <i class="bi bi-plus-circle"></i> Novo Título
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a href="{% url 'financeiro:contas_pagar' %}" class="btn btn-danger w-100">
+                                <i class="bi bi-cash-stack"></i> Contas a Pagar
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a href="{% url 'financeiro:contas_receber' %}" class="btn btn-success w-100">
+                                <i class="bi bi-cash-coin"></i> Contas a Receber
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a href="{% url 'financeiro:painel_cobranca' %}" class="btn btn-warning w-100">
+                                <i class="bi bi-bullseye"></i> Régua de Cobrança
+                            </a>
+                        </div>
+                    </div>
+                    <div class="row mt-2">
+                        <div class="col-md-3 mb-2">
+                            <a href="{% url 'financeiro:calendario' %}" class="btn btn-info w-100">
+                                <i class="bi bi-calendar3"></i> Calendário
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a href="{% url 'financeiro:relatorio_fluxo_caixa' %}" class="btn btn-outline-primary w-100">
+                                <i class="bi bi-graph-up"></i> Fluxo de Caixa
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a href="{% url 'financeiro:relatorio_dre' %}" class="btn btn-outline-secondary w-100">
+                                <i class="bi bi-file-earmark-bar-graph"></i> DRE
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a href="{% url 'financeiro:relatorio_ponto_equilibrio' %}" class="btn btn-outline-warning w-100">
+                                <i class="bi bi-bullseye"></i> Ponto de Equilíbrio
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a href="{% url 'financeiro:listar_contas_financeiras' %}" class="btn btn-outline-info w-100">
+                                <i class="bi bi-bank"></i> Contas Bancárias
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

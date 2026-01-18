@@ -1,0 +1,266 @@
+{% extends 'base_with_sidebar.html' %}
+{% load static %}
+{% load financeiro_tags %}
+
+{% block title %}Títulos Financeiros - Sistema Serrana{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <h2><i class="bi bi-file-earmark-text"></i> Títulos Financeiros</h2>
+            <p class="text-muted">Gerenciamento de títulos a pagar e receber</p>
+        </div>
+        <div class="col-auto">
+            <a href="{% url 'financeiro:criar_titulo' %}" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Novo Título
+            </a>
+            <a href="{% url 'financeiro:dashboard' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Voltar
+            </a>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-2">
+                    <label class="form-label">Tipo</label>
+                    <select name="tipo" class="form-select">
+                        <option value="">Todos</option>
+                        <option value="PAGAR" {% if request.GET.tipo == 'PAGAR' %}selected{% endif %}>A Pagar</option>
+                        <option value="RECEBER" {% if request.GET.tipo == 'RECEBER' %}selected{% endif %}>A Receber</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Status</label>
+                    <select name="status" class="form-select">
+                        <option value="">Todos</option>
+                        <option value="ABERTO" {% if request.GET.status == 'ABERTO' %}selected{% endif %}>Aberto</option>
+                        <option value="PARCIAL" {% if request.GET.status == 'PARCIAL' %}selected{% endif %}>Parcial</option>
+                        <option value="QUITADO" {% if request.GET.status == 'QUITADO' %}selected{% endif %}>Quitado</option>
+                        <option value="CANCELADO" {% if request.GET.status == 'CANCELADO' %}selected{% endif %}>Cancelado</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Pessoa</label>
+                    <input type="text" name="pessoa" class="form-control" placeholder="Nome ou CPF/CNPJ" value="{{ request.GET.pessoa }}">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Data Início</label>
+                    <input type="date" name="data_inicio" class="form-control" value="{{ request.GET.data_inicio }}">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Data Fim</label>
+                    <input type="date" name="data_fim" class="form-control" value="{{ request.GET.data_fim }}">
+                </div>
+                <div class="col-md-1 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-search"></i>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Lista de Títulos -->
+    <div class="card">
+        <div class="card-body p-0">
+            {% if titulos %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Nº Doc</th>
+                            <th>Tipo</th>
+                            <th>Pessoa</th>
+                            <th>Emissão</th>
+                            <th>Parcelas</th>
+                            <th class="text-end">Valor Total</th>
+                            <th class="text-end">Valor Pago</th>
+                            <th class="text-end">Saldo</th>
+                            <th>Status</th>
+                            <th class="text-center">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for titulo in titulos %}
+                        <tr>
+                            <td>
+                                <a href="{% url 'financeiro:detalhe_titulo' titulo.id %}" class="fw-bold">
+                                    {{ titulo.numero_documento }}
+                                </a>
+                                <br><small class="text-muted">{{ titulo.descricao|truncatewords:5 }}</small>
+                            </td>
+                            <td>
+                                <span class="badge bg-{% if titulo.tipo == 'PAGAR' %}danger{% else %}success{% endif %}">
+                                    {{ titulo.get_tipo_display }}
+                                </span>
+                            </td>
+                            <td>
+                                <strong>{{ titulo.pessoa.nome|truncatewords:3 }}</strong>
+                                <br><small class="text-muted">{{ titulo.pessoa.cpf_cnpj }}</small>
+                            </td>
+                            <td>{{ titulo.data_emissao|date:"d/m/Y" }}</td>
+                            <td class="text-center">{{ titulo.num_parcelas }}</td>
+                            <td class="text-end">
+                                <strong>{{ titulo.valor_total|currency }}</strong>
+                            </td>
+                            <td class="text-end">
+                                <span class="text-success">{{ titulo.valor_pago|currency }}</span>
+                            </td>
+                            <td class="text-end">
+                                <span class="{% if titulo.saldo_aberto > 0 %}text-danger fw-bold{% else %}text-muted{% endif %}">
+                                    {{ titulo.saldo_aberto|currency }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if titulo.status == 'ABERTO' %}
+                                <span class="badge bg-warning text-dark">Aberto</span>
+                                {% elif titulo.status == 'PARCIAL' %}
+                                <span class="badge bg-info">Parcial</span>
+                                {% elif titulo.status == 'QUITADO' %}
+                                <span class="badge bg-success">Quitado</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Cancelado</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                <a href="{% url 'financeiro:detalhe_titulo' titulo.id %}" class="btn btn-sm btn-primary" title="Ver Detalhes">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-info m-3">
+                <i class="bi bi-info-circle"></i> Nenhum título encontrado.
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Paginação -->
+        {% if page_obj %}
+        <div class="card-footer">
+            <div class="row align-items-center">
+                <div class="col-md-4">
+                    <div class="d-flex align-items-center">
+                        <label class="me-2 mb-0">Exibir:</label>
+                        <select class="form-select form-select-sm w-auto" id="porPagina" onchange="alterarPorPagina()">
+                            <option value="10" {% if por_pagina == '10' %}selected{% endif %}>10</option>
+                            <option value="20" {% if por_pagina == '20' %}selected{% endif %}>20</option>
+                            <option value="30" {% if por_pagina == '30' %}selected{% endif %}>30</option>
+                        </select>
+                        <span class="ms-2 text-muted small">
+                            ({{ page_obj.start_index }}-{{ page_obj.end_index }} de {{ page_obj.paginator.count }})
+                        </span>
+                    </div>
+                </div>
+                <div class="col-md-8">
+                    {% if page_obj.paginator.num_pages > 1 %}
+                    <nav aria-label="Paginação">
+                        <ul class="pagination pagination-sm justify-content-end mb-0">
+                            {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1&por_pagina={{ por_pagina }}&tipo={{ filtros.tipo }}&status={{ filtros.status }}&pessoa={{ filtros.pessoa_id }}&data_inicio={{ filtros.data_inicio }}&data_fim={{ filtros.data_fim }}">
+                                    <i class="bi bi-chevron-double-left"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}&por_pagina={{ por_pagina }}&tipo={{ filtros.tipo }}&status={{ filtros.status }}&pessoa={{ filtros.pessoa_id }}&data_inicio={{ filtros.data_inicio }}&data_fim={{ filtros.data_fim }}">
+                                    <i class="bi bi-chevron-left"></i>
+                                </a>
+                            </li>
+                            {% endif %}
+                            
+                            {% for num in page_obj.paginator.page_range %}
+                                {% if page_obj.number == num %}
+                                <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ num }}&por_pagina={{ por_pagina }}&tipo={{ filtros.tipo }}&status={{ filtros.status }}&pessoa={{ filtros.pessoa_id }}&data_inicio={{ filtros.data_inicio }}&data_fim={{ filtros.data_fim }}">{{ num }}</a>
+                                </li>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}&por_pagina={{ por_pagina }}&tipo={{ filtros.tipo }}&status={{ filtros.status }}&pessoa={{ filtros.pessoa_id }}&data_inicio={{ filtros.data_inicio }}&data_fim={{ filtros.data_fim }}">
+                                    <i class="bi bi-chevron-right"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}&por_pagina={{ por_pagina }}&tipo={{ filtros.tipo }}&status={{ filtros.status }}&pessoa={{ filtros.pessoa_id }}&data_inicio={{ filtros.data_inicio }}&data_fim={{ filtros.data_fim }}">
+                                    <i class="bi bi-chevron-double-right"></i>
+                                </a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+        </div>
+    </div>
+
+    <!-- Resumo -->
+    {% if page_obj %}
+    <div class="row mt-4">
+        <div class="col-md-3">
+            <div class="card bg-light">
+                <div class="card-body text-center">
+                    <small class="text-muted">Total de Títulos</small>
+                    <h4>{{ page_obj.paginator.count }}</h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-light">
+                <div class="card-body text-center">
+                    <small class="text-muted">A Pagar</small>
+                    <h4 class="text-danger">{{ total_pagar|currency }}</h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-light">
+                <div class="card-body text-center">
+                    <small class="text-muted">A Receber</small>
+                    <h4 class="text-success">{{ total_receber|currency }}</h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-light">
+                <div class="card-body text-center">
+                    <small class="text-muted">Saldo (A Receber - A Pagar)</small>
+                    <h4 class="{% if saldo_total >= 0 %}text-success{% else %}text-danger{% endif %}">
+                        {{ saldo_total|currency }}
+                    </h4>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function alterarPorPagina() {
+    const select = document.getElementById('porPagina');
+    const porPagina = select.value;
+    const url = new URL(window.location.href);
+    url.searchParams.set('por_pagina', porPagina);
+    url.searchParams.set('page', '1'); // Volta para primeira página
+    window.location.href = url.toString();
+}
+</script>
+{% endblock %}

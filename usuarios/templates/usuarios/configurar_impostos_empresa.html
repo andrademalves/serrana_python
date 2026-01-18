@@ -1,0 +1,196 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Configurar Impostos - {{ empresa.nome_fantasia }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Cabeçalho -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">
+                <i class="bi bi-receipt me-2"></i>Configuração de Impostos
+            </h2>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item"><a href="{% url 'usuarios:listar_empresas' %}">Empresas</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'usuarios:editar_empresa' empresa.id %}">{{ empresa.nome_fantasia }}</a></li>
+                    <li class="breadcrumb-item active">Impostos</li>
+                </ol>
+            </nav>
+        </div>
+        <div>
+            <a href="{% url 'usuarios:mudar_regime_empresa' empresa.id %}" class="btn btn-warning me-2">
+                <i class="bi bi-arrow-left-right me-2"></i>Mudar Regime
+            </a>
+            <a href="{% url 'usuarios:criar_aliquota_empresa' empresa.id %}" class="btn btn-primary">
+                <i class="bi bi-plus-lg me-2"></i>Nova Alíquota
+            </a>
+            <a href="{% url 'usuarios:editar_empresa' empresa.id %}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left me-2"></i>Voltar
+            </a>
+        </div>
+    </div>
+
+    <!-- Informações da Empresa e Regime -->
+    <div class="card mb-4 border-0 shadow-sm">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <h5 class="mb-1">{{ empresa.nome_fantasia }}</h5>
+                    <p class="text-muted mb-0">CNPJ: {{ empresa.cnpj }}</p>
+                </div>
+                <div class="col-md-6 text-end">
+                    <div class="mb-2">
+                        <span class="text-muted small">Regime Atual:</span><br>
+                        <div class="badge bg-primary fs-6">
+                            {{ regime_atual.get_nome_display }}
+                        </div>
+                    </div>
+                    <small class="text-muted">{{ regime_atual.descricao }}</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lista de Alíquotas -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            <h5 class="mb-3">Alíquotas Cadastradas</h5>
+            
+            {% if aliquotas %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Imposto</th>
+                            <th style="width: 150px;" class="text-center">Alíquota (%)</th>
+                            <th>Base de Cálculo</th>
+                            <th>Observação</th>
+                            <th style="width: 100px;" class="text-center">Status</th>
+                            <th style="width: 200px;" class="text-center">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for aliquota in aliquotas %}
+                        <tr>
+                            <td>
+                                <strong>{{ aliquota.get_tipo_imposto_display }}</strong>
+                                <br>
+                                <small class="text-muted">{{ aliquota.tipo_imposto }}</small>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge bg-success fs-6">{{ aliquota.aliquota_percentual }}%</span>
+                            </td>
+                            <td>
+                                <span class="badge bg-info">{{ aliquota.get_base_calculo_display }}</span>
+                            </td>
+                            <td>
+                                <small class="text-muted">{{ aliquota.observacao|default:"—"|truncatewords:10 }}</small>
+                            </td>
+                            <td class="text-center">
+                                {% if aliquota.ativo %}
+                                    <span class="badge bg-success">Ativo</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Inativo</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <a href="{% url 'usuarios:editar_aliquota_empresa' empresa.id aliquota.id %}" 
+                                       class="btn btn-outline-primary" 
+                                       title="Editar">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <a href="{% url 'usuarios:excluir_aliquota_empresa' empresa.id aliquota.id %}" 
+                                       class="btn btn-outline-danger" 
+                                       title="Excluir">
+                                        <i class="bi bi-trash"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-inbox text-muted" style="font-size: 3rem;"></i>
+                <p class="text-muted mt-3">Nenhuma alíquota cadastrada para este regime.</p>
+                <a href="{% url 'usuarios:criar_aliquota_empresa' empresa.id %}" class="btn btn-primary">
+                    <i class="bi bi-plus-lg me-2"></i>Cadastrar Primeira Alíquota
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Informações Úteis -->
+    <div class="card border-0 shadow-sm mt-4">
+        <div class="card-body">
+            <h5 class="mb-3"><i class="bi bi-info-circle me-2"></i>Como Funciona</h5>
+            <p class="small text-muted mb-2">
+                <strong>Base de Cálculo:</strong> Define sobre qual valor o imposto será calculado nos orçamentos:
+            </p>
+            <ul class="small text-muted">
+                <li><strong>Faturamento Bruto:</strong> Imposto calculado sobre o valor total do orçamento</li>
+                <li><strong>Lucro Líquido:</strong> Imposto calculado sobre o lucro (valor - custos)</li>
+                <li><strong>Custo de Material:</strong> Imposto calculado sobre os materiais utilizados</li>
+                <li><strong>Custo de Serviço:</strong> Imposto calculado sobre mão de obra e serviços</li>
+            </ul>
+            <p class="small text-muted mb-0">
+                <i class="bi bi-lightbulb me-2"></i>
+                <strong>Dica:</strong> As alíquotas configuradas aqui serão usadas automaticamente no cálculo de impostos dos orçamentos.
+            </p>
+        </div>
+    </div>
+
+    <!-- Histórico de Regimes -->
+    {% if historico_regimes %}
+    <div class="card border-0 shadow-sm mt-4">
+        <div class="card-body">
+            <h5 class="mb-3"><i class="bi bi-clock-history me-2"></i>Histórico de Regimes Tributários</h5>
+            <div class="table-responsive">
+                <table class="table table-sm align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Regime</th>
+                            <th>Início Vigência</th>
+                            <th>Fim Vigência</th>
+                            <th>Status</th>
+                            <th>Motivo da Mudança</th>
+                            <th>Alterado por</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for hist in historico_regimes %}
+                        <tr {% if hist.ativo %}class="table-success"{% endif %}>
+                            <td><strong>{{ hist.regime_tributario.get_nome_display }}</strong></td>
+                            <td>{{ hist.data_inicio|date:"d/m/Y" }}</td>
+                            <td>
+                                {% if hist.data_fim %}
+                                    {{ hist.data_fim|date:"d/m/Y" }}
+                                {% else %}
+                                    <span class="text-muted">—</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if hist.ativo %}
+                                    <span class="badge bg-success">Ativo</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Inativo</span>
+                                {% endif %}
+                            </td>
+                            <td><small class="text-muted">{{ hist.motivo_mudanca|default:"—" }}</small></td>
+                            <td><small class="text-muted">{{ hist.criado_por.get_full_name|default:hist.criado_por.username }}</small></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

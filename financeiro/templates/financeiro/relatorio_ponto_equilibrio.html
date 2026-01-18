@@ -1,0 +1,518 @@
+{% extends 'base_with_sidebar.html' %}
+{% load static %}
+{% load financeiro_tags %}
+
+{% block title %}Ponto de Equilíbrio - Sistema Serrana{% endblock %}
+
+{% block extra_css %}
+<style>
+    .metric-card {
+        border-left: 4px solid #0d6efd;
+        transition: transform 0.2s;
+    }
+    .metric-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    .metric-value {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #2c3e50;
+    }
+    .metric-label {
+        font-size: 0.875rem;
+        color: #6c757d;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .status-badge {
+        font-size: 1.1rem;
+        padding: 0.5rem 1.5rem;
+    }
+    .status-OK {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    }
+    .status-ALERTA {
+        background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
+    }
+    .status-CRITICO {
+        background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+    }
+    .chart-container {
+        position: relative;
+        height: 350px;
+        margin-bottom: 2rem;
+    }
+    .cost-breakdown-table th {
+        background-color: #f8f9fa;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.875rem;
+    }
+    .cost-tipo-FIXO {
+        border-left: 3px solid #6c757d;
+    }
+    .cost-tipo-VARIAVEL {
+        border-left: 3px solid #17a2b8;
+    }
+    .cost-tipo-MISTO {
+        border-left: 3px solid #6f42c1;
+    }
+    .progress-bar-custom {
+        height: 30px;
+        font-size: 1rem;
+        font-weight: 600;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Cabeçalho -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">
+                <i class="bi bi-graph-up-arrow me-2"></i>Análise de Ponto de Equilíbrio
+            </h2>
+            <p class="text-muted mb-0">{{ dados.periodo_analise }}</p>
+        </div>
+        <div>
+            <a href="{% url 'financeiro:dashboard' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-2"></i>Voltar
+            </a>
+        </div>
+    </div>
+
+    <!-- Filtro de Período -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <label for="periodo" class="form-label">Período de Análise</label>
+                    <select class="form-select" id="periodo" name="periodo">
+                        <option value="1" {% if periodo_meses == 1 %}selected{% endif %}>Último mês</option>
+                        <option value="3" {% if periodo_meses == 3 %}selected{% endif %}>Últimos 3 meses</option>
+                        <option value="6" {% if periodo_meses == 6 %}selected{% endif %}>Últimos 6 meses</option>
+                        <option value="12" {% if periodo_meses == 12 %}selected{% endif %}>Último ano</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <button type="submit" class="btn btn-primary me-2">
+                        <i class="bi bi-funnel me-2"></i>Filtrar
+                    </button>
+                    <a href="{% url 'financeiro:relatorio_ponto_equilibrio_pdf' %}?{{ request.GET.urlencode }}" class="btn btn-danger" target="_blank">
+                        <i class="bi bi-file-pdf"></i> Gerar PDF
+                    </a>
+                </div>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Status do Ponto de Equilíbrio -->
+    <div class="card mb-4 border-0 shadow-sm">
+        <div class="card-body text-center py-4">
+            <h5 class="text-muted mb-3">STATUS DO PONTO DE EQUILÍBRIO</h5>
+            <div class="mb-3">
+                <span class="badge status-badge status-{{ dados.ponto_equilibrio.status }} text-white">
+                    {% if dados.ponto_equilibrio.status == 'OK' %}
+                        <i class="bi bi-check-circle-fill me-2"></i>SAUDÁVEL
+                    {% elif dados.ponto_equilibrio.status == 'ALERTA' %}
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>ATENÇÃO
+                    {% else %}
+                        <i class="bi bi-x-circle-fill me-2"></i>CRÍTICO
+                    {% endif %}
+                </span>
+            </div>
+            <div class="progress progress-bar-custom mb-2">
+                <div class="progress-bar {% if dados.ponto_equilibrio.percentual_atingido >= 120 %}bg-success{% elif dados.ponto_equilibrio.percentual_atingido >= 100 %}bg-warning{% else %}bg-danger{% endif %}" 
+                     role="progressbar" 
+                     style="width: {% if dados.ponto_equilibrio.percentual_atingido > 100 %}100{% else %}{{ dados.ponto_equilibrio.percentual_atingido }}{% endif %}%"
+                     aria-valuenow="{{ dados.ponto_equilibrio.percentual_atingido }}" 
+                     aria-valuemin="0" 
+                     aria-valuemax="100">
+                    {{ dados.ponto_equilibrio.percentual_atingido }}%
+                </div>
+            </div>
+            <p class="text-muted small mb-0">Percentual da receita média em relação ao ponto de equilíbrio</p>
+        </div>
+    </div>
+
+    <!-- Métricas Principais -->
+    <div class="row g-3 mb-4">
+        <!-- Receita Média Mensal -->
+        <div class="col-md-4">
+            <div class="card metric-card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="rounded-circle bg-primary bg-opacity-10 p-3 me-3">
+                            <i class="bi bi-cash-stack fs-4 text-primary"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <p class="metric-label mb-1">Receita Média Mensal</p>
+                            <h3 class="metric-value mb-0">{{ dados.receita_media_mensal|currency }}</h3>
+                        </div>
+                    </div>
+                    <small class="text-muted">Total período: {{ dados.receitas_periodo|currency }}</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ponto de Equilíbrio -->
+        <div class="col-md-4">
+            <div class="card metric-card border-0 shadow-sm h-100" style="border-left-color: #ffc107 !important;">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="rounded-circle bg-warning bg-opacity-10 p-3 me-3">
+                            <i class="bi bi-graph-up fs-4 text-warning"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <p class="metric-label mb-1">Ponto de Equilíbrio</p>
+                            <h3 class="metric-value mb-0">{{ dados.ponto_equilibrio.valor_mensal|currency }}</h3>
+                        </div>
+                    </div>
+                    <small class="text-muted">Faturamento mínimo necessário/mês</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Margem de Contribuição -->
+        <div class="col-md-4">
+            <div class="card metric-card border-0 shadow-sm h-100" style="border-left-color: #28a745 !important;">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="rounded-circle bg-success bg-opacity-10 p-3 me-3">
+                            <i class="bi bi-percent fs-4 text-success"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <p class="metric-label mb-1">Margem de Contribuição</p>
+                            <h3 class="metric-value mb-0">{{ dados.margem_contribuicao.percentual }}%</h3>
+                        </div>
+                    </div>
+                    <small class="text-muted">{{ dados.margem_contribuicao.valor|currency }} no período</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Composição de Custos -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <i class="bi bi-lock-fill fs-1 text-secondary mb-2"></i>
+                    <h5 class="card-title">Custos Fixos</h5>
+                    <h3 class="text-secondary mb-0">{{ dados.custos.fixos|currency }}</h3>
+                    <small class="text-muted">Independem do volume de vendas</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <i class="bi bi-arrow-up-right-circle-fill fs-1 text-info mb-2"></i>
+                    <h5 class="card-title">Custos Variáveis</h5>
+                    <h3 class="text-info mb-0">{{ dados.custos.variaveis|currency }}</h3>
+                    <small class="text-muted">Acompanham as vendas</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <i class="bi bi-calculator-fill fs-1 text-dark mb-2"></i>
+                    <h5 class="card-title">Custos Totais</h5>
+                    <h3 class="text-dark mb-0">{{ dados.custos.totais|currency }}</h3>
+                    <small class="text-muted">Período de {{ periodo_meses }} {% if periodo_meses == 1 %}mês{% else %}meses{% endif %}</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráfico de Distribuição de Custos -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-pie-chart-fill me-2"></i>Distribuição de Custos
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="custos-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-bar-chart-fill me-2"></i>Análise Break-Even
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="breakeven-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detalhamento por Categoria de Custo -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white">
+            <h5 class="card-title mb-0">
+                <i class="bi bi-list-ul me-2"></i>Detalhamento de Custos por Centro de Custo
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if dados.detalhamento_custos %}
+            <div class="table-responsive">
+                <table class="table table-hover cost-breakdown-table align-middle">
+                    <thead>
+                        <tr>
+                            <th>Centro de Custo</th>
+                            <th>Tipo</th>
+                            <th class="text-end">Custo Fixo</th>
+                            <th class="text-end">Custo Variável</th>
+                            <th class="text-end">Total</th>
+                            <th class="text-end">% do Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in dados.detalhamento_custos %}
+                        <tr class="cost-tipo-{{ item.tipo }}">
+                            <td>
+                                <strong>{{ item.categoria }}</strong>
+                            </td>
+                            <td>
+                                {% if item.tipo == 'FIXO' %}
+                                    <span class="badge bg-secondary">Fixo</span>
+                                {% elif item.tipo == 'VARIAVEL' %}
+                                    <span class="badge bg-info">Variável</span>
+                                {% else %}
+                                    <span class="badge bg-purple text-white" style="background-color: #6f42c1;">Misto</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                <span class="text-muted">R$</span> {{ item.fixo|floatformat:2 }}
+                            </td>
+                            <td class="text-end">
+                                <span class="text-muted">R$</span> {{ item.variavel|floatformat:2 }}
+                            </td>
+                            <td class="text-end">
+                                <strong>{{ item.total|currency }}</strong>
+                            </td>
+                            <td class="text-end">
+                                <div class="d-flex align-items-center justify-content-end">
+                                    <div class="progress flex-grow-1 me-2" style="height: 10px; max-width: 100px;">
+                                        <div class="progress-bar bg-primary" role="progressbar" 
+                                             style="width: {{ item.percentual }}%"
+                                             aria-valuenow="{{ item.percentual }}" aria-valuemin="0" aria-valuemax="100">
+                                        </div>
+                                    </div>
+                                    <span class="text-muted small">{{ item.percentual|floatformat:1 }}%</span>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot class="table-light">
+                        <tr>
+                            <td colspan="2"><strong>TOTAL</strong></td>
+                            <td class="text-end"><strong>{{ dados.custos.fixos|currency }}</strong></td>
+                            <td class="text-end"><strong>{{ dados.custos.variaveis|currency }}</strong></td>
+                            <td class="text-end"><strong>{{ dados.custos.totais|currency }}</strong></td>
+                            <td class="text-end"><strong>100%</strong></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-info mb-0">
+                <i class="bi bi-info-circle me-2"></i>
+                Nenhum dado de custo encontrado para o período selecionado.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Informações Adicionais -->
+    <div class="card border-0 shadow-sm mt-4">
+        <div class="card-header bg-primary text-white">
+            <h6 class="mb-0">
+                <i class="bi bi-lightbulb-fill me-2"></i>Como Interpretar
+            </h6>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <h6 class="text-success"><i class="bi bi-check-circle-fill me-2"></i>Status Saudável (≥ 120%)</h6>
+                    <p class="small text-muted mb-0">
+                        Receita atual está 20% acima do ponto de equilíbrio. Margem de segurança adequada.
+                    </p>
+                </div>
+                <div class="col-md-4">
+                    <h6 class="text-warning"><i class="bi bi-exclamation-triangle-fill me-2"></i>Status Atenção (100-120%)</h6>
+                    <p class="small text-muted mb-0">
+                        Receita próxima ao ponto de equilíbrio. Pouca margem para variações. Requer monitoramento.
+                    </p>
+                </div>
+                <div class="col-md-4">
+                    <h6 class="text-danger"><i class="bi bi-x-circle-fill me-2"></i>Status Crítico (< 100%)</h6>
+                    <p class="small text-muted mb-0">
+                        Receita abaixo do ponto de equilíbrio. Operação com prejuízo. Ação imediata necessária.
+                    </p>
+                </div>
+            </div>
+            <hr>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <h6><i class="bi bi-calculator me-2"></i>Ponto de Equilíbrio</h6>
+                    <p class="small text-muted mb-0">
+                        Faturamento mínimo necessário para cobrir todos os custos (fixos + variáveis).
+                        Abaixo desse valor, a empresa opera com prejuízo.
+                    </p>
+                </div>
+                <div class="col-md-6">
+                    <h6><i class="bi bi-percent me-2"></i>Margem de Contribuição</h6>
+                    <p class="small text-muted mb-0">
+                        Percentual da receita que sobra após deduzir os custos variáveis.
+                        Quanto maior, melhor a capacidade de cobrir custos fixos e gerar lucro.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Gráfico de Distribuição de Custos (Pizza)
+    const custosCtx = document.getElementById('custos-chart');
+    new Chart(custosCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Custos Fixos', 'Custos Variáveis'],
+            datasets: [{
+                data: [
+                    {{ dados.custos.fixos|floatformat:2 }},
+                    {{ dados.custos.variaveis|floatformat:2 }}
+                ],
+                backgroundColor: [
+                    'rgba(108, 117, 125, 0.8)',
+                    'rgba(23, 162, 184, 0.8)'
+                ],
+                borderColor: [
+                    'rgba(108, 117, 125, 1)',
+                    'rgba(23, 162, 184, 1)'
+                ],
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        padding: 20,
+                        font: {
+                            size: 13
+                        }
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.label || '';
+                            if (label) {
+                                label += ': ';
+                            }
+                            label += 'R$ ' + context.parsed.toLocaleString('pt-BR', {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2
+                            });
+                            
+                            // Calcula percentual
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentual = ((context.parsed / total) * 100).toFixed(1);
+                            label += ' (' + percentual + '%)';
+                            
+                            return label;
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // Gráfico de Break-Even (Barras)
+    const breakevenCtx = document.getElementById('breakeven-chart');
+    new Chart(breakevenCtx, {
+        type: 'bar',
+        data: {
+            labels: ['Receita Média', 'Ponto de Equilíbrio', 'Custos Totais'],
+            datasets: [{
+                label: 'Valores (R$)',
+                data: [
+                    {{ dados.receita_media_mensal|floatformat:2 }},
+                    {{ dados.ponto_equilibrio.valor_mensal|floatformat:2 }},
+                    {{ dados.custos.totais|floatformat:0 }} / {{ periodo_meses }}
+                ],
+                backgroundColor: [
+                    'rgba(40, 167, 69, 0.7)',
+                    'rgba(255, 193, 7, 0.7)',
+                    'rgba(220, 53, 69, 0.7)'
+                ],
+                borderColor: [
+                    'rgba(40, 167, 69, 1)',
+                    'rgba(255, 193, 7, 1)',
+                    'rgba(220, 53, 69, 1)'
+                ],
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return 'R$ ' + context.parsed.y.toLocaleString('pt-BR', {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2
+                            });
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return 'R$ ' + value.toLocaleString('pt-BR');
+                        }
+                    }
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

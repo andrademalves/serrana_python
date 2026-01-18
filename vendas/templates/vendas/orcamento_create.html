@@ -1,0 +1,149 @@
+{% extends 'base_with_sidebar.html' %}
+{% load static %}
+
+{% block title %}Novo Orçamento - Serrana{% endblock %}
+
+{% block extra_css %}
+<style>
+    .card-header {
+        background-color: #0d6efd;
+        color: white;
+        font-weight: bold;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-file-invoice-dollar"></i> Novo Orçamento</h2>
+        <a href="{% url 'vendas:orcamento_list' %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Voltar
+        </a>
+    </div>
+
+    <form method="post" class="needs-validation" novalidate>
+        {% csrf_token %}
+
+        <div class="row">
+            <!-- DADOS DO CLIENTE -->
+            <div class="col-md-6">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <i class="fas fa-user"></i> Dados do Cliente
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label">Cliente *</label>
+                            <select name="cliente" class="form-select" required>
+                                <option value="">Selecione o cliente...</option>
+                                {% for cliente in clientes %}
+                                <option value="{{ cliente.id }}">
+                                    {{ cliente.nome_razao }} 
+                                    {% if cliente.cpf %}- CPF: {{ cliente.cpf }}{% endif %}
+                                    {% if cliente.cnpj %}- CNPJ: {{ cliente.cnpj }}{% endif %}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <small class="text-muted">
+                                <a href="{% url 'cadastros:criar_pessoa' %}?tipo=cliente" target="_blank">
+                                    <i class="fas fa-plus"></i> Cadastrar novo cliente
+                                </a>
+                            </small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Vendedor *</label>
+                            <select name="vendedor" class="form-select" required>
+                                <option value="">Selecione o vendedor...</option>
+                                {% for vendedor in vendedores %}
+                                <option value="{{ vendedor.id }}" 
+                                    {% if vendedor == request.user %}selected{% endif %}>
+                                    {{ vendedor.get_full_name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CONDIÇÕES -->
+            <div class="col-md-6">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <i class="fas fa-cog"></i> Condições
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label">Condição de Pagamento *</label>
+                            <select name="condicao_pagamento" class="form-select" required>
+                                {% for condicao in condicoes %}
+                                <option value="{{ condicao.id }}"
+                                    {% if condicao == condicao_padrao %}selected{% endif %}>
+                                    {{ condicao.descricao }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Validade (dias)</label>
+                                <input type="number" name="validade_dias" 
+                                       class="form-control" value="15" min="1" required>
+                                <small class="text-muted">Dias até o orçamento vencer</small>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Prazo Execução (dias)</label>
+                                <input type="number" name="prazo_execucao_dias" 
+                                       class="form-control" value="30" min="1" required>
+                                <small class="text-muted">Prazo previsto de entrega</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- OBSERVAÇÕES -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fas fa-comment"></i> Observações
+            </div>
+            <div class="card-body">
+                <textarea name="observacoes" class="form-control" rows="3" 
+                          placeholder="Observações que aparecerão na proposta comercial..."></textarea>
+            </div>
+        </div>
+
+        <!-- BOTÕES -->
+        <div class="text-end">
+            <a href="{% url 'vendas:orcamento_list' %}" class="btn btn-secondary">
+                <i class="fas fa-times"></i> Cancelar
+            </a>
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-save"></i> Criar Orçamento
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+// Validação de formulário Bootstrap 5
+(function() {
+    'use strict';
+    var forms = document.querySelectorAll('.needs-validation');
+    Array.prototype.slice.call(forms).forEach(function(form) {
+        form.addEventListener('submit', function(event) {
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            form.classList.add('was-validated');
+        }, false);
+    });
+})();
+</script>
+{% endblock %}
