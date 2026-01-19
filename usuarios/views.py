@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib import messages
 from django.contrib.auth import logout as auth_logout
 from django.contrib.auth.models import User, Group
@@ -288,6 +288,65 @@ def alternar_status_usuario(request, user_id):
     status = "ativado" if user.is_active else "inativado"
     messages.success(request, f"Usuário {user.username} {status} com sucesso.")
     return redirect('usuarios:listar_usuarios')
+
+
+
+
+@login_required
+@verificar_permissao_acao('/usuarios/', 'editar')
+def alterar_senha_usuario(request, user_id):
+    """Altera a senha de um usuário."""
+    user = get_object_or_404(User, id=user_id)
+    
+    if request.method == 'POST':
+        nova_senha = request.POST.get('nova_senha')
+        confirmar_senha = request.POST.get('confirmar_senha')
+        
+        if not nova_senha or not confirmar_senha:
+            messages.error(request, 'Preencha todos os campos.')
+        elif nova_senha != confirmar_senha:
+            messages.error(request, 'As senhas não coincidem.')
+        elif len(nova_senha) < 6:
+            messages.error(request, 'A senha deve ter no mínimo 6 caracteres.')
+        else:
+            user.set_password(nova_senha)
+            user.save()
+            messages.success(request, f'Senha do usuário {user.username} alterada com sucesso!')
+            return redirect('usuarios:listar_usuarios')
+    
+    context = {
+        'usuario': user,
+        'hide_sidebar': True,
+    }
+    return render(request, 'usuarios/alterar_senha.html', context)
+
+@login_required
+@verificar_permissao_acao('/usuarios/', 'editar')
+def alterar_senha_usuario(request, user_id):
+    """Altera a senha de um usuário."""
+    user = get_object_or_404(User, id=user_id)
+    
+    if request.method == 'POST':
+        nova_senha = request.POST.get('nova_senha')
+        confirmar_senha = request.POST.get('confirmar_senha')
+        
+        if not nova_senha or not confirmar_senha:
+            messages.error(request, 'Preencha todos os campos.')
+        elif nova_senha != confirmar_senha:
+            messages.error(request, 'As senhas não coincidem.')
+        elif len(nova_senha) < 6:
+            messages.error(request, 'A senha deve ter no mínimo 6 caracteres.')
+        else:
+            user.set_password(nova_senha)
+            user.save()
+            messages.success(request, f'Senha do usuário {user.username} alterada com sucesso!')
+            return redirect('usuarios:listar_usuarios')
+    
+    context = {
+        'usuario': user,
+        'hide_sidebar': True,
+    }
+    return render(request, 'usuarios/alterar_senha.html', context)
 
 
 @login_required
@@ -956,3 +1015,308 @@ def mudar_regime_empresa(request, empresa_id):
     }
     
     return render(request, 'usuarios/mudar_regime_empresa.html', context)
+
+
+# ============================================================================
+# VIEWS DE BACKUP DE BANCO DE DADOS
+# ============================================================================
+
+from django.http import FileResponse, Http404
+from django.core.exceptions import PermissionDenied
+from django.db import transaction
+from .models import BackupBancoDados
+from .services import BackupService
+import logging
+
+logger = logging.getLogger(__name__)
+
+
+@login_required
+def listar_backups(request):
+    """
+    Lista todos os backups de banco de dados gerados
+    Apenas administradores ou usuários com permissão específica
+    """
+    # Verificar permissão
+    if not (request.user.is_superuser or request.user.has_perm('usuarios.gerar_backup')):
+        messages.error(request, 'Você não tem permissão para acessar backups do banco de dados.')
+        return redirect('usuarios:home_modulos')
+    
+    # Filtrar backups
+    backups = BackupBancoDados.objects.select_related('empresa', 'usuario').all()
+    
+    # Se não for superuser, mostrar apenas backups da empresa ativa
+    if not request.user.is_superuser:
+        empresa_ativa_id = request.session.get('empresa_ativa_id')
+        if empresa_ativa_id:
+            backups = backups.filter(empresa_id=empresa_ativa_id)
+        else:
+            backups = backups.none()
+    
+    # Estatísticas
+    total_backups = backups.count()
+    backups_concluidos = backups.filter(status='concluido').count()
+    backups_erro = backups.filter(status='erro').count()
+    
+    # Tamanho total
+    tamanho_total = sum(b.tamanho_bytes for b in backups.filter(status='concluido'))
+    
+    def formatar_tamanho(bytes_value):
+        for unit in ['B', 'KB', 'MB', 'GB']:
+            if bytes_value < 1024.0:
+                return f"{bytes_value:.2f} {unit}"
+            bytes_value /= 1024.0
+        return f"{bytes_value:.2f} TB"
+    
+    context = {
+        'backups': backups[:50],  # Últimos 50 backups
+        'total_backups': total_backups,
+        'backups_concluidos': backups_concluidos,
+        'backups_erro': backups_erro,
+        'tamanho_total': formatar_tamanho(tamanho_total),
+    }
+    
+    return render(request, 'usuarios/listar_backups.html', context)
+
+
+@login_required
+@transaction.atomic
+def gerar_backup(request):
+    """
+    Gera um novo backup do banco de dados
+    POST apenas, retorna JSON para requisições AJAX
+    """
+    # Verificar permissão
+    if not (request.user.is_superuser or request.user.has_perm('usuarios.gerar_backup')):
+        messages.error(request, 'Você não tem permissão para gerar backups.')
+        return redirect('usuarios:listar_backups')
+    
+    if request.method != 'POST':
+        return redirect('usuarios:listar_backups')
+    
+    try:
+        # Obter empresa ativa
+        empresa_ativa_id = request.session.get('empresa_ativa_id')
+        
+        if not empresa_ativa_id:
+            messages.error(request, 'Nenhuma empresa ativa. Selecione uma empresa primeiro.')
+            return redirect('usuarios:listar_backups')
+        
+        empresa = get_object_or_404(Empresa, id=empresa_ativa_id)
+        
+        # Inicializar serviço e gerar backup
+        backup_service = BackupService()
+        backup = backup_service.gerar_backup(empresa, request.user)
+        
+        messages.success(
+            request, 
+            f'Backup gerado com sucesso! Arquivo: {backup.nome_arquivo} ({backup.tamanho_formatado})'
+        )
+        
+        logger.info(f"Backup gerado por {request.user.username}: {backup.nome_arquivo}")
+        
+    except Exception as e:
+        messages.error(request, f'Erro ao gerar backup: {str(e)}')
+        logger.error(f"Erro ao gerar backup (usuário: {request.user.username}): {str(e)}")
+    
+    return redirect('usuarios:listar_backups')
+
+
+@login_required
+def download_backup(request, backup_id):
+    """
+    Faz download de um arquivo de backup
+    Valida permissões e existência do arquivo antes de servir
+    """
+    # Verificar permissão
+    if not (request.user.is_superuser or request.user.has_perm('usuarios.download_backup')):
+        raise PermissionDenied('Você não tem permissão para fazer download de backups.')
+    
+    # Buscar backup
+    backup = get_object_or_404(BackupBancoDados, id=backup_id)
+    
+    # Se não for superuser, verificar se o backup é da empresa ativa
+    if not request.user.is_superuser:
+        empresa_ativa_id = request.session.get('empresa_ativa_id')
+        if backup.empresa_id != empresa_ativa_id:
+            raise PermissionDenied('Você não tem permissão para baixar este backup.')
+    
+    # Verificar se o backup foi concluído
+    if backup.status != 'concluido':
+        messages.error(request, 'Este backup não está disponível para download.')
+        return redirect('usuarios:listar_backups')
+    
+    # Verificar se o arquivo existe
+    import os
+    if not os.path.exists(backup.caminho_arquivo):
+        messages.error(request, 'Arquivo de backup não encontrado no servidor.')
+        logger.error(f"Arquivo de backup não encontrado: {backup.caminho_arquivo}")
+        return redirect('usuarios:listar_backups')
+    
+    try:
+        # Servir arquivo usando FileResponse (streaming para arquivos grandes)
+        response = FileResponse(
+            open(backup.caminho_arquivo, 'rb'),
+            as_attachment=True,
+            filename=backup.nome_arquivo
+        )
+        
+        # Adicionar headers
+        response['Content-Type'] = 'application/sql'
+        response['Content-Length'] = backup.tamanho_bytes
+        
+        logger.info(f"Download de backup por {request.user.username}: {backup.nome_arquivo}")
+        
+        return response
+        
+    except Exception as e:
+        messages.error(request, f'Erro ao fazer download do backup: {str(e)}')
+        logger.error(f"Erro ao fazer download de backup {backup.nome_arquivo}: {str(e)}")
+        return redirect('usuarios:listar_backups')
+
+
+@login_required
+@transaction.atomic
+def excluir_backup(request, backup_id):
+    """
+    Exclui um backup (arquivo e registro)
+    Apenas superusuários podem excluir backups
+    """
+    # Verificar permissão - apenas superuser
+    if not request.user.is_superuser:
+        messages.error(request, 'Apenas administradores podem excluir backups.')
+        return redirect('usuarios:listar_backups')
+    
+    if request.method != 'POST':
+        return redirect('usuarios:listar_backups')
+    
+    backup = get_object_or_404(BackupBancoDados, id=backup_id)
+    
+    try:
+        import os
+        
+        # Remover arquivo do disco se existir
+        if os.path.exists(backup.caminho_arquivo):
+            os.remove(backup.caminho_arquivo)
+            logger.info(f"Arquivo de backup removido: {backup.caminho_arquivo}")
+        
+        nome_arquivo = backup.nome_arquivo
+        
+        # Remover registro do banco
+        backup.delete()
+        
+        messages.success(request, f'Backup {nome_arquivo} excluído com sucesso.')
+        logger.info(f"Backup excluído por {request.user.username}: {nome_arquivo}")
+        
+    except Exception as e:
+        messages.error(request, f'Erro ao excluir backup: {str(e)}')
+        logger.error(f"Erro ao excluir backup {backup.nome_arquivo}: {str(e)}")
+    
+    return redirect('usuarios:listar_backups')
+
+@login_required
+@permission_required('usuarios.gerar_backup', raise_exception=True)
+def configurar_backup_automatico(request):
+    """
+    View para configurar backups automáticos agendados
+    Apenas superusuários podem acessar
+    """
+    if not request.user.is_superuser:
+        messages.error(request, 'Apenas administradores podem configurar backups automáticos.')
+        return redirect('usuarios:listar_backups')
+    
+    from .forms import BackupConfigForm
+    from .models import BackupConfig
+    
+    config = BackupConfig.get_config()
+    
+    if request.method == 'POST':
+        form = BackupConfigForm(request.POST, instance=config)
+        
+        if form.is_valid():
+            config = form.save(commit=False)
+            config.atualizado_por = request.user
+            config.save()
+            
+            messages.success(request, 'Configuração de backup automático salva com sucesso!')
+            logger.info(f"Configuração de backup atualizada por {request.user.username}")
+            
+            return redirect('usuarios:configurar_backup_automatico')
+    else:
+        form = BackupConfigForm(instance=config)
+    
+    # Estatísticas
+    from .models import BackupBancoDados
+    
+    total_agendados = BackupBancoDados.objects.filter(tipo_backup='agendado').count()
+    total_manuais = BackupBancoDados.objects.filter(tipo_backup='manual').count()
+    total_protegidos = BackupBancoDados.objects.filter(protegido=True).count()
+    
+    # Calcular próxima execução estimada
+    proxima_execucao = None
+    if config.habilitado:
+        from datetime import datetime, timedelta
+        agora = datetime.now()
+        hora_exec = config.hora_execucao
+        
+        proxima = agora.replace(
+            hour=hora_exec.hour,
+            minute=hora_exec.minute,
+            second=0,
+            microsecond=0
+        )
+        
+        # Se já passou da hora hoje, próxima execução é amanhã
+        if proxima <= agora:
+            if config.frequencia == 'diaria':
+                proxima += timedelta(days=1)
+            elif config.frequencia == 'semanal':
+                dias_ate_proximo = (int(config.dia_semana) - agora.weekday()) % 7
+                if dias_ate_proximo == 0:
+                    dias_ate_proximo = 7  # Próxima semana
+                proxima += timedelta(days=dias_ate_proximo)
+            elif config.frequencia == 'mensal':
+                # Próximo dia do mês
+                if agora.day >= config.dia_mes:
+                    # Próximo mês
+                    if agora.month == 12:
+                        proxima = proxima.replace(year=agora.year + 1, month=1, day=config.dia_mes)
+                    else:
+                        proxima = proxima.replace(month=agora.month + 1, day=config.dia_mes)
+                else:
+                    proxima = proxima.replace(day=config.dia_mes)
+        
+        proxima_execucao = proxima
+    
+    context = {
+        'form': form,
+        'config': config,
+        'total_agendados': total_agendados,
+        'total_manuais': total_manuais,
+        'total_protegidos': total_protegidos,
+        'proxima_execucao': proxima_execucao,
+    }
+    
+    return render(request, 'usuarios/configurar_backup_automatico.html', context)
+
+
+@login_required
+@permission_required('usuarios.gerar_backup', raise_exception=True)
+def proteger_backup(request, backup_id):
+    """
+    Marca/desmarca um backup como protegido
+    Backups protegidos não são excluídos pela política de retenção
+    """
+    from .models import BackupBancoDados
+    
+    backup = get_object_or_404(BackupBancoDados, id=backup_id)
+    
+    # Alternar proteção
+    backup.protegido = not backup.protegido
+    backup.save()
+    
+    status = "protegido" if backup.protegido else "desprotegido"
+    messages.success(request, f'Backup {status} com sucesso!')
+    logger.info(f"Backup {backup.nome_arquivo} {status} por {request.user.username}")
+    
+    return redirect('usuarios:listar_backups')

@@ -1,0 +1,328 @@
+{% extends 'base_with_sidebar.html' %}
+{% load static %}
+
+{% block title %}Backups do Banco de Dados - Sistema{% endblock %}
+
+{% block extra_css %}
+<style>
+    .backup-card {
+        border-left: 4px solid #6c757d;
+    }
+    .backup-card.concluido {
+        border-left-color: #28a745;
+    }
+    .backup-card.erro {
+        border-left-color: #dc3545;
+    }
+    .backup-card.processando {
+        border-left-color: #ffc107;
+    }
+    
+    .stats-card {
+        border-radius: 8px;
+        transition: transform 0.2s;
+    }
+    
+    .stats-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    
+    .backup-icon {
+        font-size: 2rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+            <i class="bi bi-database-fill-down"></i> Backup do Banco de Dados
+        </h2>
+        <div>
+            {% if user.is_superuser %}
+            <a href="{% url 'usuarios:configurar_backup_automatico' %}" class="btn btn-primary me-2">
+                <i class="bi bi-gear-fill"></i> Configurar Automático
+            </a>
+            {% endif %}
+            <form method="post" action="{% url 'usuarios:gerar_backup' %}" id="formGerarBackup" style="display: inline-block;">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-success" id="btnGerar">
+                    <i class="bi bi-play-fill"></i> Gerar Novo Backup
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Estatísticas -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card stats-card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-subtitle mb-1 text-white-50">Total de Backups</h6>
+                            <h3 class="mb-0">{{ total_backups }}</h3>
+                        </div>
+                        <i class="bi bi-database backup-icon opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card stats-card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-subtitle mb-1 text-white-50">Concluídos</h6>
+                            <h3 class="mb-0">{{ backups_concluidos }}</h3>
+                        </div>
+                        <i class="bi bi-check-circle backup-icon opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card stats-card bg-danger text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-subtitle mb-1 text-white-50">Com Erro</h6>
+                            <h3 class="mb-0">{{ backups_erro }}</h3>
+                        </div>
+                        <i class="bi bi-x-circle backup-icon opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card stats-card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-subtitle mb-1 text-white-50">Espaço Total</h6>
+                            <h3 class="mb-0">{{ tamanho_total }}</h3>
+                        </div>
+                        <i class="bi bi-hdd backup-icon opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Informações de Segurança -->
+    <div class="alert alert-info" role="alert">
+        <i class="bi bi-info-circle"></i>
+        <strong>Importante:</strong> Os backups são gerados do banco de dados completo e incluem todas as empresas e dados do sistema.
+        Mantenha os arquivos em local seguro. Os backups são mantidos por {{ BACKUP_RETENTION_DAYS|default:30 }} dias.
+    </div>
+
+    <!-- Lista de Backups -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="bi bi-clock-history"></i> Histórico de Backups (Últimos 50)</h5>
+        </div>
+        <div class="card-body">
+            {% if backups %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th width="5%">Status</th>
+                                <th width="25%">Nome do Arquivo</th>
+                                <th width="10%">Tipo</th>
+                                <th width="12%">Empresa</th>
+                                <th width="10%">Tamanho</th>
+                                <th width="10%">Data/Hora</th>
+                                <th width="8%">Gerado por</th>
+                                <th width="8%">Tempo</th>
+                                <th width="12%">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for backup in backups %}
+                            <tr>
+                                <td>
+                                    {% if backup.status == 'concluido' %}
+                                        <span class="badge bg-success">
+                                            <i class="bi bi-check-circle"></i> OK
+                                        </span>
+                                    {% elif backup.status == 'erro' %}
+                                        <span class="badge bg-danger">
+                                            <i class="bi bi-x-circle"></i> Erro
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-warning">
+                                            <i class="bi bi-hourglass-split"></i> Processando
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <small class="font-monospace">{{ backup.nome_arquivo }}</small>
+                                    {% if backup.protegido %}
+                                        <i class="bi bi-shield-fill-check text-warning ms-1" title="Protegido"></i>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if backup.tipo_backup == 'manual' %}
+                                        <span class="badge bg-info">Manual</span>
+                                    {% else %}
+                                        <span class="badge bg-primary">Agendado</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ backup.empresa.nome_fantasia }}</td>
+                                <td>
+                                    {% if backup.status == 'concluido' %}
+                                        <span class="badge bg-light text-dark">
+                                            {{ backup.tamanho_formatado }}
+                                        </span>
+                                    {% else %}
+                                        <small class="text-muted">-</small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <small>{{ backup.criado_em|date:"d/m/Y H:i" }}</small>
+                                </td>
+                                <td>
+                                    <small>{{ backup.usuario.username|default:"Sistema" }}</small>
+                                </td>
+                                <td>
+                                    {% if backup.tempo_execucao_segundos %}
+                                        <small>{{ backup.tempo_execucao_segundos }}s</small>
+                                    {% else %}
+                                        <small class="text-muted">-</small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        {% if backup.status == 'concluido' %}
+                                            <a href="{% url 'usuarios:download_backup' backup.id %}" 
+                                               class="btn btn-outline-primary"
+                                               title="Baixar backup">
+                                                <i class="bi bi-download"></i>
+                                            </a>
+                                        {% endif %}
+                                        
+                                        {% if user.is_superuser %}
+                                            <a href="{% url 'usuarios:proteger_backup' backup.id %}"
+                                               class="btn btn-outline-{% if backup.protegido %}warning{% else %}secondary{% endif %}"
+                                               title="{% if backup.protegido %}Desproteger backup{% else %}Proteger backup{% endif %}">
+                                                <i class="bi bi-shield-{% if backup.protegido %}fill-check{% else %}lock{% endif %}"></i>
+                                            </a>
+                                        {% endif %}
+                                        
+                                        {% if backup.status == 'erro' %}
+                                            <button type="button" 
+                                                    class="btn btn-outline-warning"
+                                                    data-bs-toggle="tooltip"
+                                                    title="{{ backup.mensagem_erro }}">
+                                                <i class="bi bi-exclamation-triangle"></i>
+                                            </button>
+                                        {% endif %}
+                                        
+                                        {% if user.is_superuser %}
+                                            <button type="button" 
+                                                    class="btn btn-outline-danger"
+                                                    onclick="confirmarExclusao({{ backup.id }}, '{{ backup.nome_arquivo }}')">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-database-x" style="font-size: 4rem; color: #dee2e6;"></i>
+                    <p class="text-muted mt-3">Nenhum backup gerado ainda.</p>
+                    <p class="text-muted">Clique em "Gerar Novo Backup" para criar o primeiro backup.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Confirmação de Exclusão -->
+<div class="modal fade" id="modalExcluir" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="bi bi-exclamation-triangle"></i> Confirmar Exclusão
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Tem certeza que deseja excluir o backup:</p>
+                <p class="font-monospace fw-bold" id="nomeArquivoExcluir"></p>
+                <p class="text-danger">
+                    <i class="bi bi-exclamation-circle"></i>
+                    Esta ação não pode ser desfeita e o arquivo será removido permanentemente do servidor.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <form method="post" id="formExcluir" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash"></i> Excluir Definitivamente
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    // Confirmação antes de gerar backup
+    document.getElementById('formGerarBackup').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const btn = document.getElementById('btnGerar');
+        const form = this;
+        
+        Swal.fire({
+            title: 'Gerar Novo Backup?',
+            html: 'Deseja gerar um novo backup do banco de dados?<br><br><small class="text-muted">Este processo pode levar alguns minutos dependendo do tamanho do banco.</small>',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#198754',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: '<i class="bi bi-check-lg"></i> Sim, gerar backup',
+            cancelButtonText: 'Cancelar',
+            reverseButtons: true
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Desabilitar botão durante processamento
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Gerando...';
+                form.submit();
+            }
+        });
+    });
+    
+    // Função para confirmar exclusão
+    function confirmarExclusao(backupId, nomeArquivo) {
+        document.getElementById('nomeArquivoExcluir').textContent = nomeArquivo;
+        document.getElementById('formExcluir').action = `/empresas/backups/${backupId}/excluir/`;
+        
+        const modal = new bootstrap.Modal(document.getElementById('modalExcluir'));
+        modal.show();
+    }
+    
+    // Inicializar tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+</script>
+{% endblock %}

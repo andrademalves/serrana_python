@@ -27,7 +27,7 @@ from .models import (
 from cadastros.models import Pessoa
 from .services.indicadores import IndicadoresSaudeFinanceira
 from .services.ponto_equilibrio import AnalisePontoEquilibrio
-from .forms import TituloFinanceiroForm, BaixaFinanceiraForm, BancoForm, CentroCustoForm, FormaPagamentoForm, PlanoContaForm
+from .forms import TituloFinanceiroForm, BaixaFinanceiraForm, BancoForm, CentroCustoForm, FormaPagamentoForm, PlanoContaForm, ContaFinanceiraForm
 
 
 # =========================================

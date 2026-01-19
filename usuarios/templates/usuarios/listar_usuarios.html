@@ -107,6 +107,10 @@
                             <a href="{% url 'usuarios:editar_usuario' usuario.id %}" class="btn btn-sm btn-warning" title="Editar">
                                 <i class="fas fa-edit"></i>
                             </a>
+                            
+                            <a href="{% url 'usuarios:alterar_senha_usuario' usuario.id %}" class="btn btn-sm btn-secondary" title="Alterar Senha">
+                                <i class="fas fa-key"></i>
+                            </a>
                             {% endif %}
                             
                             {% tem_permissao_menu '/permissoes/' 'visualizar' as pode_ver_permissoes %}

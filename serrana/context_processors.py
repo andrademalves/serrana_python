@@ -6,36 +6,37 @@ Injetam variáveis em todos os templates do projeto
 def current_module(request):
     """
     Detecta o módulo atual baseado na URL/namespace
-    Retorna: {'current_module': 'financeiro'|'estoque'|'obras'|'vendas'|'cadastros'|'dashboard'|'relatorios'}
+    Retorna: {'current_module': 'financeiro'|'estoque'|'obras'|'vendas'|'cadastros'|'dashboard'|'relatorios'|'empresas'}
     """
     module = 'dashboard'  # padrão
     
-    # Tentar detectar pelo namespace da URL
-    if hasattr(request, 'resolver_match') and request.resolver_match:
+    # Detectar pelo path PRIMEIRO (prioridade para URLs específicas)
+    path = request.path.strip('/')
+    
+    if path.startswith('empresas'):
+        module = 'empresas'
+    elif path.startswith('financeiro'):
+        module = 'financeiro'
+    elif path.startswith('estoque'):
+        module = 'estoque'
+    elif path.startswith('projetos'):
+        module = 'obras'
+    elif path.startswith('vendas') or path.startswith('orcamentos'):
+        module = 'vendas'
+    elif path.startswith('cadastros'):
+        module = 'cadastros'
+    elif path.startswith('usuarios'):
+        module = 'usuarios'
+    elif 'relatorio' in path:
+        module = 'relatorios'
+    elif path == '' or path == 'dashboard':
+        module = 'dashboard'
+    # Fallback: tentar namespace se não detectou pelo path
+    elif hasattr(request, 'resolver_match') and request.resolver_match:
         namespace = request.resolver_match.namespace
         if namespace:
             module = namespace
-        else:
-            # Se não tem namespace, detectar pelo path
-            path = request.path.strip('/')
-            
-            if path.startswith('financeiro'):
-                module = 'financeiro'
-            elif path.startswith('estoque'):
-                module = 'estoque'
-            elif path.startswith('projetos'):
-                module = 'obras'
-            elif path.startswith('vendas') or path.startswith('orcamentos'):
-                module = 'vendas'
-            elif path.startswith('cadastros'):
-                module = 'cadastros'
-            elif path.startswith('usuarios'):
-                module = 'usuarios'
-            elif 'relatorio' in path:
-                module = 'relatorios'
-            elif path == '' or path == 'dashboard':
-                module = 'dashboard'
-    
+
     return {
         'current_module': module,
         'current_path': request.path,
@@ -57,6 +58,7 @@ def user_permissions(request):
             'has_projetos': False,
             'has_vendas': False,
             'has_cadastros': False,
+            'has_empresas': False,
         }
     
     # Superuser tem acesso a tudo
@@ -71,6 +73,7 @@ def user_permissions(request):
             'has_projetos': True,
             'has_vendas': True,
             'has_cadastros': True,
+            'has_empresas': True,
         }
     
     # Buscar menus que o usuário tem permissão
@@ -100,6 +103,7 @@ def user_permissions(request):
     has_projetos = any('/projetos' in url or '/obras' in url for url in urls_permitidas)
     has_vendas = any('/vendas' in url or '/orcamentos' in url for url in urls_permitidas)
     has_cadastros = any('/cadastros' in url for url in urls_permitidas)
+    has_empresas = any('/empresas' in url for url in urls_permitidas)
     
     return {
         'is_admin': request.user.is_staff or request.user.is_superuser,
@@ -111,4 +115,5 @@ def user_permissions(request):
         'has_projetos': has_projetos,
         'has_vendas': has_vendas,
         'has_cadastros': has_cadastros,
+        'has_empresas': has_empresas,
     }

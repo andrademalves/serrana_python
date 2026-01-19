@@ -331,3 +331,202 @@ class UsuarioEmpresa(models.Model):
         if self.data_fim and self.data_fim < self.data_inicio:
             raise ValidationError({'data_fim': 'Data de término deve ser posterior à data de início'})
 
+
+class BackupBancoDados(models.Model):
+    """
+    Registra os backups de banco de dados gerados pelo sistema
+    Mantém histórico e permite rastreabilidade de quem gerou cada backup
+    """
+    STATUS_CHOICES = [
+        ('processando', 'Processando'),
+        ('concluido', 'Concluído'),
+        ('erro', 'Erro'),
+    ]
+    
+    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, 
+                                related_name='backups', verbose_name='Empresa',
+                                help_text='Empresa para qual o backup foi gerado')
+    usuario = models.ForeignKey(User, on_delete=models.SET_NULL, null=True,
+                                related_name='backups_gerados', 
+                                verbose_name='Gerado por')
+    
+    nome_arquivo = models.CharField('Nome do Arquivo', max_length=255)
+    caminho_arquivo = models.CharField('Caminho do Arquivo', max_length=500,
+                                       help_text='Caminho completo do arquivo de backup')
+    tamanho_bytes = models.BigIntegerField('Tamanho (bytes)', default=0)
+    status = models.CharField('Status', max_length=20, choices=STATUS_CHOICES, 
+                             default='processando')
+    
+    # Detalhes técnicos
+    database_name = models.CharField('Nome do Banco', max_length=100)
+    tempo_execucao_segundos = models.DecimalField('Tempo de Execução (s)', 
+                                                  max_digits=8, decimal_places=2,
+                                                  null=True, blank=True)
+    
+    # Mensagens de log
+    mensagem_erro = models.TextField('Mensagem de Erro', blank=True,
+                                     help_text='Detalhes do erro caso o backup falhe')
+    observacoes = models.TextField('Observações', blank=True)
+    
+    # Auditoria
+    criado_em = models.DateTimeField('Criado em', auto_now_add=True)
+    concluido_em = models.DateTimeField('Concluído em', null=True, blank=True)
+    
+    # Controle de retenção
+    data_expiracao = models.DateTimeField('Data de Expiração', null=True, blank=True,
+                                          help_text='Data após a qual o backup pode ser excluído')
+
+    # Tipo e Proteção
+    TIPO_CHOICES = [
+        ('manual', 'Manual'),
+        ('agendado', 'Agendado'),
+    ]
+    
+    tipo_backup = models.CharField('Tipo de Backup', max_length=10,
+                                    choices=TIPO_CHOICES, default='manual',
+                                    help_text='Manual (gerado por usuário) ou Agendado (automático)')
+    protegido = models.BooleanField('Protegido', default=False,
+                                     help_text='Backups protegidos não são excluídos pela política de retenção')
+
+    class Meta:
+        db_table = 'backup_banco_dados'
+        verbose_name = 'Backup de Banco de Dados'
+        verbose_name_plural = 'Backups de Banco de Dados'
+        ordering = ['-criado_em']
+        indexes = [
+            models.Index(fields=['-criado_em']),
+            models.Index(fields=['empresa', 'status']),
+            models.Index(fields=['status']),
+        ]
+        permissions = [
+            ('gerar_backup', 'Pode gerar backup do banco de dados'),
+            ('download_backup', 'Pode fazer download de backups'),
+        ]
+    
+    def __str__(self):
+        return f"Backup {self.nome_arquivo} - {self.get_status_display()}"
+    
+    @property
+    def tamanho_formatado(self):
+        """Retorna o tamanho do arquivo formatado"""
+        bytes_value = self.tamanho_bytes
+        for unit in ['B', 'KB', 'MB', 'GB']:
+            if bytes_value < 1024.0:
+                return f"{bytes_value:.2f} {unit}"
+            bytes_value /= 1024.0
+        return f"{bytes_value:.2f} TB"
+
+
+
+class BackupConfig(models.Model):
+    """
+    Configuração de backup agendado do banco de dados (Singleton)
+    Apenas um registro deve existir
+    """
+    FREQUENCIA_CHOICES = [
+        ('diaria', 'Diária'),
+        ('semanal', 'Semanal'),
+        ('mensal', 'Mensal'),
+    ]
+    
+    DIA_SEMANA_CHOICES = [
+        ('0', 'Segunda-feira'),
+        ('1', 'Terça-feira'),
+        ('2', 'Quarta-feira'),
+        ('3', 'Quinta-feira'),
+        ('4', 'Sexta-feira'),
+        ('5', 'Sábado'),
+        ('6', 'Domingo'),
+    ]
+    
+    STATUS_EXECUCAO_CHOICES = [
+        ('processando', 'Processando'),
+        ('concluido', 'Concluído'),
+        ('erro', 'Erro'),
+    ]
+    
+    # Configuração de Agendamento
+    habilitado = models.BooleanField('Backup Agendado Habilitado', default=False,
+                                     help_text='Ativa ou desativa os backups agendados')
+    frequencia = models.CharField('Frequência', max_length=10, choices=FREQUENCIA_CHOICES,
+                                  default='diaria',
+                                  help_text='Frequência de execução dos backups')
+    hora_execucao = models.TimeField('Hora de Execução', default='03:00',
+                                     help_text='Hora em que o backup deve ser executado')
+    dia_semana = models.CharField('Dia da Semana', max_length=1, choices=DIA_SEMANA_CHOICES,
+                                  default='0',
+                                  help_text='Dia da semana para backups semanais (0=Segunda, 6=Domingo)')
+    dia_mes = models.IntegerField('Dia do Mês', default=1,
+                                  help_text='Dia do mês para backups mensais (1-28)')
+    
+    # Política de Retenção
+    manter_ultimos_n = models.IntegerField('Manter Últimos N Backups', default=10,
+                                           help_text='Quantidade de backups recentes a manter (0 = ilimitado)')
+    manter_dias = models.IntegerField('Manter Backups por Dias', default=30,
+                                      help_text='Dias para manter backups antigos (0 = ilimitado)')
+    
+    # Status da Última Execução
+    ultima_execucao = models.DateTimeField('Última Execução', null=True, blank=True,
+                                           help_text='Data/hora da última execução do backup agendado')
+    status_ultima_execucao = models.CharField('Status Última Execução', max_length=20,
+                                              choices=STATUS_EXECUCAO_CHOICES,
+                                              null=True, blank=True)
+    mensagem_ultima_execucao = models.TextField('Mensagem Última Execução', blank=True, default='',
+                                                help_text='Detalhes ou erros da última execução')
+    
+    # Auditoria
+    atualizado_por = models.ForeignKey(User, on_delete=models.SET_NULL, null=True,
+                                       related_name='backupconfig_atualizacoes',
+                                       verbose_name='Atualizado por')
+    atualizado_em = models.DateTimeField('Atualizado em', auto_now=True)
+    criado_em = models.DateTimeField('Criado em', auto_now_add=True)
+    
+    class Meta:
+        db_table = 'usuarios_backupconfig'
+        verbose_name = 'Configuração de Backup'
+        verbose_name_plural = 'Configurações de Backup'
+    
+    @classmethod
+    def get_config(cls):
+        """Retorna o único registro de configuração (Singleton)"""
+        config, created = cls.objects.get_or_create(pk=1)
+        return config
+    
+    def deve_executar_hoje(self):
+        """
+        Verifica se o backup deve ser executado hoje com base na configuração
+        Retorna True se está no horário/dia correto
+        """
+        from django.utils import timezone
+        from datetime import datetime, time
+        
+        agora = timezone.now()
+        hoje = agora.date()
+        hora_atual = agora.time()
+        
+        # Se já executou hoje, não executar novamente
+        if self.ultima_execucao:
+            ultima_data = timezone.localtime(self.ultima_execucao).date()
+            if ultima_data == hoje:
+                return False
+        
+        # Verificar se está no horário correto (com margem de 5 minutos)
+        hora_min = time(self.hora_execucao.hour, max(0, self.hora_execucao.minute - 5))
+        hora_max = time(self.hora_execucao.hour, min(59, self.hora_execucao.minute + 5))
+        
+        if not (hora_min <= hora_atual <= hora_max):
+            return False
+        
+        # Verificar frequência
+        if self.frequencia == 'diaria':
+            return True
+        elif self.frequencia == 'semanal':
+            return str(hoje.weekday()) == self.dia_semana
+        elif self.frequencia == 'mensal':
+            return hoje.day == self.dia_mes
+        
+        return False
+    
+    def __str__(self):
+        status = "Ativo" if self.habilitado else "Inativo"
+        return f"Configuração de Backup ({status})"

@@ -25,10 +25,12 @@ class EmpresaAtivaMiddleware:
         '/accounts/login/',
         '/accounts/logout/',
         '/admin/',
+        '/empresas/',  # Gestão de empresas (listar, criar, editar)
         '/empresas/selecionar/',
         '/empresas/trocar/',
         '/static/',
         '/media/',
+        '/usuarios/',  # Painel de módulos e gestão de usuários
     ]
     
     def __init__(self, get_response):
@@ -75,7 +77,13 @@ class EmpresaAtivaMiddleware:
             request.empresa = empresa_auto
             return self.get_response(request)
         
-        # Não conseguiu selecionar automaticamente - redirecionar para seleção
+        # Não conseguiu selecionar automaticamente
+        # Se for superuser e estiver acessando gestão de empresas, permitir sem empresa ativa
+        if request.user.is_superuser and request.path.startswith('/empresas/'):
+            request.empresa = None  # Explicitamente None para superuser gerenciar empresas
+            return self.get_response(request)
+        
+        # Para outros casos, redirecionar para seleção
         return self._redirecionar_selecao_empresa(request)
     
     def _is_exempt_url(self, path):

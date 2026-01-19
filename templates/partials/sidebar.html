@@ -24,6 +24,9 @@
                     {% if has_cadastros %}
                     <li><a class="dropdown-item" href="/cadastros/"><i class="bi bi-people"></i> Cadastros</a></li>
                     {% endif %}
+                    {% if has_empresas or is_admin %}
+                    <li><a class="dropdown-item" href="{% url 'usuarios:listar_empresas' %}"><i class="bi bi-building-gear"></i> Empresas</a></li>
+                    {% endif %}
                     {% if is_admin %}
                     <li><a class="dropdown-item" href="{% url 'usuarios:listar_usuarios' %}"><i class="bi bi-shield-lock"></i> Usuários</a></li>
                     {% endif %}
@@ -91,6 +94,10 @@
             
             <a href="{% url 'financeiro:listar_plano_contas' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'plano-contas' in request.path %}active{% endif %}">
                 <i class="bi bi-folder-symlink"></i> Plano de Contas
+            </a>
+            
+            <a href="{% url 'financeiro:listar_regimes_tributarios' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'regimes-tributarios' in request.path %}active{% endif %}">
+                <i class="bi bi-percent"></i> Regimes Tributários
             </a>
             
             <div class="list-group-item bg-dark text-white-50 small fw-bold mt-2">GESTÃO & ANÁLISE</div>
@@ -361,6 +368,29 @@
         {% endif %}
 
     </div>
+
+        {% if current_module == 'empresas' %}
+        <div class="list-group list-group-flush">
+            <div class="list-group-item bg-dark text-white-50 small fw-bold">EMPRESAS</div>
+            
+            <a href="{% url 'usuarios:listar_empresas' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'empresas' in request.path and 'backups' not in request.path %}active{% endif %}">
+                <i class="bi bi-building"></i> Gestão de Empresas
+            </a>
+            
+            {% if is_admin or user.is_superuser %}
+            <a href="{% url 'usuarios:criar_empresa' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'criar' in request.path %}active{% endif %}">
+                <i class="bi bi-building-add"></i> Nova Empresa
+            </a>
+            
+            <div class="list-group-item bg-dark text-white-50 small fw-bold mt-2">SEGURANÇA</div>
+            
+            <a href="{% url 'usuarios:listar_backups' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'backups' in request.path %}active{% endif %}">
+                <i class="bi bi-database-fill-down"></i> Backup do Banco
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
+
 
     <!-- Rodapé da Sidebar -->
     <div class="sidebar-footer p-3 border-top border-secondary mt-auto">

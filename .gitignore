@@ -35,3 +35,13 @@ staticfiles/
 *~
 .vscode/
 .idea/
+
+# Backups e arquivos sensíveis
+*.sql
+*.dump
+backups/
+db_backups/
+backup_*.sql
+*.bak
+*_temp.py
+*_before_*.py
