@@ -158,6 +158,7 @@ class Item(models.Model):
     foto = models.ImageField('Foto', upload_to='estoque/itens/', blank=True, null=True, help_text='Imagem do item')
     url_foto = models.CharField('URL Foto', max_length=500, blank=True, null=True, help_text='Alternativa: URL externa da foto')
     ativo = models.BooleanField('Ativo', default=True)
+    status_ativo = models.BooleanField('Status Ativo', default=True)  # Compatibilidade com banco legado
     observacoes = models.TextField('Observações', blank=True, null=True)
     
     # Auditoria

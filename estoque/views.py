@@ -129,7 +129,17 @@ def criar_item(request):
             messages.success(request, 'Item criado com sucesso!')
             return redirect('estoque:listar_itens')
         except Exception as e:
-            messages.error(request, f'Erro ao criar item: {str(e)}')
+            # Mensagens de erro amigáveis para o usuário
+            erro_msg = str(e)
+            if "status_ativo" in erro_msg and "doesn't have a default value" in erro_msg:
+                messages.error(request, 'Erro ao criar item: Campo obrigatório não preenchido. Por favor, entre em contato com o suporte técnico.')
+            elif "doesn't have a default value" in erro_msg:
+                campo = erro_msg.split("'")[1] if "'" in erro_msg else "desconhecido"
+                messages.error(request, f'Erro ao criar item: O campo "{campo}" é obrigatório mas não foi preenchido. Entre em contato com o suporte.')
+            elif "Duplicate entry" in erro_msg:
+                messages.error(request, 'Erro ao criar item: Já existe um item com este código. Por favor, verifique os dados.')
+            else:
+                messages.error(request, f'Erro ao criar item. Por favor, verifique os dados e tente novamente. Se o problema persistir, entre em contato com o suporte.')
     
     return render(request, 'estoque/criar_item.html')
 
