@@ -107,6 +107,7 @@ class PerfilUsuario(models.Model):
     cargo = models.CharField(max_length=100, blank=True, null=True, verbose_name='Cargo')
     departamento = models.CharField(max_length=100, blank=True, null=True, verbose_name='Departamento')
     foto = models.ImageField(upload_to='usuarios/fotos/', blank=True, null=True, verbose_name='Foto')
+    vendedor = models.BooleanField(default=False, verbose_name='É Vendedor', help_text='Marca este usuário como vendedor e cria/vincula automaticamente o cadastro de Pessoa')
     ativo = models.BooleanField(default=True, verbose_name='Ativo')
     criado_em = models.DateTimeField(auto_now_add=True, verbose_name='Criado em')
     atualizado_em = models.DateTimeField(auto_now=True, verbose_name='Atualizado em')

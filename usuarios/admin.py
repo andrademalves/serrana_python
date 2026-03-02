@@ -43,7 +43,7 @@ class PerfilUsuarioInline(admin.StackedInline):
     model = PerfilUsuario
     can_delete = False
     verbose_name_plural = 'Perfil'
-    fields = ['telefone', 'celular', 'cargo', 'departamento', 'foto', 'ativo']
+    fields = ['telefone', 'celular', 'cargo', 'departamento', 'vendedor', 'foto', 'ativo']
 
 
 class UserAdmin(BaseUserAdmin):
