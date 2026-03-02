@@ -33,6 +33,7 @@ urlpatterns = [
     path('estoque/', include(('estoque.urls', 'estoque'), namespace='estoque')),
     path('projetos/', include(('projetos.urls', 'projetos'), namespace='projetos')),
     path('financeiro/', include(('financeiro.urls', 'financeiro'), namespace='financeiro')),
+    path('crm/', include(('crm.urls', 'crm'), namespace='crm')),
     
     # Budget e Controle de Lucratividade
     path('financeiro/budget/', include('financeiro.urls_budget')),

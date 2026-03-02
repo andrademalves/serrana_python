@@ -139,6 +139,17 @@ class Pessoa(models.Model):
     # Observações
     observacoes = models.TextField(blank=True, null=True, verbose_name='Observações')
     
+    # Vínculo com Usuário do Sistema (para vendedores/funcionários)
+    usuario = models.OneToOneField(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='pessoa',
+        verbose_name='Usuário do Sistema',
+        help_text='Vincular esta pessoa a um usuário do sistema'
+    )
+    
     # Controle
     ativo = models.BooleanField(default=True, verbose_name='Ativo')
     criado_em = models.DateTimeField(auto_now_add=True, verbose_name='Criado em')

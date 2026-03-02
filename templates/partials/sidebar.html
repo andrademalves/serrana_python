@@ -1,14 +1,16 @@
 <!-- Sidebar Dinâmica por Módulo -->
 <nav class="sidebar bg-dark text-white" id="sidebar">
+    
     <!-- Seletor de Módulos (topo da sidebar) -->
     <div class="sidebar-header p-3 border-bottom border-secondary">
-        <h5 class="mb-2">Sistema Serrana</h5>
+        <h5 class="mb-2 sidebar-title text-center">Sistema Serrana</h5>
         <div class="btn-group-vertical w-100" role="group">
             <div class="btn-group" role="group">
-                <button type="button" class="btn btn-sm btn-outline-light dropdown-toggle" data-bs-toggle="dropdown">
-                    <i class="bi bi-grid-3x3-gap"></i> Módulos
+                <button type="button" class="btn btn-sm btn-outline-light dropdown-toggle sidebar-content" data-bs-toggle="dropdown">
+                    <i class="bi bi-grid-3x3-gap"></i> <span class="sidebar-text">Módulos</span>
                 </button>
                 <ul class="dropdown-menu dropdown-menu-dark">
+                    <li><a class="dropdown-item" href="{% url 'crm:kanban' %}"><i class="bi bi-funnel"></i> CRM</a></li>
                     {% if has_financeiro %}
                     <li><a class="dropdown-item" href="{% url 'financeiro:dashboard' %}"><i class="bi bi-cash-coin"></i> Financeiro</a></li>
                     {% endif %}
@@ -18,9 +20,7 @@
                     {% if has_projetos %}
                     <li><a class="dropdown-item" href="{% url 'projetos:dashboard' %}"><i class="bi bi-building"></i> Obras</a></li>
                     {% endif %}
-                    {% if has_financeiro or has_estoque or has_projetos %}
                     <li><hr class="dropdown-divider"></li>
-                    {% endif %}
                     {% if has_cadastros %}
                     <li><a class="dropdown-item" href="/cadastros/"><i class="bi bi-people"></i> Cadastros</a></li>
                     {% endif %}
@@ -39,103 +39,128 @@
     <div class="sidebar-body p-0">
         
         <!-- ========================================= -->
+        <!-- MENU: CRM -->
+        <!-- ========================================= -->
+        {% if current_module == 'crm' %}
+        <div class="list-group list-group-flush">
+            <div class="list-group-item bg-dark text-white-50 small fw-bold"><span class="sidebar-text">CRM & VENDAS</span></div>
+            
+            <a href="{% url 'crm:dashboard' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'dashboard' in request.path %}active{% endif %}" title="Dashboard BI">
+                <i class="bi bi-bar-chart-fill"></i> <span class="sidebar-text">Dashboard BI</span>
+            </a>
+            
+            <a href="{% url 'crm:kanban' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'kanban' in request.path %}active{% endif %}" title="Funil de Vendas">
+                <i class="bi bi-kanban"></i> <span class="sidebar-text">Funil de Vendas</span>
+            </a>
+            
+            <div class="list-group-item bg-dark text-white-50 small fw-bold mt-2"><span class="sidebar-text">CONFIGURAÇÃO</span></div>
+            
+            {% if user.is_superuser or user.is_staff %}
+            <a href="#" class="list-group-item list-group-item-action bg-dark text-white" onclick="alert('Selecione um pipeline no Kanban e clique em Gerenciar Etapas'); return false;" title="Gerenciar Etapas">
+                <i class="bi bi-gear"></i> <span class="sidebar-text">Gerenciar Etapas</span>
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
+        
+        <!-- ========================================= -->
         <!-- MENU: FINANCEIRO -->
         <!-- ========================================= -->
         {% if current_module == 'financeiro' %}
         <div class="list-group list-group-flush">
             <div class="list-group-item bg-dark text-white-50 small fw-bold">FINANCEIRO</div>
             
-            <a href="{% url 'financeiro:dashboard' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'dashboard' in request.path %}active{% endif %}">
-                <i class="bi bi-speedometer2"></i> Dashboard
+            <a href="{% url 'financeiro:dashboard' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'dashboard' in request.path %}active{% endif %}" title="Dashboard">
+                <i class="bi bi-speedometer2"></i> <span class="sidebar-text">Dashboard</span>
             </a>
             
             <div class="list-group-item bg-dark text-white-50 small fw-bold mt-2">CONTAS</div>
             
-            <a href="{% url 'financeiro:contas_pagar' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'contas-pagar' in request.path %}active{% endif %}">
-                <i class="bi bi-arrow-down-circle text-danger"></i> Contas a Pagar
+            <a href="{% url 'financeiro:contas_pagar' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'contas-pagar' in request.path %}active{% endif %}" title="Contas a Pagar">
+                <i class="bi bi-arrow-down-circle text-danger"></i> <span class="sidebar-text">Contas a Pagar</span>
             </a>
             
-            <a href="{% url 'financeiro:contas_receber' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'contas-receber' in request.path %}active{% endif %}">
-                <i class="bi bi-arrow-up-circle text-success"></i> Contas a Receber
+            <a href="{% url 'financeiro:contas_receber' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'contas-receber' in request.path %}active{% endif %}" title="Contas a Receber">
+                <i class="bi bi-arrow-up-circle text-success"></i> <span class="sidebar-text">Contas a Receber</span>
             </a>
             
-            <a href="{% url 'financeiro:listar_titulos' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'titulos' in request.path %}active{% endif %}">
-                <i class="bi bi-file-earmark-text"></i> Títulos
+            <a href="{% url 'financeiro:listar_titulos' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'titulos' in request.path %}active{% endif %}" title="Títulos">
+                <i class="bi bi-file-earmark-text"></i> <span class="sidebar-text">Títulos</span>
             </a>
             
-            <a href="{% url 'financeiro:listar_parcelas' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'parcelas' in request.path %}active{% endif %}">
-                <i class="bi bi-list-ol"></i> Parcelas
+            <a href="{% url 'financeiro:listar_parcelas' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'parcelas' in request.path %}active{% endif %}" title="Parcelas">
+                <i class="bi bi-list-ol"></i> <span class="sidebar-text">Parcelas</span>
             </a>
             
             <div class="list-group-item bg-dark text-white-50 small fw-bold mt-2">BANCOS & CAIXA</div>
             
-            <a href="{% url 'financeiro:listar_contas_financeiras' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'contas-financeiras' in request.path %}active{% endif %}">
-                <i class="bi bi-bank"></i> Contas Financeiras
+            <a href="{% url 'financeiro:listar_contas_financeiras' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'contas-financeiras' in request.path %}active{% endif %}" title="Contas Financeiras">
+                <i class="bi bi-bank"></i> <span class="sidebar-text">Contas Financeiras</span>
             </a>
             
             <!-- TODO: Criar rota 'financeiro:transferencias' -->
-            <a href="#" class="list-group-item list-group-item-action bg-dark text-white disabled">
-                <i class="bi bi-arrow-left-right"></i> Transferências
+            <a href="#" class="list-group-item list-group-item-action bg-dark text-white disabled" title="Transferências">
+                <i class="bi bi-arrow-left-right"></i> <span class="sidebar-text">Transferências</span>
             </a>
             
             <div class="list-group-item bg-dark text-white-50 small fw-bold mt-2">CADASTROS</div>
             
-            <a href="{% url 'financeiro:listar_centros_custo' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'centros-custo' in request.path %}active{% endif %}">
-                <i class="bi bi-diagram-3"></i> Centros de Custo
+            <a href="{% url 'financeiro:listar_centros_custo' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'centros-custo' in request.path %}active{% endif %}" title="Centros de Custo">
+                <i class="bi bi-diagram-3"></i> <span class="sidebar-text">Centros de Custo</span>
             </a>
             
-            <a href="{% url 'financeiro:listar_bancos' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'bancos' in request.path %}active{% endif %}">
-                <i class="bi bi-building"></i> Bancos
+            <a href="{% url 'financeiro:listar_bancos' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'bancos' in request.path %}active{% endif %}" title="Bancos">
+                <i class="bi bi-building"></i> <span class="sidebar-text">Bancos</span>
             </a>
             
-            <a href="{% url 'financeiro:listar_formas_pagamento' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'formas-pagamento' in request.path %}active{% endif %}">
-                <i class="bi bi-credit-card"></i> Formas de Pagamento
+            <a href="{% url 'financeiro:listar_formas_pagamento' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'formas-pagamento' in request.path %}active{% endif %}" title="Formas de Pagamento">
+                <i class="bi bi-credit-card"></i> <span class="sidebar-text">Formas de Pagamento</span>
             </a>
             
-            <a href="{% url 'financeiro:listar_plano_contas' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'plano-contas' in request.path %}active{% endif %}">
-                <i class="bi bi-folder-symlink"></i> Plano de Contas
+            <a href="{% url 'financeiro:listar_plano_contas' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'plano-contas' in request.path %}active{% endif %}" title="Plano de Contas">
+                <i class="bi bi-folder-symlink"></i> <span class="sidebar-text">Plano de Contas</span>
             </a>
             
-            <a href="{% url 'financeiro:listar_regimes_tributarios' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'regimes-tributarios' in request.path %}active{% endif %}">
-                <i class="bi bi-percent"></i> Regimes Tributários
+            <a href="{% url 'financeiro:listar_regimes_tributarios' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'regimes-tributarios' in request.path %}active{% endif %}" title="Regimes Tributários">
+                <i class="bi bi-percent"></i> <span class="sidebar-text">Regimes Tributários</span>
             </a>
             
             <div class="list-group-item bg-dark text-white-50 small fw-bold mt-2">GESTÃO & ANÁLISE</div>
             
-            <a href="/financeiro/budget/dashboard/" class="list-group-item list-group-item-action bg-dark text-white {% if 'budget' in request.path %}active{% endif %}">
-                <i class="bi bi-graph-up-arrow"></i> Budget & Lucratividade
+            <a href="/financeiro/budget/dashboard/" class="list-group-item list-group-item-action bg-dark text-white {% if 'budget' in request.path %}active{% endif %}" title="Budget & Lucratividade">
+                <i class="bi bi-graph-up-arrow"></i> <span class="sidebar-text">Budget & Lucratividade</span>
             </a>
             
-            <a href="{% url 'financeiro:listar_categorias_custo' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'categorias-custo' in request.path %}active{% endif %}">
-                <i class="bi bi-tags"></i> Classificação de Custos
+            <a href="{% url 'financeiro:listar_categorias_custo' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'categorias-custo' in request.path %}active{% endif %}" title="Classificação de Custos">
+                <i class="bi bi-tags"></i> <span class="sidebar-text">Classificação de Custos</span>
             </a>
             
             <div class="list-group-item bg-dark text-white-50 small fw-bold mt-2">COBRANÇA</div>
             
-            <a href="{% url 'financeiro:painel_cobranca' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'cobranca' in request.path %}active{% endif %}">
-                <i class="bi bi-bullseye text-warning"></i> Régua de Cobrança
+            <a href="{% url 'financeiro:painel_cobranca' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'cobranca' in request.path %}active{% endif %}" title="Régua de Cobrança">
+                <i class="bi bi-bullseye text-warning"></i> <span class="sidebar-text">Régua de Cobrança</span>
             </a>
             
             <div class="list-group-item bg-dark text-white-50 small fw-bold mt-2">RELATÓRIOS</div>
             
-            <a href="{% url 'financeiro:calendario' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'calendario' in request.path %}active{% endif %}">
-                <i class="bi bi-calendar3"></i> Calendário Financeiro
+            <a href="{% url 'financeiro:calendario' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'calendario' in request.path %}active{% endif %}" title="Calendário Financeiro">
+                <i class="bi bi-calendar3"></i> <span class="sidebar-text">Calendário Financeiro</span>
             </a>
             
-            <a href="{% url 'financeiro:relatorio_fluxo_caixa' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'fluxo-caixa' in request.path %}active{% endif %}">
-                <i class="bi bi-graph-up"></i> Fluxo de Caixa
+            <a href="{% url 'financeiro:relatorio_fluxo_caixa' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'fluxo-caixa' in request.path %}active{% endif %}" title="Fluxo de Caixa">
+                <i class="bi bi-graph-up"></i> <span class="sidebar-text">Fluxo de Caixa</span>
             </a>
             
-            <a href="{% url 'financeiro:relatorio_dre' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'dre' in request.path %}active{% endif %}">
-                <i class="bi bi-file-earmark-spreadsheet"></i> DRE
+            <a href="{% url 'financeiro:relatorio_dre' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'dre' in request.path %}active{% endif %}" title="DRE">
+                <i class="bi bi-file-earmark-spreadsheet"></i> <span class="sidebar-text">DRE</span>
             </a>
             
-            <a href="{% url 'financeiro:relatorio_ponto_equilibrio' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'ponto-equilibrio' in request.path %}active{% endif %}">
-                <i class="bi bi-graph-down"></i> Ponto de Equilíbrio
+            <a href="{% url 'financeiro:relatorio_ponto_equilibrio' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'ponto-equilibrio' in request.path %}active{% endif %}" title="Ponto de Equilíbrio">
+                <i class="bi bi-graph-down"></i> <span class="sidebar-text">Ponto de Equilíbrio</span>
             </a>
             
-            <a href="{% url 'financeiro:relatorio_resultado_centro_custo' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'resultado-centro-custo' in request.path %}active{% endif %}">
-                <i class="bi bi-pie-chart"></i> Resultado por Centro de Custo
+            <a href="{% url 'financeiro:relatorio_resultado_centro_custo' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'resultado-centro-custo' in request.path %}active{% endif %}" title="Resultado por Centro de Custo">
+                <i class="bi bi-pie-chart"></i> <span class="sidebar-text">Resultado por Centro de Custo</span>
             </a>
         </div>
         {% endif %}
@@ -147,46 +172,46 @@
         <div class="list-group list-group-flush">
             <div class="list-group-item bg-dark text-white-50 small fw-bold">ESTOQUE</div>
             
-            <a href="{% url 'estoque:dashboard' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'dashboard' in request.path %}active{% endif %}">
-                <i class="bi bi-speedometer2"></i> Dashboard
+            <a href="{% url 'estoque:dashboard' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'dashboard' in request.path %}active{% endif %}" title="Dashboard">
+                <i class="bi bi-speedometer2"></i> <span class="sidebar-text">Dashboard</span>
             </a>
             
             <div class="list-group-item bg-dark text-white-50 small fw-bold mt-2">MOVIMENTAÇÕES</div>
             
-            <a href="{% url 'estoque:listar_movimentacoes' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'movimentacoes' in request.path and 'criar' not in request.path %}active{% endif %}">
-                <i class="bi bi-arrow-left-right"></i> Movimentações
+            <a href="{% url 'estoque:listar_movimentacoes' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'movimentacoes' in request.path and 'criar' not in request.path %}active{% endif %}" title="Movimentações">
+                <i class="bi bi-arrow-left-right"></i> <span class="sidebar-text">Movimentações</span>
             </a>
             
-            <a href="{% url 'estoque:criar_movimentacao' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'criar' in request.path %}active{% endif %}">
-                <i class="bi bi-plus-circle"></i> Nova Movimentação
+            <a href="{% url 'estoque:criar_movimentacao' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'criar' in request.path %}active{% endif %}" title="Nova Movimentação">
+                <i class="bi bi-plus-circle"></i> <span class="sidebar-text">Nova Movimentação</span>
             </a>
             
             <div class="list-group-item bg-dark text-white-50 small fw-bold mt-2">CADASTROS</div>
             
-            <a href="{% url 'estoque:listar_itens' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'itens' in request.path %}active{% endif %}">
-                <i class="bi bi-box-seam"></i> Itens
+            <a href="{% url 'estoque:listar_itens' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'itens' in request.path %}active{% endif %}" title="Itens">
+                <i class="bi bi-box-seam"></i> <span class="sidebar-text">Itens</span>
             </a>
             
             <div class="list-group-item bg-dark text-white-50 small fw-bold mt-2">RELATÓRIOS</div>
             
-            <a href="{% url 'estoque:relatorio_estoque_atual' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'estoque-atual' in request.path %}active{% endif %}">
-                <i class="bi bi-clipboard-data"></i> Estoque Atual
+            <a href="{% url 'estoque:relatorio_estoque_atual' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'estoque-atual' in request.path %}active{% endif %}" title="Estoque Atual">
+                <i class="bi bi-clipboard-data"></i> <span class="sidebar-text">Estoque Atual</span>
             </a>
             
-            <a href="{% url 'estoque:relatorio_movimentacoes' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'relatorio-movimentacoes' in request.path %}active{% endif %}">
-                <i class="bi bi-file-earmark-bar-graph"></i> Movimentações
+            <a href="{% url 'estoque:relatorio_movimentacoes' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'relatorio-movimentacoes' in request.path %}active{% endif %}" title="Movimentações">
+                <i class="bi bi-file-earmark-bar-graph"></i> <span class="sidebar-text">Movimentações</span>
             </a>
             
-            <a href="{% url 'estoque:relatorio_materiais_obra_consolidado' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'materiais-obra-consolidado' in request.path %}active{% endif %}">
-                <i class="bi bi-building"></i> Custos por Obra
+            <a href="{% url 'estoque:relatorio_materiais_obra_consolidado' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'materiais-obra-consolidado' in request.path %}active{% endif %}" title="Custos por Obra">
+                <i class="bi bi-building"></i> <span class="sidebar-text">Custos por Obra</span>
             </a>
             
-            <a href="{% url 'estoque:relatorio_materiais_obra_analitico' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'materiais-obra-analitico' in request.path %}active{% endif %}">
-                <i class="bi bi-list-ul"></i> Materiais por Obra
+            <a href="{% url 'estoque:relatorio_materiais_obra_analitico' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'materiais-obra-analitico' in request.path %}active{% endif %}" title="Materiais por Obra">
+                <i class="bi bi-list-ul"></i> <span class="sidebar-text">Materiais por Obra</span>
             </a>
             
-            <a href="{% url 'estoque:listar_itens' %}?estoque_baixo=sim" class="list-group-item list-group-item-action bg-dark text-white">
-                <i class="bi bi-exclamation-triangle text-warning"></i> Estoque Crítico
+            <a href="{% url 'estoque:listar_itens' %}?estoque_baixo=sim" class="list-group-item list-group-item-action bg-dark text-white" title="Estoque Crítico">
+                <i class="bi bi-exclamation-triangle text-warning"></i> <span class="sidebar-text">Estoque Crítico</span>
             </a>
         </div>
         {% endif %}
@@ -198,64 +223,64 @@
         <div class="list-group list-group-flush">
             <div class="list-group-item bg-dark text-white-50 small fw-bold">OBRAS & PROJETOS</div>
             
-            <a href="{% url 'projetos:dashboard' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'dashboard' in request.path %}active{% endif %}">
-                <i class="bi bi-speedometer2"></i> Dashboard
+            <a href="{% url 'projetos:dashboard' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'dashboard' in request.path %}active{% endif %}" title="Dashboard">
+                <i class="bi bi-speedometer2"></i> <span class="sidebar-text">Dashboard</span>
             </a>
             
             <div class="list-group-item bg-dark text-white-50 small fw-bold mt-2">ORÇAMENTOS</div>
             
-            <a href="{% url 'projetos:listar_orcamentos' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'orcamentos' in request.path and 'criar' not in request.path %}active{% endif %}">
-                <i class="bi bi-file-earmark-text"></i> Orçamentos
+            <a href="{% url 'projetos:listar_orcamentos' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'orcamentos' in request.path and 'criar' not in request.path %}active{% endif %}" title="Orçamentos">
+                <i class="bi bi-file-earmark-text"></i> <span class="sidebar-text">Orçamentos</span>
             </a>
             
-            <a href="{% url 'projetos:criar_orcamento' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'orcamentos' in request.path and 'criar' in request.path %}active{% endif %}">
-                <i class="bi bi-plus-circle"></i> Novo Orçamento
+            <a href="{% url 'projetos:criar_orcamento' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'orcamentos' in request.path and 'criar' in request.path %}active{% endif %}" title="Novo Orçamento">
+                <i class="bi bi-plus-circle"></i> <span class="sidebar-text">Novo Orçamento</span>
             </a>
             
             <div class="list-group-item bg-dark text-white-50 small fw-bold mt-2">PROJETOS/OBRAS</div>
             
-            <a href="{% url 'projetos:listar_projetos' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'projetos' in request.path and 'criar' not in request.path and 'orcamentos' not in request.path %}active{% endif %}">
-                <i class="bi bi-building"></i> Obras
+            <a href="{% url 'projetos:listar_projetos' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'projetos' in request.path and 'criar' not in request.path and 'orcamentos' not in request.path %}active{% endif %}" title="Obras">
+                <i class="bi bi-building"></i> <span class="sidebar-text">Obras</span>
             </a>
             
-            <a href="{% url 'projetos:criar_projeto' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'projetos' in request.path and 'criar' in request.path %}active{% endif %}">
-                <i class="bi bi-plus-circle"></i> Nova Obra
+            <a href="{% url 'projetos:criar_projeto' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'projetos' in request.path and 'criar' in request.path %}active{% endif %}" title="Nova Obra">
+                <i class="bi bi-plus-circle"></i> <span class="sidebar-text">Nova Obra</span>
             </a>
             
             <div class="list-group-item bg-dark text-white-50 small fw-bold mt-2">VENDAS DIRETAS</div>
             
-            <a href="{% url 'projetos:listar_vendas' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'vendas' in request.path and 'criar' not in request.path %}active{% endif %}">
-                <i class="bi bi-cart-check"></i> Vendas
+            <a href="{% url 'projetos:listar_vendas' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'vendas' in request.path and 'criar' not in request.path %}active{% endif %}" title="Vendas">
+                <i class="bi bi-cart-check"></i> <span class="sidebar-text">Vendas</span>
             </a>
             
-            <a href="{% url 'projetos:criar_venda' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'vendas' in request.path and 'criar' in request.path %}active{% endif %}">
-                <i class="bi bi-plus-circle"></i> Nova Venda
+            <a href="{% url 'projetos:criar_venda' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'vendas' in request.path and 'criar' in request.path %}active{% endif %}" title="Nova Venda">
+                <i class="bi bi-plus-circle"></i> <span class="sidebar-text">Nova Venda</span>
             </a>
             
             <div class="list-group-item bg-dark text-white-50 small fw-bold mt-2">VISITAS TÉCNICAS</div>
             
-            <a href="{% url 'projetos:listar_visitas_tecnicas' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'visitas-tecnicas' in request.path and 'criar' not in request.path %}active{% endif %}">
-                <i class="bi bi-calendar-check"></i> Visitas Técnicas
+            <a href="{% url 'projetos:listar_visitas_tecnicas' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'visitas-tecnicas' in request.path and 'criar' not in request.path %}active{% endif %}" title="Visitas Técnicas">
+                <i class="bi bi-calendar-check"></i> <span class="sidebar-text">Visitas Técnicas</span>
             </a>
             
-            <a href="{% url 'projetos:criar_visita_tecnica' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'visitas-tecnicas' in request.path and 'criar' in request.path %}active{% endif %}">
-                <i class="bi bi-plus-circle"></i> Agendar Visita
+            <a href="{% url 'projetos:criar_visita_tecnica' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'visitas-tecnicas' in request.path and 'criar' in request.path %}active{% endif %}" title="Agendar Visita">
+                <i class="bi bi-plus-circle"></i> <span class="sidebar-text">Agendar Visita</span>
             </a>
             
             <div class="list-group-item bg-dark text-white-50 small fw-bold mt-2">GESTÃO</div>
             
-            <a href="#" class="list-group-item list-group-item-action bg-dark text-white disabled">
-                <i class="bi bi-journal-text"></i> Diário de Obra
+            <a href="#" class="list-group-item list-group-item-action bg-dark text-white disabled" title="Diário de Obra">
+                <i class="bi bi-journal-text"></i> <span class="sidebar-text">Diário de Obra</span>
             </a>
             
-            <a href="#" class="list-group-item list-group-item-action bg-dark text-white disabled">
-                <i class="bi bi-currency-dollar"></i> Custos da Obra
+            <a href="#" class="list-group-item list-group-item-action bg-dark text-white disabled" title="Custos da Obra">
+                <i class="bi bi-currency-dollar"></i> <span class="sidebar-text">Custos da Obra</span>
             </a>
             
             <div class="list-group-item bg-dark text-white-50 small fw-bold mt-2">RELATÓRIOS</div>
             
-            <a href="#" class="list-group-item list-group-item-action bg-dark text-white disabled">
-                <i class="bi bi-file-earmark-bar-graph"></i> Resultado por Obra
+            <a href="#" class="list-group-item list-group-item-action bg-dark text-white disabled" title="Resultado por Obra">
+                <i class="bi bi-file-earmark-bar-graph"></i> <span class="sidebar-text">Resultado por Obra</span>
             </a>
         </div>
         {% endif %}
@@ -268,32 +293,32 @@
             <div class="list-group-item bg-dark text-white-50 small fw-bold">VENDAS & ORÇAMENTOS</div>
             
             <!-- TODO: Criar módulo de vendas/orçamentos -->
-            <a href="#" class="list-group-item list-group-item-action bg-dark text-white disabled">
-                <i class="bi bi-file-earmark-text"></i> Orçamentos
+            <a href="#" class="list-group-item list-group-item-action bg-dark text-white disabled" title="Orçamentos">
+                <i class="bi bi-file-earmark-text"></i> <span class="sidebar-text">Orçamentos</span>
             </a>
             
-            <a href="#" class="list-group-item list-group-item-action bg-dark text-white disabled">
-                <i class="bi bi-plus-circle"></i> Novo Orçamento
+            <a href="#" class="list-group-item list-group-item-action bg-dark text-white disabled" title="Novo Orçamento">
+                <i class="bi bi-plus-circle"></i> <span class="sidebar-text">Novo Orçamento</span>
             </a>
             
             <div class="list-group-item bg-dark text-white-50 small fw-bold mt-2">GESTÃO</div>
             
-            <a href="#" class="list-group-item list-group-item-action bg-dark text-white disabled">
-                <i class="bi bi-funnel"></i> Funil de Vendas
+            <a href="#" class="list-group-item list-group-item-action bg-dark text-white disabled" title="Funil de Vendas">
+                <i class="bi bi-funnel"></i> <span class="sidebar-text">Funil de Vendas</span>
             </a>
             
-            <a href="#" class="list-group-item list-group-item-action bg-dark text-white disabled">
-                <i class="bi bi-file-pdf"></i> Propostas (PDF)
+            <a href="#" class="list-group-item list-group-item-action bg-dark text-white disabled" title="Propostas (PDF)">
+                <i class="bi bi-file-pdf"></i> <span class="sidebar-text">Propostas (PDF)</span>
             </a>
             
-            <a href="#" class="list-group-item list-group-item-action bg-dark text-white disabled">
-                <i class="bi bi-check-circle"></i> Aprovar Orçamento
+            <a href="#" class="list-group-item list-group-item-action bg-dark text-white disabled" title="Aprovar Orçamento">
+                <i class="bi bi-check-circle"></i> <span class="sidebar-text">Aprovar Orçamento</span>
             </a>
             
             <div class="list-group-item bg-dark text-white-50 small fw-bold mt-2">RELATÓRIOS</div>
             
-            <a href="#" class="list-group-item list-group-item-action bg-dark text-white disabled">
-                <i class="bi bi-graph-up"></i> Relatórios Comerciais
+            <a href="#" class="list-group-item list-group-item-action bg-dark text-white disabled" title="Relatórios Comerciais">
+                <i class="bi bi-graph-up"></i> <span class="sidebar-text">Relatórios Comerciais</span>
             </a>
         </div>
         {% endif %}
@@ -305,37 +330,37 @@
         <div class="list-group list-group-flush">
             <div class="list-group-item bg-dark text-white-50 small fw-bold">CADASTROS</div>
             
-            <a href="/cadastros/" class="list-group-item list-group-item-action bg-dark text-white {% if request.path == '/cadastros/' %}active{% endif %}">
-                <i class="bi bi-house-door"></i> Início
+            <a href="/cadastros/" class="list-group-item list-group-item-action bg-dark text-white {% if request.path == '/cadastros/' %}active{% endif %}" title="Início">
+                <i class="bi bi-house-door"></i> <span class="sidebar-text">Início</span>
             </a>
             
-            <a href="/cadastros/pessoas/" class="list-group-item list-group-item-action bg-dark text-white {% if 'pessoas' in request.path %}active{% endif %}">
-                <i class="bi bi-people"></i> Pessoas
+            <a href="/cadastros/pessoas/" class="list-group-item list-group-item-action bg-dark text-white {% if 'pessoas' in request.path %}active{% endif %}" title="Pessoas">
+                <i class="bi bi-people"></i> <span class="sidebar-text">Pessoas</span>
             </a>
             
-            <a href="/cadastros/pessoas/criar/" class="list-group-item list-group-item-action bg-dark text-white {% if 'pessoas/criar' in request.path %}active{% endif %}">
-                <i class="bi bi-person-plus"></i> Nova Pessoa
+            <a href="/cadastros/pessoas/criar/" class="list-group-item list-group-item-action bg-dark text-white {% if 'pessoas/criar' in request.path %}active{% endif %}" title="Nova Pessoa">
+                <i class="bi bi-person-plus"></i> <span class="sidebar-text">Nova Pessoa</span>
             </a>
             
-            <a href="/cadastros/produtos/" class="list-group-item list-group-item-action bg-dark text-white {% if 'produtos' in request.path %}active{% endif %}">
-                <i class="bi bi-box"></i> Produtos
+            <a href="/cadastros/produtos/" class="list-group-item list-group-item-action bg-dark text-white {% if 'produtos' in request.path %}active{% endif %}" title="Produtos">
+                <i class="bi bi-box"></i> <span class="sidebar-text">Produtos</span>
             </a>
             
-            <a href="/cadastros/produtos/criar/" class="list-group-item list-group-item-action bg-dark text-white {% if 'produtos/criar' in request.path %}active{% endif %}">
-                <i class="bi bi-plus-circle"></i> Novo Produto
+            <a href="/cadastros/produtos/criar/" class="list-group-item list-group-item-action bg-dark text-white {% if 'produtos/criar' in request.path %}active{% endif %}" title="Novo Produto">
+                <i class="bi bi-plus-circle"></i> <span class="sidebar-text">Novo Produto</span>
             </a>
             
             {% if is_admin %}
             <div class="list-group-item bg-dark text-white-50 small fw-bold mt-2">CONFIGURAÇÕES</div>
             
             <!-- TODO: Criar rota para plano de contas -->
-            <a href="#" class="list-group-item list-group-item-action bg-dark text-white disabled">
-                <i class="bi bi-diagram-3"></i> Plano de Contas
+            <a href="#" class="list-group-item list-group-item-action bg-dark text-white disabled" title="Plano de Contas">
+                <i class="bi bi-diagram-3"></i> <span class="sidebar-text">Plano de Contas</span>
             </a>
             
             <!-- TODO: Criar rota para categorias -->
-            <a href="#" class="list-group-item list-group-item-action bg-dark text-white disabled">
-                <i class="bi bi-tags"></i> Categorias
+            <a href="#" class="list-group-item list-group-item-action bg-dark text-white disabled" title="Categorias">
+                <i class="bi bi-tags"></i> <span class="sidebar-text">Categorias</span>
             </a>
             {% endif %}
         </div>
@@ -348,8 +373,8 @@
         <div class="list-group list-group-flush">
             <div class="list-group-item bg-dark text-white-50 small fw-bold">USUÁRIOS</div>
             
-            <a href="{% url 'usuarios:listar_usuarios' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'usuarios' in request.path and 'criar' not in request.path %}active{% endif %}">
-                <i class="bi bi-people"></i> Usuários
+            <a href="{% url 'usuarios:listar_usuarios' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'usuarios' in request.path and 'criar' not in request.path %}active{% endif %}" title="Usuários">
+                <i class="bi bi-people"></i> <span class="sidebar-text">Usuários</span>
             </a>
             
             {% if is_admin %}
@@ -373,19 +398,19 @@
         <div class="list-group list-group-flush">
             <div class="list-group-item bg-dark text-white-50 small fw-bold">EMPRESAS</div>
             
-            <a href="{% url 'usuarios:listar_empresas' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'empresas' in request.path and 'backups' not in request.path %}active{% endif %}">
-                <i class="bi bi-building"></i> Gestão de Empresas
+            <a href="{% url 'usuarios:listar_empresas' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'empresas' in request.path and 'backups' not in request.path %}active{% endif %}" title="Gestão de Empresas">
+                <i class="bi bi-building"></i> <span class="sidebar-text">Gestão de Empresas</span>
             </a>
             
             {% if is_admin or user.is_superuser %}
-            <a href="{% url 'usuarios:criar_empresa' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'criar' in request.path %}active{% endif %}">
-                <i class="bi bi-building-add"></i> Nova Empresa
+            <a href="{% url 'usuarios:criar_empresa' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'criar' in request.path %}active{% endif %}" title="Nova Empresa">
+                <i class="bi bi-building-add"></i> <span class="sidebar-text">Nova Empresa</span>
             </a>
             
             <div class="list-group-item bg-dark text-white-50 small fw-bold mt-2">SEGURANÇA</div>
             
-            <a href="{% url 'usuarios:listar_backups' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'backups' in request.path %}active{% endif %}">
-                <i class="bi bi-database-fill-down"></i> Backup do Banco
+            <a href="{% url 'usuarios:listar_backups' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'backups' in request.path %}active{% endif %}" title="Backup do Banco">
+                <i class="bi bi-database-fill-down"></i> <span class="sidebar-text">Backup do Banco</span>
             </a>
             {% endif %}
         </div>
@@ -398,7 +423,7 @@
             <a href="#" class="d-flex align-items-center text-white text-decoration-none dropdown-toggle" 
                id="dropdownUser" data-bs-toggle="dropdown" aria-expanded="false">
                 <i class="bi bi-person-circle me-2 fs-5"></i>
-                <div class="small">
+                <div class="small sidebar-text">
                     <div class="fw-bold">{{ request.user.get_full_name|default:request.user.username }}</div>
                     <div class="text-white-50">
                         {% if is_admin %}
@@ -425,114 +450,3 @@
         </div>
     </div>
 </nav>
-
-<style>
-/* Estilos da Sidebar */
-.sidebar {
-    height: 100vh;
-    max-height: 100vh;
-    width: 280px;
-    position: fixed;
-    top: 0;
-    left: 0;
-    overflow-y: auto;
-    overflow-x: hidden;
-    z-index: 1000;
-    display: flex;
-    flex-direction: column;
-}
-
-.sidebar-header {
-    flex-shrink: 0;
-}
-
-.sidebar-body {
-    flex: 1;
-    overflow-y: auto;
-    overflow-x: hidden;
-    max-height: calc(100vh - 150px); /* Ajusta baseado na altura do header */
-}
-
-.sidebar-footer {
-    flex-shrink: 0;
-    border-top: 1px solid #495057;
-}
-
-.sidebar .list-group-item {
-    border: none;
-    border-radius: 0;
-    padding: 0.75rem 1rem;
-    transition: all 0.2s;
-}
-
-.sidebar .list-group-item:hover:not(.disabled) {
-    background-color: #495057 !important;
-    padding-left: 1.5rem;
-}
-
-.sidebar .list-group-item.active {
-    background-color: #0d6efd !important;
-    border-left: 3px solid #fff;
-}
-
-.sidebar .list-group-item.disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
-.sidebar .list-group-item i {
-    width: 20px;
-    margin-right: 8px;
-}
-
-/* Ajuste do conteúdo principal quando sidebar está presente */
-.main-content {
-    margin-left: 280px;
-    padding: 20px;
-}
-
-/* Responsivo - esconder sidebar em telas pequenas */
-@media (max-width: 768px) {
-    .sidebar {
-        transform: translateX(-100%);
-        transition: transform 0.3s;
-    }
-    
-    .sidebar.show {
-        transform: translateX(0);
-    }
-    
-    .main-content {
-        margin-left: 0;
-    }
-}
-
-/* Scrollbar customizada para a sidebar */
-.sidebar::-webkit-scrollbar,
-.sidebar-body::-webkit-scrollbar {
-    width: 8px;
-}
-
-.sidebar::-webkit-scrollbar-track,
-.sidebar-body::-webkit-scrollbar-track {
-    background: #2d3238;
-}
-
-.sidebar::-webkit-scrollbar-thumb,
-.sidebar-body::-webkit-scrollbar-thumb {
-    background: #6c757d;
-    border-radius: 4px;
-}
-
-.sidebar::-webkit-scrollbar-thumb:hover,
-.sidebar-body::-webkit-scrollbar-thumb:hover {
-    background: #adb5bd;
-}
-
-/* Firefox scrollbar */
-.sidebar,
-.sidebar-body {
-    scrollbar-width: thin;
-    scrollbar-color: #6c757d #2d3238;
-}
-</style>

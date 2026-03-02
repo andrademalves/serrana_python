@@ -1,0 +1,482 @@
+{% extends "base_with_sidebar.html" %}
+{% load static %}
+{% load crm_tags %}
+
+{% block title %}Funil de Vendas - CRM{% endblock %}
+
+{% block extra_css %}
+<style>
+    .kanban-board {
+        display: flex;
+        gap: 15px;
+        overflow-x: auto;
+        padding: 20px 0;
+        min-height: 70vh;
+    }
+    
+    .kanban-column {
+        flex: 0 0 300px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 15px;
+        max-height: 75vh;
+        overflow-y: auto;
+    }
+    
+    .kanban-column-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+        border-bottom: 3px solid;
+    }
+    
+    .kanban-column-title {
+        font-weight: 600;
+        font-size: 14px;
+        text-transform: uppercase;
+    }
+    
+    .kanban-column-count {
+        background: #fff;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: bold;
+    }
+    
+    .kanban-cards {
+        min-height: 100px;
+    }
+    
+    .kanban-card {
+        background: white;
+        border-radius: 6px;
+        padding: 12px;
+        margin-bottom: 10px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+        cursor: move;
+        transition: all 0.2s;
+    }
+    
+    .kanban-card:hover {
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        transform: translateY(-2px);
+    }
+    
+    .kanban-card-title {
+        font-weight: 600;
+        font-size: 14px;
+        margin-bottom: 5px;
+        color: #2c3e50;
+    }
+    
+    .kanban-card-contact {
+        font-size: 13px;
+        color: #7f8c8d;
+        margin-bottom: 8px;
+    }
+    
+    .kanban-card-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 11px;
+        color: #95a5a6;
+        margin-top: 10px;
+        padding-top: 8px;
+        border-top: 1px solid #ecf0f1;
+    }
+    
+    .kanban-card-value {
+        font-weight: bold;
+        color: #27ae60;
+        font-size: 13px;
+    }
+    
+    .kanban-card-badges {
+        display: flex;
+        gap: 5px;
+        margin-top: 8px;
+        flex-wrap: wrap;
+    }
+    
+    .badge-sm {
+        font-size: 10px;
+        padding: 2px 6px;
+    }
+    
+    .sortable-ghost {
+        opacity: 0.4;
+        background: #e3f2fd;
+    }
+    
+    .sortable-drag {
+        opacity: 1;
+    }
+    
+    .filters-bar {
+        background: white;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2><i class="fas fa-project-diagram"></i> Funil de Vendas - {{ pipeline.nome }}</h2>
+        <div>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalLeadRapido">
+                <i class="fas fa-plus"></i> Lead Rápido
+            </button>
+            {% if is_admin %}
+            <a href="{% url 'crm:gerenciar_etapas' pipeline.id %}" class="btn btn-outline-secondary">
+                <i class="fas fa-cog"></i> Gerenciar Etapas
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Filtros -->
+    <div class="filters-bar">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label small">Pipeline</label>
+                <select name="pipeline" class="form-select form-select-sm" onchange="this.form.submit()">
+                    {% for p in pipelines %}
+                    <option value="{{ p.id }}" {% if p.id == pipeline.id %}selected{% endif %}>
+                        {{ p.nome }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            {% if is_admin and vendedores %}
+            <div class="col-md-3">
+                <label class="form-label small">Vendedor</label>
+                <select name="vendedor" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <option value="">Todos os vendedores</option>
+                    {% for v in vendedores %}
+                    <option value="{{ v.id }}" {% if vendedor_selecionado == v.id|stringformat:"s" %}selected{% endif %}>
+                        {{ v.nome }}{% if v.usuario %} ({{ v.usuario.username }}){% endif %}
+                    </option>
+                    {% endfor %}
+                </select>
+                <small class="text-muted">Filtrar leads por vendedor</small>
+            </div>
+            {% endif %}
+            
+            <div class="col-md-4">
+                <label class="form-label small">Buscar</label>
+                <input type="text" name="search" class="form-control form-control-sm" 
+                       placeholder="Nome, empresa, email, telefone..." value="{{ search }}">
+            </div>
+            
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-sm btn-primary w-100">
+                    <i class="fas fa-search"></i> Filtrar
+                </button>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Kanban Board -->
+    <div class="kanban-board">
+        {% for etapa in etapas %}
+        <div class="kanban-column" data-etapa-id="{{ etapa.id }}">
+            <div class="kanban-column-header" style="border-color: {{ etapa.cor }}">
+                <span class="kanban-column-title" style="color: {{ etapa.cor }}">
+                    {{ etapa.nome }}
+                </span>
+                <span class="kanban-column-count">
+                    {{ oportunidades_por_etapa|get_item:etapa.id|length }}
+                </span>
+            </div>
+            
+            <div class="kanban-cards sortable-cards">
+                {% for oportunidade in oportunidades_por_etapa|get_item:etapa.id %}
+                <div class="kanban-card" data-oportunidade-id="{{ oportunidade.id }}">
+                    <div class="kanban-card-title">{{ oportunidade.titulo }}</div>
+                    <div class="kanban-card-contact">
+                        <i class="fas fa-user"></i> {{ oportunidade.nome_contato }}
+                    </div>
+                    
+                    {% if oportunidade.valor_estimado %}
+                    <div class="kanban-card-value">
+                        R$ {{ oportunidade.valor_estimado|floatformat:2 }}
+                    </div>
+                    {% endif %}
+                    
+                    <div class="kanban-card-badges">
+                        <span class="badge bg-secondary badge-sm">{{ oportunidade.get_origem_display }}</span>
+                        
+                        {% if oportunidade.orcamento %}
+                        <span class="badge bg-info badge-sm">
+                            <i class="fas fa-file-invoice"></i> Orçamento
+                        </span>
+                        {% endif %}
+                        
+                        {% if oportunidade.projeto %}
+                        <span class="badge bg-success badge-sm">
+                            <i class="fas fa-project-diagram"></i> Projeto
+                        </span>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="kanban-card-meta">
+                        <span>
+                            <i class="fas fa-user-circle"></i>
+                            {{ oportunidade.responsavel.first_name|default:oportunidade.responsavel.username }}
+                        </span>
+                        <span>{{ oportunidade.updated_at|date:"d/m" }}</span>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-center text-muted py-3">
+                    <small>Nenhuma oportunidade</small>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Modal Lead Rápido -->
+<div class="modal fade" id="modalLeadRapido" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Criar Lead Rápido</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="formLeadRapido">
+                {% csrf_token %}
+                <input type="hidden" name="pipeline_id" value="{{ pipeline.id }}">
+                
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Título *</label>
+                        <input type="text" name="titulo" class="form-control" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Nome do Contato *</label>
+                        <input type="text" name="nome_contato" class="form-control" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Telefone</label>
+                        <input type="text" name="telefone" class="form-control">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">E-mail</label>
+                        <input type="email" name="email" class="form-control">
+                    </div>
+                    
+                    {% if is_admin and vendedores_pessoa %}
+                    <div class="mb-3">
+                        <label class="form-label">Atribuir ao Vendedor</label>
+                        <select name="vendedor_pessoa_id" class="form-select">
+                            <option value="">Selecionar vendedor...</option>
+                            {% for vendedor in vendedores_pessoa %}
+                            <option value="{{ vendedor.id }}">{{ vendedor.nome }}</option>
+                            {% endfor %}
+                        </select>
+                        <small class="text-muted">Vendedor responsável por este lead</small>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Origem</label>
+                        <select name="origem" class="form-select">
+                            <option value="site">Site</option>
+                            <option value="telefone">Telefone</option>
+                            <option value="email">E-mail</option>
+                            <option value="indicacao">Indicação</option>
+                            <option value="rede_social">Rede Social</option>
+                            <option value="visita">Visita Presencial</option>
+                            <option value="evento">Evento</option>
+                            <option value="outro">Outro</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Criar Lead</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('=== INICIANDO KANBAN ===');
+    console.log('SweetAlert disponível:', typeof Swal !== 'undefined');
+    console.log('Sortable disponível:', typeof Sortable !== 'undefined');
+    
+    // Funções auxiliares
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    
+    function atualizarContadores() {
+        document.querySelectorAll('.kanban-column').forEach(coluna => {
+            const count = coluna.querySelectorAll('.kanban-card').length;
+            coluna.querySelector('.kanban-column-count').textContent = count;
+        });
+    }
+    
+    function showToast(message, type = 'info') {
+        console.log('Toast:', type, message);
+        
+        if (typeof Swal !== 'undefined') {
+            const iconMap = {
+                'success': 'success',
+                'danger': 'error',
+                'warning': 'warning',
+                'info': 'info'
+            };
+            
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: iconMap[type] || 'info',
+                title: message,
+                showConfirmButton: false,
+                timer: 3000,
+                timerProgressBar: true
+            });
+        } else {
+            // Fallback: usar alert padrão
+            alert(message);
+        }
+    }
+    
+    // Configurar Sortable.js para drag & drop
+    const colunas = document.querySelectorAll('.sortable-cards');
+    const csrftoken = getCookie('csrftoken');
+    
+    console.log('Colunas encontradas:', colunas.length);
+    console.log('CSRF Token:', csrftoken ? 'OK' : 'FALTANDO!');
+    
+    colunas.forEach((coluna, index) => {
+        console.log(`Configurando coluna ${index + 1}...`);
+        
+        new Sortable(coluna, {
+            group: 'kanban',
+            animation: 150,
+            ghostClass: 'sortable-ghost',
+            onEnd: function(evt) {
+                const card = evt.item;
+                const oportunidadeId = card.dataset.oportunidadeId;
+                const novaColuna = evt.to.closest('.kanban-column');
+                const novaEtapaId = novaColuna.dataset.etapaId;
+                
+                console.log('=== DRAG COMPLETO ===');
+                console.log('Oportunidade ID:', oportunidadeId);
+                console.log('Nova Etapa ID:', novaEtapaId);
+                console.log('Card:', card);
+                console.log('Nova coluna:', novaColuna);
+                
+                // Enviar para o servidor
+                console.log('Enviando requisição POST...');
+                fetch('{% url "crm:atualizar_etapa" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrftoken
+                    },
+                    body: JSON.stringify({
+                        oportunidade_id: oportunidadeId,
+                        etapa_id: novaEtapaId
+                    })
+                })
+                .then(response => {
+                    console.log('Status HTTP:', response.status);
+                    console.log('Response OK:', response.ok);
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('=== RESPOSTA DO SERVIDOR ===');
+                    console.log('Data:', data);
+                    
+                    if (data.success) {
+                        console.log('✅ SUCESSO!');
+                        atualizarContadores();
+                        showToast(data.message, 'success');
+                    } else {
+                        console.log('❌ ERRO no servidor:', data.error);
+                        showToast('Erro: ' + data.error, 'danger');
+                        // Recarregar página em caso de erro
+                        setTimeout(() => location.reload(), 1500);
+                    }
+                })
+                .catch(error => {
+                    console.log('❌ ERRO na requisição:', error);
+                    showToast('Erro ao atualizar', 'danger');
+                    // Recarregar página em caso de erro
+                    setTimeout(() => location.reload(), 1500);
+                });
+            }
+        });
+        
+        console.log(`Coluna ${index + 1} configurada!`);
+    });
+    
+    // Clique nos cards para abrir detalhes
+    document.querySelectorAll('.kanban-card').forEach(card => {
+        card.addEventListener('dblclick', function() {
+            const oportunidadeId = this.dataset.oportunidadeId;
+            window.location.href = `/crm/oportunidades/${oportunidadeId}/`;
+        });
+    });
+    
+    // Criar lead rápido
+    document.getElementById('formLeadRapido').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        
+        fetch('{% url "crm:criar_oportunidade_rapida" %}', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrftoken
+            },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showToast(data.message, 'success');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showToast('Erro: ' + data.error, 'danger');
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

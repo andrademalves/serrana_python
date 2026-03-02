@@ -1,0 +1,62 @@
+{% extends "base_with_sidebar.html" %}
+
+{% block title %}Criar Orçamento - {{ oportunidade.titulo }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="card">
+        <div class="card-header">
+            <h4><i class="fas fa-file-invoice"></i> Criar Orçamento da Oportunidade</h4>
+        </div>
+        <div class="card-body">
+            <div class="alert alert-info">
+                <strong>Oportunidade:</strong> {{ oportunidade.titulo }}<br>
+                <strong>Cliente/Contato:</strong> {{ oportunidade.nome_contato }}
+                {% if oportunidade.empresa_contato %} - {{ oportunidade.empresa_contato }}{% endif %}<br>
+                <strong>Valor Estimado:</strong> 
+                {% if oportunidade.valor_estimado %}
+                R$ {{ oportunidade.valor_estimado|floatformat:2 }}
+                {% else %}
+                Não informado
+                {% endif %}
+            </div>
+            
+            <form method="post">
+                {% csrf_token %}
+                
+                <div class="mb-3">
+                    <label class="form-label">Descrição do Orçamento</label>
+                    <textarea name="descricao" class="form-control" rows="4">{{ oportunidade.descricao|default:oportunidade.titulo }}</textarea>
+                    <div class="form-text">Esta descrição aparecerá no orçamento</div>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Validade (dias)</label>
+                    <input type="number" name="validade_dias" class="form-control" value="30" min="1">
+                </div>
+                
+                <div class="alert alert-warning">
+                    <i class="fas fa-info-circle"></i>
+                    <strong>Importante:</strong> 
+                    {% if not oportunidade.cliente %}
+                    Como esta oportunidade não possui um cliente cadastrado vinculado, 
+                    será criado um novo cadastro básico com os dados do contato.
+                    Você poderá completar/editar os dados do cliente posteriormente.
+                    {% else %}
+                    O orçamento será vinculado ao cliente <strong>{{ oportunidade.cliente.nome }}</strong>.
+                    {% endif %}
+                </div>
+                
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-check"></i> Criar Orçamento
+                    </button>
+                    <a href="{% url 'crm:oportunidade_detail' oportunidade.id %}" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Cancelar
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,564 @@
+{% extends "base_with_sidebar.html" %}
+{% load static %}
+
+{% block title %}{{ oportunidade.titulo }} - CRM{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-8">
+            <!-- Cabeçalho -->
+            <div class="card mb-3">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div>
+                            <h3>{{ oportunidade.titulo }}</h3>
+                            <p class="text-muted mb-0">
+                                <i class="fas fa-user"></i> {{ oportunidade.nome_contato }}
+                                {% if oportunidade.empresa_contato %}
+                                - {{ oportunidade.empresa_contato }}
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div>
+                            <span class="badge bg-primary">{{ oportunidade.etapa.nome }}</span>
+                            <span class="badge bg-secondary">{{ oportunidade.get_status_display }}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <small class="text-muted d-block">Telefone</small>
+                            <strong>{{ oportunidade.telefone|default:"-" }}</strong>
+                        </div>
+                        <div class="col-md-6">
+                            <small class="text-muted d-block">E-mail</small>
+                            <strong>{{ oportunidade.email|default:"-" }}</strong>
+                        </div>
+                        <div class="col-md-6">
+                            <small class="text-muted d-block">Valor Estimado</small>
+                            <strong class="text-success">
+                                {% if oportunidade.valor_estimado %}
+                                R$ {{ oportunidade.valor_estimado|floatformat:2 }}
+                                {% else %}-{% endif %}
+                            </strong>
+                        </div>
+                        <div class="col-md-6">
+                            <small class="text-muted d-block">Responsável</small>
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div>
+                                    <strong>{{ oportunidade.responsavel.get_full_name|default:oportunidade.responsavel.username }}</strong>
+                                    {% if oportunidade.primeiro_atendente and oportunidade.primeiro_atendente != oportunidade.responsavel %}
+                                    <br><small class="text-muted"><i class="bi bi-person-badge"></i> Primeiro atendente: {{ oportunidade.primeiro_atendente.get_full_name|default:oportunidade.primeiro_atendente.username }}</small>
+                                    {% endif %}
+                                </div>
+                                {% if is_admin and vendedores %}
+                                <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalTrocarResponsavel" title="Trocar responsável">
+                                    <i class="bi bi-arrow-left-right"></i>
+                                </button>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if oportunidade.descricao %}
+                    <hr>
+                    <small class="text-muted d-block mb-2">Descrição</small>
+                    <p>{{ oportunidade.descricao }}</p>
+                    {% endif %}
+                    
+                    <!-- Ações -->
+                    <hr>
+                    <div class="d-flex flex-column gap-2">
+                        {% if not oportunidade.orcamento %}
+                        <a href="{% url 'crm:criar_orcamento' oportunidade.id %}" class="btn btn-primary">
+                            <i class="fas fa-file-invoice"></i> Criar Orçamento
+                        </a>
+                        {% else %}
+                        <div class="alert alert-info mb-2">
+                            <i class="fas fa-file-invoice"></i> <strong>Orçamento Vinculado:</strong> {{ oportunidade.orcamento.codigo }}
+                        </div>
+                        <div class="btn-group" role="group">
+                            <a href="{% url 'projetos:visualizar_orcamento' oportunidade.orcamento.id %}" class="btn btn-success">
+                                <i class="fas fa-eye"></i> Visualizar Orçamento
+                            </a>
+                            <a href="{% url 'projetos:editar_orcamento' oportunidade.orcamento.id %}" class="btn btn-primary">
+                                <i class="fas fa-edit"></i> Editar Orçamento
+                            </a>
+                            <button type="button" class="btn btn-danger" onclick="confirmarDesvincularOrcamento()">
+                                <i class="fas fa-unlink"></i> Desvincular Orçamento
+                            </button>
+                        </div>
+                        {% endif %}
+                        
+                        {% if oportunidade.projeto %}
+                        <a href="{% url 'projetos:visualizar_projeto' oportunidade.projeto.id %}" class="btn btn-info">
+                            <i class="fas fa-project-diagram"></i> Ver Projeto {{ oportunidade.projeto.codigo }}
+                        </a>
+                        {% endif %}
+                        
+                        <a href="{% url 'crm:kanban' %}?pipeline={{ oportunidade.pipeline.id }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left"></i> Voltar ao Funil
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Atividades -->
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h5><i class="fas fa-history"></i> Atividades</h5>
+                </div>
+                <div class="card-body">
+                    <!-- Formulário nova atividade -->
+                    <form id="formNovaAtividade" class="mb-4">
+                        {% csrf_token %}
+                        <div class="row g-2">
+                            <div class="col-md-3">
+                                <select name="tipo" class="form-select form-select-sm">
+                                    <option value="nota">Nota</option>
+                                    <option value="ligacao">Ligação</option>
+                                    <option value="email">E-mail</option>
+                                    <option value="reuniao">Reunião</option>
+                                    <option value="whatsapp">WhatsApp</option>
+                                    <option value="visita">Visita</option>
+                                    <option value="proposta">Proposta</option>
+                                    <option value="negociacao">Negociação</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <textarea name="descricao" class="form-control form-control-sm" 
+                                          placeholder="Registrar atividade..." rows="2" required></textarea>
+                            </div>
+                            <div class="col-md-3">
+                                <button type="submit" class="btn btn-sm btn-primary w-100">
+                                    <i class="fas fa-plus"></i> Adicionar
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                    
+                    <!-- Lista de atividades -->
+                    <div id="listaAtividades">
+                        {% for atividade in atividades %}
+                        <div class="border-start border-3 border-primary ps-3 mb-3">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <span class="badge bg-secondary badge-sm">{{ atividade.get_tipo_display }}</span>
+                                    {% if atividade.titulo %}
+                                    <strong>{{ atividade.titulo }}</strong>
+                                    {% endif %}
+                                </div>
+                                <small class="text-muted">
+                                    {{ atividade.data_atividade|date:"d/m/Y H:i" }}
+                                </small>
+                            </div>
+                            <p class="mb-1">{{ atividade.descricao }}</p>
+                            <small class="text-muted">
+                                por {{ atividade.criado_por.get_full_name|default:atividade.criado_por.username }}
+                            </small>
+                        </div>
+                        {% empty %}
+                        <p class="text-muted">Nenhuma atividade registrada.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Histórico de Etapas -->
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-timeline"></i> Timeline / Histórico</h5>
+                </div>
+                <div class="card-body">
+                    {% for hist in historico %}
+                    <div class="d-flex gap-3 mb-3">
+                        <div class="text-center" style="min-width: 60px;">
+                            <small class="text-muted d-block">{{ hist.data_hora|date:"d/m" }}</small>
+                            <small class="text-muted">{{ hist.data_hora|date:"H:i" }}</small>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="border-start border-2 ps-3">
+                                {% if hist.etapa_de %}
+                                <strong>{{ hist.etapa_de.nome }}</strong> → <strong>{{ hist.etapa_para.nome }}</strong>
+                                {% else %}
+                                <strong>Criado em {{ hist.etapa_para.nome }}</strong>
+                                {% endif %}
+                                <br>
+                                <small class="text-muted">
+                                    por {{ hist.usuario.get_full_name|default:hist.usuario.username }}
+                                </small>
+                                {% if hist.observacao %}
+                                <p class="mb-0 mt-1">{{ hist.observacao }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p class="text-muted">Sem histórico.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sidebar -->
+        <div class="col-md-4">
+            <!-- Alertas Pendentes -->
+            <div class="card mb-3">
+                <div class="card-header bg-warning text-dark">
+                    <h6 class="mb-0"><i class="fas fa-bell"></i> Alertas Pendentes</h6>
+                </div>
+                <div class="card-body">
+                    <!-- Formulário novo alerta -->
+                    <form id="formNovoAlerta" class="mb-3">
+                        {% csrf_token %}
+                        <div class="mb-2">
+                            <input type="text" name="titulo" class="form-control form-control-sm" 
+                                   placeholder="Título do alerta" required>
+                        </div>
+                        <div class="mb-2">
+                            <input type="datetime-local" name="data_hora" class="form-control form-control-sm" required>
+                        </div>
+                        <div class="mb-2">
+                            <select name="prioridade" class="form-select form-select-sm">
+                                <option value="baixa">Baixa</option>
+                                <option value="media" selected>Média</option>
+                                <option value="alta">Alta</option>
+                                <option value="urgente">Urgente</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-sm btn-warning w-100">
+                            <i class="fas fa-plus"></i> Criar Alerta
+                        </button>
+                    </form>
+                    
+                    <hr>
+                    
+                    <!-- Lista de alertas -->
+                    <div id="listaAlertas">
+                        {% for alerta in alertas %}
+                        <div class="border-start border-3 border-warning ps-2 mb-2" data-alerta-id="{{ alerta.id }}">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <strong class="small">{{ alerta.titulo }}</strong>
+                                <button class="btn btn-sm btn-success btn-concluir-alerta" 
+                                        data-alerta-id="{{ alerta.id }}">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                            </div>
+                            <small class="text-muted d-block">
+                                <i class="fas fa-clock"></i> {{ alerta.data_hora|date:"d/m/Y H:i" }}
+                            </small>
+                            <small class="badge bg-{{ alerta.prioridade }}">{{ alerta.get_prioridade_display }}</small>
+                        </div>
+                        {% empty %}
+                        <p class="text-muted small">Nenhum alerta pendente.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Alertas Concluídos (últimos) -->
+            {% if alertas_concluidos %}
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-check-circle"></i> Concluídos Recentes</h6>
+                </div>
+                <div class="card-body">
+                    {% for alerta in alertas_concluidos %}
+                    <div class="border-start border-3 border-success ps-2 mb-2 opacity-75">
+                        <strong class="small">{{ alerta.titulo }}</strong>
+                        <small class="text-muted d-block">
+                            Concluído em {{ alerta.concluido_em|date:"d/m/Y H:i" }}
+                        </small>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Informações Adicionais -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-info-circle"></i> Informações</h6>
+                </div>
+                <div class="card-body small">
+                    <div class="mb-2">
+                        <strong>Pipeline:</strong> {{ oportunidade.pipeline.nome }}
+                    </div>
+                    <div class="mb-2">
+                        <strong>Origem:</strong> {{ oportunidade.get_origem_display }}
+                    </div>
+                    <div class="mb-2">
+                        <strong>Criado em:</strong> {{ oportunidade.created_at|date:"d/m/Y H:i" }}
+                    </div>
+                    <div class="mb-2">
+                        <strong>Última atualização:</strong> {{ oportunidade.updated_at|date:"d/m/Y H:i" }}
+                    </div>
+                    {% if oportunidade.data_prevista_fechamento %}
+                    <div class="mb-2">
+                        <strong>Previsão Fechamento:</strong> {{ oportunidade.data_prevista_fechamento|date:"d/m/Y" }}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Criar atividade
+    document.getElementById('formNovaAtividade').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        
+        fetch('{% url "crm:criar_atividade" oportunidade.id %}', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload(); // Simplificado
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Erro!',
+                    text: data.error,
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 3000,
+                    timerProgressBar: true
+                });
+            }
+        });
+    });
+    
+    // Criar alerta
+    document.getElementById('formNovoAlerta').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        
+        fetch('{% url "crm:criar_alerta" oportunidade.id %}', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Erro!',
+                    text: data.error,
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 3000,
+                    timerProgressBar: true
+                });
+            }
+        });
+    });
+    
+    // Concluir alerta
+    document.querySelectorAll('.btn-concluir-alerta').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const alertaId = this.dataset.alertaId;
+            
+            Swal.fire({
+                title: 'Concluir alerta?',
+                text: 'Deseja marcar este alerta como concluído?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#198754',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Sim, concluir',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    fetch(`/crm/api/alertas/${alertaId}/concluir/`, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': '{{ csrf_token }}'
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Concluído!',
+                                text: 'Alerta marcado como concluído',
+                                toast: true,
+                                position: 'top-end',
+                                showConfirmButton: false,
+                                timer: 2000,
+                                timerProgressBar: true
+                            }).then(() => {
+                                location.reload();
+                            });
+                        } else {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Erro!',
+                                text: data.error,
+                                toast: true,
+                                position: 'top-end',
+                                showConfirmButton: false,
+                                timer: 3000,
+                                timerProgressBar: true
+                            });
+                        }
+                    });
+                }
+            });
+        });
+    });
+});
+
+// Função para desvincular orçamento
+function confirmarDesvincularOrcamento() {
+    Swal.fire({
+        title: 'Desvincular Orçamento?',
+        html: 'O orçamento será desvinculado desta oportunidade, mas <strong>não será excluído</strong> do sistema. Você poderá criar um novo orçamento ou vincular outro depois.<br><br>Deseja continuar?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Sim, Desvincular',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Criar formulário e enviar
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '{% url "crm:desvincular_orcamento" oportunidade.id %}';
+            
+            const csrf = document.createElement('input');
+            csrf.type = 'hidden';
+            csrf.name = 'csrfmiddlewaretoken';
+            csrf.value = '{{ csrf_token }}';
+            form.appendChild(csrf);
+            
+            document.body.appendChild(form);
+            form.submit();
+        }
+    });
+}
+
+// Função para trocar responsável
+function trocarResponsavel() {
+    const selectVendedor = document.getElementById('selectNovoResponsavel');
+    const vendedorId = selectVendedor.value;
+    
+    if (!vendedorId) {
+        Swal.fire('Erro', 'Selecione um vendedor', 'error');
+        return;
+    }
+    
+    const vendedorNome = selectVendedor.options[selectVendedor.selectedIndex].text;
+    
+    Swal.fire({
+        title: 'Trocar Responsável?',
+        html: `Transferir este lead para <strong>${vendedorNome}</strong>?<br><br>O histórico do primeiro atendente será mantido.`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#0d6efd',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Sim, Transferir',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Enviar requisição AJAX
+            fetch('{% url "crm:trocar_responsavel" oportunidade.id %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: `novo_responsavel_id=${vendedorId}&tipo=pessoa`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Sucesso!',
+                        text: data.message,
+                        timer: 2000,
+                        showConfirmButton: false
+                    }).then(() => {
+                        location.reload();
+                    });
+                } else {
+                    Swal.fire('Erro', data.error, 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Erro:', error);
+                Swal.fire('Erro', 'Erro ao trocar responsável', 'error');
+            });
+        }
+    });
+}
+</script>
+
+<!-- Modal Trocar Responsável -->
+{% if is_admin and vendedores %}
+<div class="modal fade" id="modalTrocarResponsavel" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-arrow-left-right"></i> Trocar Responsável</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted">
+                    <strong>Responsável atual:</strong> {{ oportunidade.responsavel.get_full_name|default:oportunidade.responsavel.username }}
+                </p>
+                {% if oportunidade.primeiro_atendente %}
+                <p class="text-muted small">
+                    <i class="bi bi-person-badge"></i> <strong>Primeiro atendente:</strong> {{ oportunidade.primeiro_atendente.get_full_name|default:oportunidade.primeiro_atendente.username }}
+                </p>
+                {% endif %}
+                
+                <hr>
+                
+                <div class="mb-3">
+                    <label class="form-label">Novo Responsável</label>
+                    <select id="selectNovoResponsavel" class="form-select">
+                        <option value="">Selecione um vendedor...</option>
+                        {% for vendedor in vendedores %}
+                        <option value="{{ vendedor.id }}">
+                            {{ vendedor.nome }}{% if vendedor.usuario %} ({{ vendedor.usuario.username }}){% else %} ⚠️ Sem usuário{% endif %}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <small class="text-muted">Apenas vendedores com usuário vinculado podem ser selecionados</small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="trocarResponsavel()">
+                    <i class="bi bi-check"></i> Confirmar Troca
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}

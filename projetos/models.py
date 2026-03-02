@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from cadastros.models import Pessoa
 from estoque.models import Item, MovimentoEstoque
+from financeiro.models import CentroCusto
 from decimal import Decimal
 from django.utils import timezone
 from django.db import transaction
@@ -34,10 +35,21 @@ class Orcamento(models.Model):
         ('VALOR_FIXO', 'Valor Fixo (R$)'),
     ]
     
+    # Empresa (multiempresa)
+    empresa = models.ForeignKey(
+        'usuarios.Empresa',
+        on_delete=models.PROTECT,
+        related_name='orcamentos',
+        verbose_name='Empresa',
+        default=1
+    )
+    
     codigo = models.CharField('Código', max_length=50, unique=True, editable=False, blank=True)
+    descricao = models.CharField('Descrição', max_length=200, help_text='Descrição resumida do orçamento', default='Orçamento')
     cliente = models.ForeignKey(Pessoa, on_delete=models.PROTECT, related_name='orcamentos_projeto', verbose_name='Cliente', limit_choices_to={'cliente': True})
     vendedor = models.ForeignKey(Pessoa, on_delete=models.PROTECT, related_name='orcamentos_vendedor', verbose_name='Vendedor', limit_choices_to={'vendedor': True})
     data_orcamento = models.DateField('Data do Orçamento')
+    data_aprovacao = models.DateField('Data de Aprovação', null=True, blank=True)
     validade_dias = models.IntegerField('Validade (dias)', default=30)
     forma_pagamento = models.CharField('Forma de Pagamento', max_length=20, choices=FORMA_PAGAMENTO_CHOICES, default='A_VISTA')
     
@@ -102,6 +114,9 @@ class Orcamento(models.Model):
         # Gerar código automático se for novo orçamento
         if not self.pk and not self.codigo:
             self.codigo = self._gerar_codigo_automatico()
+        
+        # Garantir que os valores sejam Decimal
+        self.valor_total = Decimal(str(self.valor_total)) if self.valor_total else Decimal('0.00')
         
         # Calcular desconto em reais
         self.desconto = self._calcular_desconto()
@@ -197,15 +212,12 @@ class OrcamentoItem(models.Model):
         return f"{self.descricao} - {self.quantidade}"
     
     def save(self, *args, **kwargs):
-        # Garantir que todos os valores numéricos não sejam None
-        if self.quantidade is None:
-            self.quantidade = Decimal('1.000')
-        if self.valor_unitario is None:
-            self.valor_unitario = Decimal('0.0000')
-        if self.desconto is None:
-            self.desconto = Decimal('0.00')
+        # Garantir que todos os valores numéricos sejam Decimal e não None
+        self.quantidade = Decimal(str(self.quantidade)) if self.quantidade else Decimal('1.000')
+        self.valor_unitario = Decimal(str(self.valor_unitario)) if self.valor_unitario else Decimal('0.0000')
+        self.desconto = Decimal(str(self.desconto)) if self.desconto else Decimal('0.00')
         
-        subtotal = self.quantidade * Decimal(str(self.valor_unitario))
+        subtotal = self.quantidade * self.valor_unitario
         self.valor_total = subtotal - self.desconto
         super().save(*args, **kwargs)
 
@@ -279,10 +291,23 @@ class Projeto(models.Model):
         ('CANCELADO', 'Cancelado'),
     ]
     
-    codigo = models.CharField('Código do Projeto', max_length=50, unique=True)
+    # Empresa (multiempresa)
+    empresa = models.ForeignKey(
+        'usuarios.Empresa',
+        on_delete=models.PROTECT,
+        related_name='projetos',
+        verbose_name='Empresa',
+        default=1
+    )
+    
+    codigo = models.CharField('Código do Projeto', max_length=50, unique=True, editable=False)
+    
+    # Nota: O relacionamento com CentroCusto existe via OneToOne reverso
+    # Acesse através de projeto.centro_custo (definido em financeiro.models.CentroCusto)
+    
     orcamento = models.ForeignKey(Orcamento, on_delete=models.SET_NULL, null=True, blank=True, related_name='projetos', verbose_name='Orçamento Original')
     cliente = models.ForeignKey(Pessoa, on_delete=models.PROTECT, related_name='projetos', verbose_name='Cliente', limit_choices_to={'cliente': True})
-    vendedor = models.ForeignKey(Pessoa, on_delete=models.PROTECT, related_name='projetos_vendedor', verbose_name='Vendedor/Responsável', limit_choices_to={'vendedor': True})
+    vendedor = models.ForeignKey(User, on_delete=models.PROTECT, related_name='projetos_vendedor', verbose_name='Vendedor/Responsável')
     descricao = models.CharField('Descrição do Projeto', max_length=200)
     
     # Datas
@@ -388,6 +413,15 @@ class VisitaTecnica(models.Model):
         ('CANCELADA', 'Cancelada'),
     ]
     
+    # Empresa (multiempresa)
+    empresa = models.ForeignKey(
+        'usuarios.Empresa',
+        on_delete=models.PROTECT,
+        related_name='visitas_tecnicas',
+        verbose_name='Empresa',
+        default=1
+    )
+    
     orcamento = models.ForeignKey(Orcamento, on_delete=models.CASCADE, related_name='visitas_tecnicas', verbose_name='Orçamento', null=True, blank=True)
     
     # Quem agendou e quem vai fazer  
@@ -436,6 +470,15 @@ class AlocacaoProjeto(models.Model):
         ('TRANSPORTE', 'Transporte'),
         ('OUTROS', 'Outros'),
     ]
+    
+    # Empresa (multiempresa)
+    empresa = models.ForeignKey(
+        'usuarios.Empresa',
+        on_delete=models.PROTECT,
+        related_name='alocacoes_projeto',
+        verbose_name='Empresa',
+        default=1
+    )
     
     projeto = models.ForeignKey(Projeto, on_delete=models.CASCADE, related_name='alocacoes', verbose_name='Projeto')
     data_alocacao = models.DateField('Data da Alocação')
@@ -520,6 +563,15 @@ class ContaCorrenteProjeto(models.Model):
         ('VISITA', 'Visita Técnica'),
     ]
     
+    # Empresa (multiempresa)
+    empresa = models.ForeignKey(
+        'usuarios.Empresa',
+        on_delete=models.PROTECT,
+        related_name='contas_correntes_projeto',
+        verbose_name='Empresa',
+        default=1
+    )
+    
     projeto = models.ForeignKey(Projeto, on_delete=models.CASCADE, related_name='conta_corrente', verbose_name='Projeto')
     data_movimento = models.DateField('Data Movimento')
     tipo = models.CharField('Tipo', max_length=20, choices=TIPO_CHOICES)
@@ -575,6 +627,15 @@ class VendaDireta(models.Model):
         ('CANCELADO', 'Cancelado'),
     ]
     
+    # Empresa (multiempresa)
+    empresa = models.ForeignKey(
+        'usuarios.Empresa',
+        on_delete=models.PROTECT,
+        related_name='vendas_diretas',
+        verbose_name='Empresa',
+        default=1
+    )
+    
     codigo = models.CharField('Código da Venda', max_length=50, unique=True)
     cliente = models.ForeignKey(Pessoa, on_delete=models.PROTECT, related_name='vendas', verbose_name='Cliente', limit_choices_to={'cliente': True})
     vendedor = models.ForeignKey(User, on_delete=models.PROTECT, related_name='vendas', verbose_name='Vendedor')
@@ -608,6 +669,15 @@ class VendaDireta(models.Model):
 
 class VendaDiretaItem(models.Model):
     """Itens da venda direta"""
+    # Empresa (multiempresa)
+    empresa = models.ForeignKey(
+        'usuarios.Empresa',
+        on_delete=models.PROTECT,
+        related_name='vendas_diretas_itens',
+        verbose_name='Empresa',
+        default=1
+    )
+    
     venda = models.ForeignKey(VendaDireta, on_delete=models.CASCADE, related_name='itens', verbose_name='Venda')
     item = models.ForeignKey(Item, on_delete=models.PROTECT, verbose_name='Item')
     quantidade = models.DecimalField('Quantidade', max_digits=12, decimal_places=3)
@@ -661,6 +731,15 @@ class DiarioObra(models.Model):
         ('INTEGRAL', 'Dia Integral'),
         ('NOITE', 'Noite'),
     ]
+    
+    # Empresa (multiempresa)
+    empresa = models.ForeignKey(
+        'usuarios.Empresa',
+        on_delete=models.PROTECT,
+        related_name='diarios_obra',
+        verbose_name='Empresa',
+        default=1
+    )
     
     projeto = models.ForeignKey(Projeto, on_delete=models.CASCADE, related_name='diario_obra', verbose_name='Projeto')
     data = models.DateField('Data', help_text='Data do registro no diário')

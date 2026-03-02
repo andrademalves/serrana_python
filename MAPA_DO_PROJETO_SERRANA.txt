@@ -1,0 +1,1668 @@
+================================================================================
+                    MAPA COMPLETO DO PROJETO SERRANA
+                    Sistema de Gestão Empresarial
+                    Gerado em: 23/02/2026
+================================================================================
+
+================================================================================
+1) VISÃO GERAL
+================================================================================
+
+OBJETIVO DO SISTEMA:
+O Sistema Serrana é uma solução empresarial completa para gestão de obras,
+orçamentos, vendas diretas, estoque, financeiro e projetos. O foco principal
+é o ciclo completo: ORÇAMENTO → PROJETO/OBRA → CUSTOS → RECEBIMENTOS.
+
+O sistema gerencia desde a visita técnica inicial, passando pelo orçamento
+comercial, aprovação, execução da obra com controle de custos e receitas,
+até o fechamento financeiro e análise de lucratividade por projeto.
+
+PRINCIPAIS MÓDULOS DO MENU LATERAL:
+
+1. OBRAS & PROJETOS (app: projetos)
+   - Orçamentos: Criação de propostas comerciais com múltiplos itens
+   - Projetos/Obras: Gestão de projetos aprovados (centro de custo)
+   - Vendas Diretas: Vendas simples de produtos sem vínculo com obras
+   - Visitas Técnicas: Agendamento e controle de visitas antes do orçamento
+   - Diário de Obra: Registro diário de atividades, equipe, materiais
+
+2. ORÇAMENTOS (app: vendas - NOVO MÓDULO PARALELO)
+   - Sistema comercial profissional com orçamentos mais robustos
+   - Condições de pagamento predefinidas
+   - Geração automática de obras e títulos financeiros
+   - Análise de margem e custo estimado
+   - NÃO ENCONTRADO: Integração completa ainda em desenvolvimento
+
+3. VENDAS DIRETAS (submódulo de projetos)
+   - Venda rápida sem orçamento prévio
+   - Movimentação automática de estoque
+   - Geração de títulos a receber (PENDENTE)
+
+4. VISITAS TÉCNICAS (submódulo de projetos)
+   - Registro de visitas antes do orçamento
+   - Controle de custos e valores cobrados
+   - Possibilidade de converter valor em desconto no orçamento
+
+5. GESTÃO (app: cadastros)
+   - Pessoas: Clientes, Fornecedores, Funcionários, Vendedores
+   - Produtos e Serviços
+   - Estados e Cidades
+
+6. FINANCEIRO (app: financeiro)
+   - Contas a Pagar e Receber
+   - Bancos e Contas Financeiras
+   - Centros de Custo (vínculo com projetos/obras)
+   - Plano de Contas
+   - Régua de Cobrança automática
+   - Budget (controle orçamentário)
+
+7. RELATÓRIOS
+   - Resultado por Obra (receitas vs custos)
+   - Dashboard BI (app: dashboard)
+   - Relatórios de vendas e conversão (app: vendas)
+
+8. ESTOQUE (app: estoque)
+   - Controle de itens (materiais, produtos acabados)
+   - Movimentações de entrada/saída
+   - NÃO ENCONTRADO: Integração automática com orçamentos
+
+9. SISTEMA (app: usuarios)
+   - Usuários e permissões
+   - Empresas (multiempresa)
+   - Módulos e menus personalizados
+   - Backups
+
+================================================================================
+2) ARQUITETURA DJANGO
+================================================================================
+
+NOME DO PROJETO: serrana
+SETTINGS ROOT: serrana/settings.py
+
+INSTALLED_APPS:
+- django.contrib.admin
+- django.contrib.auth
+- django.contrib.contenttypes
+- django.contrib.sessions
+- django.contrib.messages
+- django.contrib.staticfiles
+- usuarios (usuários, empresas, permissões)
+- cadastros (pessoas, produtos)
+- estoque (itens, movimentações)
+- projetos (orçamentos, obras, vendas diretas, visitas)
+- vendas (novo módulo comercial profissional - paralelo)
+- financeiro (contas a pagar/receber, bancos, centros custo)
+- dashboard (BI e relatórios)
+
+MIDDLEWARE RELEVANTE:
+- SecurityMiddleware (segurança Django)
+- SessionMiddleware (sessões)
+- CsrfViewMiddleware (proteção CSRF)
+- AuthenticationMiddleware (autenticação)
+- MessageMiddleware (mensagens flash)
+- ClickjackingMiddleware (proteção XSS)
+- usuarios.middleware_empresa.EmpresaAtivaMiddleware (MULTIEMPRESA ATIVO)
+
+AUTENTICAÇÃO:
+- Modelo de Usuário: django.contrib.auth.models.User (padrão Django)
+- Backend: ModelBackend (padrão)
+- Permissões: Sistema customizado por menu/módulo (usuarios.MenuPermissao)
+- Login: /accounts/login/ → registration/login.html
+- Redirect após login: usuarios:home_modulos
+
+BANCO DE DADOS:
+- Engine: django.db.backends.mysql
+- Nome: serrana_empresarial
+- User: root
+- Password: MBRHELP2023DEV@
+- Host: localhost
+- Port: 3306
+- Charset: utf8mb4
+- Modo SQL: STRICT_TRANS_TABLES
+
+CACHE:
+- Backend: django.core.cache.backends.locmem.LocMemCache (em memória)
+- Timeout: 3600 segundos (1 hora)
+- Nota: Redis configurado mas desabilitado (desenvolvimento)
+
+EMAIL:
+- Backend: django.core.mail.backends.console.EmailBackend (console/log)
+- Produção: SMTP desabilitado (não configurado)
+
+CONTEXT PROCESSORS:
+- serrana.context_processors.current_module (módulo atual)
+- serrana.context_processors.user_permissions (permissões do usuário)
+- usuarios.middleware_empresa.empresa_context_processor (empresa ativa)
+
+INTERNACIONALIZAÇÃO:
+- LANGUAGE_CODE: pt-br
+- TIME_ZONE: America/Sao_Paulo
+- USE_I18N: True
+- USE_TZ: True
+
+SESSÃO:
+- Tempo: 30 minutos de inatividade
+- SESSION_SAVE_EVERY_REQUEST: True
+
+================================================================================
+3) ESTRUTURA DE PASTAS (RESUMO)
+================================================================================
+
+serrana/                          # Raiz do projeto
+├── manage.py                     # Script principal Django
+├── requirements.txt              # Dependências Python
+├── .venv/                        # Ambiente virtual
+├── serrana/                      # Configurações do projeto
+│   ├── __init__.py
+│   ├── settings.py               # Configurações principais
+│   ├── urls.py                   # URLs raiz
+│   ├── wsgi.py                   # WSGI para produção
+│   ├── asgi.py                   # ASGI (não usado)
+│   └── context_processors.py    # Processadores customizados
+├── templates/                    # Templates globais
+│   ├── base.html                 # Base principal
+│   ├── base_with_sidebar.html   # Base com menu lateral
+│   ├── registration/            # Login/logout
+│   └── partials/                # Componentes reutilizáveis
+├── static/                       # Arquivos estáticos (CSS/JS/IMG)
+│   └── (VAZIO - sem static local ainda)
+├── media/                        # Uploads (imagens, documentos)
+├── usuarios/                     # App de usuários e sistema
+│   ├── models.py                # User, Empresa, MenuPermissao
+│   ├── views.py                 # Views principais
+│   ├── urls.py                  # URLs do app
+│   ├── forms.py                 # Formulários
+│   ├── middleware_empresa.py    # Middleware multiempresa
+│   └── templates/usuarios/      # Templates específicos
+├── cadastros/                   # App de cadastros base
+│   ├── models.py               # Pessoa, Produto, Estado, Cidade
+│   ├── views.py                # CRUD de cadastros
+│   ├── urls.py
+│   ├── forms.py
+│   └── templates/cadastros/
+├── estoque/                     # App de estoque
+│   ├── models.py               # Item, MovimentoEstoque
+│   ├── views.py
+│   ├── urls.py
+│   ├── forms.py
+│   └── templates/estoque/
+├── projetos/                    # App de orçamentos e obras
+│   ├── models.py               # Orcamento, Projeto, VisitaTecnica, etc
+│   ├── views.py                # Views de orçamentos/obras
+│   ├── urls.py
+│   ├── forms.py
+│   └── templates/projetos/
+│       ├── criar_orcamento.html
+│       ├── visualizar_orcamento.html
+│       ├── listar_orcamentos.html
+│       ├── criar_projeto.html
+│       ├── visualizar_projeto.html
+│       └── diario/             # Diário de obra
+├── vendas/                      # App comercial (novo - paralelo)
+│   ├── models.py               # Orcamento, CondicaoPagamento, etc
+│   ├── views.py
+│   ├── urls.py
+│   ├── forms.py
+│   └── templates/vendas/
+├── financeiro/                  # App financeiro
+│   ├── models.py               # TituloFinanceiro, Parcela, Banco, etc
+│   ├── views.py
+│   ├── urls.py
+│   ├── urls_budget.py          # URLs do budget
+│   ├── forms.py
+│   ├── services/               # Lógica de negócio
+│   └── templates/financeiro/
+└── dashboard/                   # App de BI e dashboards
+    ├── models.py
+    ├── views.py
+    ├── urls.py
+    └── templates/dashboard/
+
+ONDE FICAM:
+- Templates globais: /templates/
+- Template base: /templates/base_with_sidebar.html
+- Static global: /static/ (vazio - usar CDN Bootstrap/Select2)
+- Apps principais: /usuarios, /cadastros, /projetos, /vendas, /financeiro
+
+================================================================================
+4) MODELOS (DATABASE MAP)
+================================================================================
+
+----------------------------------------------
+APP: USUARIOS (Usuários e Sistema)
+----------------------------------------------
+
+Model: Empresa
+  - id: BigAutoField (PK)
+  - nome: CharField(200)
+  - nome_fantasia: CharField(200, null, blank)
+  - cnpj: CharField(18, unique)
+  - endereco, cidade, estado, cep: CharField
+  - telefone, email: CharField
+  - logo: ImageField (null, blank)
+  - ativo: BooleanField(default=True)
+  - criado_em, atualizado_em: DateTimeField
+  - Relacionamentos: N/A (tabela base)
+
+Model: Modulo
+  - id: BigAutoField
+  - nome: CharField(100, unique)
+  - icone: CharField(50)
+  - ordem: IntegerField
+  - ativo: BooleanField
+
+Model: Menu
+  - id: BigAutoField
+  - modulo: ForeignKey(Modulo)
+  - nome: CharField(100)
+  - url_name: CharField(100)
+  - icone: CharField(50)
+  - ordem: IntegerField
+  - pai: ForeignKey(Menu, null, blank) - hierarquia
+  - ativo: BooleanField
+
+Model: MenuPermissao
+  - id: BigAutoField
+  - user: ForeignKey(User)
+  - menu: ForeignKey(Menu)
+  - pode_visualizar: BooleanField
+  - pode_criar: BooleanField
+  - pode_editar: BooleanField
+  - pode_deletar: BooleanField
+
+Model: EmpresaUsuario
+  - id: BigAutoField
+  - empresa: ForeignKey(Empresa)
+  - usuario: ForeignKey(User)
+  - ativo: BooleanField
+  - unique_together: [empresa, usuario]
+
+----------------------------------------------
+APP: CADASTROS (Cadastros Base)
+----------------------------------------------
+
+Model: Estado
+  - id: BigAutoField
+  - sigla: CharField(2, unique)
+  - nome: CharField(100)
+
+Model: Cidade
+  - id: BigAutoField
+  - estado: ForeignKey(Estado)
+  - nome: CharField(100)
+  - codigo_ibge: CharField(10, null, blank)
+  - unique_together: [estado, nome]
+
+Model: Pessoa
+  CAMPOS PRINCIPAIS:
+  - id: BigAutoField
+  - empresa: ForeignKey(Empresa) - MULTIEMPRESA
+  - tipo: CharField(1, choices=[F/J])
+  - nome: CharField(200) - Nome/Razão Social
+  - nome_fantasia: CharField(200, null, blank)
+  - cpf_cnpj: CharField(18, unique)
+  - rg, ie, data_emissao_rg, orgao_emissor: CharField
+  - sexo: CharField(1, choices=[M/F/O])
+  
+  ENDEREÇO:
+  - cep, logradouro, numero, complemento: CharField
+  - bairro, cidade, uf: CharField
+  
+  CONTATO:
+  - telefone, celular1, celular2: CharField
+  - email: EmailField
+  
+  CLASSIFICAÇÃO (Flags booleanas):
+  - cliente: BooleanField
+  - fornecedor: BooleanField
+  - funcionario: BooleanField
+  - terceiro: BooleanField
+  - vendedor: BooleanField
+  
+  FUNCIONÁRIO (se funcionario=True):
+  - titulo_eleitoral, zona, secao, ctps, serie, uf_ctps
+  - data_expedicao_ctps, cnh, cnh_categoria
+  - escolaridade: CharField
+  - deficiencia: BooleanField
+  - cargo: CharField
+  - data_admissao, data_demissao: DateField
+  
+  CONTROLE:
+  - observacoes: TextField
+  - ativo: BooleanField
+  - criado_em, criado_por, atualizado_em, atualizado_por
+  - unique_together: [empresa, cpf_cnpj]
+
+Model: Produto
+  - id: BigAutoField
+  - empresa: ForeignKey(Empresa) - MULTIEMPRESA
+  - tipo: CharField(10, choices=[produto/servico])
+  - codigo: CharField(50, unique)
+  - descricao: CharField(200)
+  - descricao_detalhada: TextField(null, blank)
+  - unidade: CharField(5, choices=[UN/KG/M/M2/M3/LT/CX/PC/HR])
+  - estoque_atual: DecimalField(10, 2)
+  - estoque_minimo: DecimalField(10, 2)
+  - custo: DecimalField(10, 2)
+  - preco_venda: DecimalField(10, 2)
+  - fornecedor: ForeignKey(Pessoa, null, blank)
+  - ativo: BooleanField
+  - unique_together: [empresa, codigo]
+
+----------------------------------------------
+APP: ESTOQUE
+----------------------------------------------
+
+Model: Item
+  - id: BigAutoField
+  - empresa: ForeignKey(Empresa)
+  - tipo_item: CharField(20, choices=[MP/PA/SEMI/CONSUMIVEL/SERVICO])
+  - codigo: CharField(50)
+  - descricao: CharField(200)
+  - unidade: CharField(10)
+  - estoque_atual: DecimalField(12, 3)
+  - estoque_minimo: DecimalField(12, 3)
+  - custo_medio: DecimalField(12, 4)
+  - preco_venda: DecimalField(12, 2, null, blank)
+  - ativo: BooleanField
+  - unique_together: [empresa, codigo]
+
+Model: MovimentoEstoque
+  - id: BigAutoField
+  - item: ForeignKey(Item)
+  - tipo_movimento: CharField(10, choices=[ENTRADA/SAIDA/AJUSTE])
+  - quantidade: DecimalField(12, 3)
+  - custo_unitario: DecimalField(12, 4)
+  - custo_total: DecimalField(12, 2)
+  - documento: CharField(100, null, blank)
+  - observacao: TextField
+  - data_movimento: DateTimeField
+  - criado_por: ForeignKey(User)
+
+----------------------------------------------
+APP: PROJETOS (Orçamentos e Obras)
+----------------------------------------------
+
+Model: Orcamento (PRINCIPAL)
+  IDENTIFICAÇÃO:
+  - id: BigAutoField
+  - codigo: CharField(50, unique, editable=False) - Ex: ORC-2026-0001
+  - cliente: ForeignKey(Pessoa, limit_choices_to={cliente=True})
+  - vendedor: ForeignKey(Pessoa, limit_choices_to={vendedor=True})
+  - data_orcamento: DateField
+  - validade_dias: IntegerField(default=30)
+  - status: CharField(20, choices=[PENDENTE/APROVADO/REJEITADO/CONVERTIDO])
+  
+  PAGAMENTO:
+  - forma_pagamento: CharField(20, choices=[A_VISTA/CARTAO/PIX/BOLETO/...])
+  - numero_parcelas: IntegerField(default=1)
+  - valor_entrada: DecimalField(12, 2, default=0)
+  
+  VALORES E DESCONTO:
+  - valor_total: DecimalField(12, 2) - Soma dos itens
+  - tipo_desconto: CharField(20, choices=[NENHUM/PERCENTUAL/VALOR_FIXO])
+  - desconto_valor: DecimalField(12, 2) - Percentual ou valor fixo
+  - desconto: DecimalField(12, 2, editable=False) - Desconto em R$
+  - valor_final: DecimalField(12, 2, editable=False)
+  
+  OBSERVAÇÕES:
+  - observacoes: TextField(null, blank)
+  
+  AUDITORIA:
+  - criado_em, criado_por, atualizado_em, atualizado_por
+  
+  MÉTODOS IMPORTANTES:
+  - _gerar_codigo_automatico(): Gera ORC-YYYY-NNNN
+  - _calcular_desconto(): Calcula desconto baseado em tipo
+  - save(): Gera código, calcula desconto/valor_final, auditoria
+  - _registrar_auditoria(): Salva histórico de alterações
+
+Model: OrcamentoItem
+  - id: BigAutoField
+  - orcamento: ForeignKey(Orcamento, related_name='itens')
+  - tipo: CharField(20, choices=[PRODUTO/MATERIAL/SERVICO/MAO_OBRA])
+  - item: ForeignKey(Item, null, blank) - Vínculo com estoque
+  - item_ref: CharField(50, null, blank) - Ex: "produto_1", "servico_3"
+  - item_codigo: CharField(50, null, blank) - Código do item
+  - descricao: CharField(255)
+  - quantidade: DecimalField(12, 3, default=1.000)
+  - valor_unitario: DecimalField(12, 4, default=0)
+  - desconto: DecimalField(12, 2, default=0)
+  - valor_total: DecimalField(12, 2, default=0)
+  
+  MÉTODOS:
+  - save(): Calcula valor_total = (qtd * valor_unit) - desconto
+
+Model: OrcamentoParcela
+  - id: BigAutoField
+  - orcamento: ForeignKey(Orcamento, related_name='parcelas')
+  - numero_parcela: IntegerField
+  - descricao: CharField(200, blank) - Ex: "Entrada", "1/3"
+  - data_vencimento: DateField
+  - valor: DecimalField(12, 2)
+  - forma_pagamento: CharField(20, choices=[A_VISTA/PIX/CARTAO/...])
+  - ordering: [numero_parcela]
+
+Model: OrcamentoHistorico (Auditoria)
+  - id: BigAutoField
+  - orcamento: ForeignKey(Orcamento, related_name='historico')
+  - usuario: ForeignKey(User, null)
+  - timestamp: DateTimeField(auto_now_add=True, db_index=True)
+  - acao: CharField(20, choices=[CRIADO/ALTERADO/DESCONTO/PARCELA])
+  - diff: JSONField(default=dict) - Alterações antes/depois
+
+Model: Projeto (Obra)
+  IDENTIFICAÇÃO:
+  - id: BigAutoField
+  - codigo: CharField(50, unique) - Ex: PROJ-2026-0001
+  - orcamento: ForeignKey(Orcamento, null, blank) - Orçamento origem
+  - cliente: ForeignKey(Pessoa, limit_choices_to={cliente=True})
+  - vendedor: ForeignKey(Pessoa, limit_choices_to={vendedor=True})
+  - descricao: CharField(200)
+  
+  DATAS:
+  - data_orcamento, data_contratacao: DateField
+  - data_inicio_prevista, data_inicio_real: DateField
+  - data_previsao_termino, data_termino_prevista, data_termino_real: DateField
+  - prazo_obra: CharField(200, null, blank)
+  
+  ENDEREÇO DA OBRA:
+  - logradouro, complemento, bairro, cidade, uf, cep: CharField
+  
+  VALORES:
+  - valor_orcado: DecimalField(12, 2) - Budget
+  - valor_contratado: DecimalField(12, 2)
+  - valor_total_visitas: DecimalField(12, 2)
+  
+  VISITAS TÉCNICAS:
+  - num_visitas_tecnicas: IntegerField(default=0)
+  - num_visitas_cobradas: IntegerField(default=0)
+  - valor_visita: DecimalField(10, 2)
+  - visitas_viraram_desconto: BooleanField
+  
+  STATUS:
+  - status: CharField(20, choices=[ORCAMENTO/AGUARDANDO/ANDAMENTO/
+                                   PAUSADO/CONCLUIDO/CANCELADO])
+  - observacoes: TextField
+  
+  PROPERTIES:
+  - valor_total_alocado: Soma de todas as alocações
+  - margem: valor_contratado - valor_total_alocado
+  - percentual_margem: (margem / valor_contratado) * 100
+
+Model: VisitaTecnica
+  - id: BigAutoField
+  - orcamento: ForeignKey(Orcamento, null, blank)
+  - agendado_por: ForeignKey(User, null, blank)
+  - tecnico: ForeignKey(Pessoa, limit_choices_to={vendedor=True})
+  - data_agendamento, data_visita: DateField
+  - hora_inicio, hora_fim: TimeField
+  - custo_visita, valor_cobrado: DecimalField(10, 2)
+  - status: CharField(20, choices=[AGENDADA/REALIZADA/CANCELADA])
+  - descricao, observacoes: TextField
+  - virou_desconto: BooleanField
+  - data_desconto: DateField(null, blank)
+
+Model: AlocacaoProjeto (Custos da Obra)
+  - id: BigAutoField
+  - projeto: ForeignKey(Projeto, related_name='alocacoes')
+  - data_alocacao: DateField
+  - tipo: CharField(20, choices=[MATERIAL/MO_INTERNA/MO_TERCEIRO/
+                                 SERVICO/EQUIPAMENTO/TRANSPORTE/OUTROS])
+  
+  SE MATERIAL:
+  - item: ForeignKey(Item, null, blank)
+  - quantidade: DecimalField(12, 3)
+  - valor_unitario: DecimalField(12, 4)
+  - movimentacao_estoque: ForeignKey(MovimentoEstoque, null, blank)
+  
+  SE MÃO DE OBRA INTERNA:
+  - funcionario: ForeignKey(Pessoa)
+  - horas_trabalhadas: DecimalField(8, 2)
+  - valor_hora: DecimalField(10, 2)
+  
+  SE TERCEIRO/SERVIÇO:
+  - fornecedor: ForeignKey(Pessoa)
+  - descricao_servico: CharField(255)
+  
+  COMUM:
+  - valor_total: DecimalField(12, 2)
+  - documento: CharField(100)
+  - observacoes: TextField
+  
+  MÉTODOS:
+  - save(): Calcula valor_total, cria MovimentoEstoque, cria ContaCorrente
+
+Model: ContaCorrenteProjeto (Movimentações Financeiras)
+  - id: BigAutoField
+  - projeto: ForeignKey(Projeto, related_name='conta_corrente')
+  - data_movimento: DateField
+  - tipo: CharField(20, choices=[RECEBIMENTO/PAGAMENTO/VISITA])
+  - descricao: CharField(255)
+  - valor: DecimalField(12, 2)
+  - documento: CharField(100)
+  - alocacao: ForeignKey(AlocacaoProjeto, null, blank)
+  - visita: ForeignKey(VisitaTecnica, null, blank)
+  - saldo_anterior, saldo_apos: DecimalField(12, 2)
+  - observacoes: TextField
+  
+  MÉTODOS:
+  - save(): Calcula saldo_anterior e saldo_apos
+
+Model: VendaDireta
+  - id: BigAutoField
+  - codigo: CharField(50, unique)
+  - cliente: ForeignKey(Pessoa)
+  - vendedor: ForeignKey(User)
+  - data_venda: DateField
+  - valor_total, desconto, valor_final: DecimalField(12, 2)
+  - forma_pagamento: CharField(50)
+  - status: CharField(20, choices=[PENDENTE/PAGO/CANCELADO])
+  - observacoes: TextField
+
+Model: VendaDiretaItem
+  - id: BigAutoField
+  - venda: ForeignKey(VendaDireta, related_name='itens')
+  - item: ForeignKey(Item)
+  - quantidade: DecimalField(12, 3)
+  - valor_unitario: DecimalField(12, 4)
+  - desconto, valor_total: DecimalField(12, 2)
+  - movimentacao_estoque: ForeignKey(MovimentoEstoque, null, blank)
+
+Model: DiarioObra
+  - id: BigAutoField
+  - projeto: ForeignKey(Projeto, related_name='diario_obra')
+  - data: DateField
+  - periodo: CharField(20, choices=[MANHA/TARDE/INTEGRAL/NOITE])
+  - clima: CharField(20, choices=[ENSOLARADO/NUBLADO/CHUVOSO/TEMPESTADE])
+  - temperatura: CharField(50)
+  - num_trabalhadores: IntegerField
+  - equipe_descricao, equipamentos_utilizados: TextField
+  - atividades_realizadas: TextField
+  - percentual_progresso: DecimalField(5, 2)
+  - materiais_recebidos, materiais_utilizados: TextField
+  - problemas_encontrados, solucoes_aplicadas: TextField
+  - visitas_fiscalizacao, incidentes_seguranca: TextField
+  - epi_utilizado: BooleanField
+  - observacoes: TextField
+  - unique_together: [projeto, data, periodo]
+
+----------------------------------------------
+APP: VENDAS (Novo Módulo Comercial - Paralelo)
+----------------------------------------------
+
+Model: CondicaoPagamento
+  - id: BigAutoField
+  - codigo: CharField(20, unique) - Ex: "AV", "3X", "ENT3X"
+  - descricao: CharField(200)
+  - tipo: CharField(20, choices=[A_VISTA/PARCELADO/ENTRADA_PARCELAS/
+                                 MEDICAO/PERSONALIZADO])
+  - percentual_entrada: DecimalField(5, 2) - 0-100%
+  - numero_parcelas: PositiveIntegerField
+  - intervalo_dias: PositiveIntegerField
+  - primeira_parcela_dias: PositiveIntegerField
+  - medicoes_percentuais: JSONField(null, blank) - Ex: [30, 40, 30]
+  - ativo, padrao: BooleanField
+
+Model: Orcamento (app vendas - DIFERENTE do projetos!)
+  IDENTIFICAÇÃO:
+  - id: BigAutoField
+  - numero: CharField(20, unique, editable=False) - ORC-2025-0001
+  - status: CharField(20, choices=[RASCUNHO/ENVIADO/NEGOCIACAO/
+                                   APROVADO/REPROVADO/CANCELADO])
+  - cliente: ForeignKey(Pessoa, limit_choices_to={cliente=True})
+  - vendedor: ForeignKey(User)
+  
+  DATAS:
+  - data_orcamento: DateField
+  - validade_ate: DateField
+  - prazo_execucao_dias: PositiveIntegerField
+  
+  ENDEREÇO DE EXECUÇÃO:
+  - endereco_execucao_logradouro, numero, complemento: CharField
+  - endereco_execucao_bairro, cidade, estado, cep: CharField
+  
+  CONDIÇÃO DE PAGAMENTO:
+  - condicao_pagamento: ForeignKey(CondicaoPagamento)
+  
+  VALORES:
+  - subtotal: DecimalField(15, 2) - Soma dos itens
+  - desconto: DecimalField(15, 2)
+  - frete: DecimalField(15, 2)
+  - outras_despesas: DecimalField(15, 2)
+  - total: DecimalField(15, 2) - Valor final
+  - custo_total_estimado: DecimalField(15, 2) - Não aparece na proposta
+  
+  OBSERVAÇÕES:
+  - observacoes: TextField - Aparece na proposta
+  - observacoes_internas: TextField - Não aparece
+  
+  INTEGRAÇÃO COM PROJETO:
+  - projeto_gerado: OneToOneField(Projeto, null, blank)
+  - data_aprovacao: DateTimeField
+  - aprovado_por: ForeignKey(User, null, blank)
+  - motivo_reprovacao: TextField
+  
+  PROPERTIES:
+  - margem_estimada_percentual: (lucro / total) * 100
+  - lucro_estimado: total - custo_total_estimado
+  - esta_vencido: bool
+  - dias_ate_vencimento: int
+  - pode_editar, pode_aprovar, pode_reprovar, pode_cancelar: bool
+  
+  MÉTODOS:
+  - calcular_totais(): Soma itens e atualiza subtotal/total/custo
+
+Model: OrcamentoItem (app vendas)
+  - id: BigAutoField
+  - orcamento: ForeignKey(Orcamento, related_name='itens')
+  - ordem: PositiveIntegerField - Ordem na proposta
+  - produto: ForeignKey(Produto, null, blank)
+  - descricao: CharField(500)
+  - quantidade: DecimalField(15, 3)
+  - unidade: CharField(10) - UN/M2/ML/KG/CJ
+  - preco_unitario: DecimalField(15, 2)
+  - custo_unitario_estimado: DecimalField(15, 2)
+  - desconto_percentual: DecimalField(5, 2) - 0-100%
+  - desconto_valor: DecimalField(15, 2)
+  - total_item: DecimalField(15, 2)
+  
+  ESPECÍFICO ESQUADRIAS:
+  - largura, altura: DecimalField(10, 2, null, blank)
+  - m2_calculado: DecimalField(10, 2, null, blank)
+  - cor, linha, vidro, acabamento: CharField
+  - observacao_tecnica: TextField
+  
+  MÉTODOS:
+  - calcular_total(): Aplica descontos e calcula total_item
+  - PROPRIEDADE margem_estimada_item: % de lucro do item
+
+Model: OrcamentoAnexo (app vendas)
+  - id: BigAutoField
+  - orcamento: ForeignKey(Orcamento, related_name='anexos')
+  - tipo: CharField(20, choices=[PROPOSTA/PLANTA/FOTO/DOCUMENTO/OUTRO])
+  - descricao: CharField(200)
+  - arquivo: FileField(upload_to='orcamentos/anexos/%Y/%m/')
+  - versao: PositiveIntegerField - Versionamento de propostas
+  - data_envio: DateTimeField(null, blank)
+  - enviado_por: ForeignKey(User, null, blank)
+
+Model: OrcamentoHistorico (app vendas)
+  - id: BigAutoField
+  - orcamento: ForeignKey(Orcamento, related_name='historico')
+  - status_anterior: CharField(20)
+  - status_novo: CharField(20)
+  - observacao: TextField
+  - criado_em: DateTimeField
+  - criado_por: ForeignKey(User)
+
+----------------------------------------------
+APP: FINANCEIRO
+----------------------------------------------
+
+Model: Banco
+  - id: BigAutoField
+  - codigo_compe: CharField(3, unique) - Código Banco Central
+  - nome: CharField(100)
+  - ativo: BooleanField
+
+Model: ContaFinanceira
+  - id: BigAutoField
+  - empresa: ForeignKey(Empresa)
+  - nome: CharField(100) - Ex: "Caixa Matriz", "Bradesco CC 1234-5"
+  - tipo: CharField(20, choices=[CONTA_CORRENTE/CONTA_POUPANCA/
+                                 CONTA_INVESTIMENTO/CAIXA/CARTEIRA_DIGITAL])
+  - banco: ForeignKey(Banco, null, blank)
+  - agencia, conta: CharField
+  - saldo_inicial: DecimalField(15, 2)
+  - data_saldo_inicial: DateField
+  - limite_credito: DecimalField(15, 2)
+  - ativo: BooleanField
+  
+  MÉTODOS:
+  - saldo_atual(): Calcula baseado em movimentações
+  - saldo_disponivel(): saldo_atual + limite_credito
+
+Model: FormaPagamento
+  - id: BigAutoField
+  - empresa: ForeignKey(Empresa)
+  - codigo: CharField(20)
+  - descricao: CharField(100)
+  - tipo: CharField(20, choices=[PIX/DINHEIRO/BOLETO/TRANSFERENCIA/
+                                 CARTAO_CREDITO/CARTAO_DEBITO/CHEQUE/...])
+  - prazo_compensacao: IntegerField - Dias até compensação
+  - taxa_percentual: DecimalField(5, 2)
+  - taxa_fixa: DecimalField(10, 2)
+  - ativo: BooleanField
+  - unique_together: [empresa, codigo]
+
+Model: CentroCusto (IMPORTANTE - VÍNCULO COM OBRA)
+  - id: BigAutoField
+  - empresa: ForeignKey(Empresa)
+  - codigo: CharField(20)
+  - nome: CharField(100)
+  - tipo: CharField(20, choices=[OBRA/ADMINISTRATIVO/PRODUCAO/
+                                 COMERCIAL/LOJA/OUTROS])
+  - projeto: ForeignKey(Projeto, null, blank) ← RELACIONAMENTO CHAVE
+  - responsavel: ForeignKey(User, null, blank)
+  - ativo: BooleanField
+  - unique_together: [empresa, codigo]
+
+Model: PlanoConta (Plano de Contas Contábil)
+  - id: BigAutoField
+  - empresa: ForeignKey(Empresa)
+  - codigo: CharField(20) - Ex: "1.1.01", "3.2.01.001"
+  - nome: CharField(150)
+  - tipo: CharField(15, choices=[RECEITA/DESPESA/ATIVO/
+                                 PASSIVO/PATRIMONIO])
+  - natureza: CharField(10, choices=[ANALITICA/SINTETICA])
+  - conta_pai: ForeignKey(PlanoConta, null, blank) - Hierarquia
+  - nivel: IntegerField(editable=False)
+  - caminho: CharField(255, editable=False)
+  - aceita_lancamento: BooleanField
+  - ativo: BooleanField
+  - unique_together: [empresa, codigo]
+  
+  MÉTODOS:
+  - save(): Calcula nível e caminho automaticamente
+  - get_filhas(): Retorna contas filhas recursivamente
+
+Model: CategoriaCustoVariabilidade
+  - id: BigAutoField
+  - empresa: ForeignKey(Empresa)
+  - nome: CharField(100)
+  - tipo: CharField(10, choices=[FIXO/VARIAVEL/MISTO])
+  - percentual_variavel: DecimalField(5, 2)
+  - observacao: TextField
+
+Model: TituloFinanceiro (PRINCIPAL - Conta a Pagar/Receber)
+  IDENTIFICAÇÃO:
+  - id: BigAutoField
+  - empresa: ForeignKey(Empresa)
+  - tipo: CharField(10, choices=[PAGAR/RECEBER])
+  - numero_documento: CharField(50) - NF, Contrato, Ordem
+  - descricao: CharField(255)
+  - pessoa: ForeignKey(Pessoa, null, blank) - Cliente/Fornecedor
+  
+  CLASSIFICAÇÃO CONTÁBIL:
+  - plano_conta: ForeignKey(PlanoConta, null, blank)
+  - centro_custo: ForeignKey(CentroCusto, null, blank) ← VÍNCULO OBRA
+  - projeto: ForeignKey(Projeto, null, blank) ← VÍNCULO DIRETO OBRA
+  - conta_financeira_padrao: ForeignKey(ContaFinanceira, null, blank)
+  
+  VALORES E DATAS:
+  - data_emissao: DateField
+  - data_primeiro_vencimento: DateField
+  - valor_total: DecimalField(15, 2)
+  
+  PARCELAMENTO:
+  - num_parcelas: IntegerField
+  - intervalo_dias: IntegerField
+  - intervalos_personalizados: CharField(200) - Ex: "30/45/60"
+  
+  STATUS:
+  - status: CharField(10, choices=[ABERTO/PARCIAL/QUITADO/CANCELADO])
+  
+  MÉTODOS IMPORTANTES:
+  - save(): Cria parcelas automaticamente
+  - gerar_parcelas(): Gera/regenera parcelas com lógica personalizada
+  - atualizar_status(): Atualiza status baseado nas parcelas
+  - valor_pago(): Total já pago
+  - saldo_aberto(): Total em aberto
+
+Model: ParcelaFinanceira
+  - id: BigAutoField
+  - titulo: ForeignKey(TituloFinanceiro, related_name='parcelas')
+  - numero_parcela: IntegerField
+  - data_vencimento: DateField
+  - valor_original: DecimalField(15, 2)
+  - valor_pago: DecimalField(15, 2, default=0)
+  - saldo_aberto: DecimalField(15, 2)
+  - status: CharField(10, choices=[ABERTO/PARCIAL/QUITADO/CANCELADO])
+  
+  RÉGUA DE COBRANÇA:
+  - regua: ForeignKey(ReguaCobranca, null, blank)
+  - regua_ativa: BooleanField
+  - pausar_regua_ate: DateField
+  - status_cobranca: CharField(20, choices=[NORMAL/NEGOCIACAO/PROMESSA/
+                                            INTENSA/BLOQUEADA])
+  - contato_email_override: EmailField
+  - data_promessa_pagamento: DateField
+  - observacao_promessa: TextField
+  
+  MÉTODOS:
+  - esta_vencida(): bool
+  - dias_atraso(): int
+  - atualizar_status(): Atualiza status e do título
+  - pode_enviar_cobranca(): bool
+
+Model: ReguaCobranca
+  - NÃO ENCONTRADO: Modelo completo não mapeado ainda
+
+Model: BaixaFinanceira (Baixa de Parcelas)
+  - NÃO ENCONTRADO: Modelo completo não listado
+
+================================================================================
+5) FLUXOS DE NEGÓCIO (PASSO A PASSO)
+================================================================================
+
+----------------------------------------------
+A) CRIAR ORÇAMENTO → GERAR PARCELAS → SALVAR
+----------------------------------------------
+
+MÓDULO: projetos (app antigo)
+
+1. Usuário acessa: /projetos/orcamentos/criar/
+2. Preenche formulário (cliente, vendedor, data, validade)
+3. Adiciona itens dinamicamente (JavaScript + Formset Django):
+   - Seleciona tipo (PRODUTO/MATERIAL/SERVICO/MAO_OBRA)
+   - Busca item via Select2 (AJAX: buscar_itens_por_tipo)
+   - Select2 retorna formato "tipo_id" (ex: "produto_5", "item_12")
+   - Preenche quantidade, valor unitário, desconto
+   - JavaScript calcula subtotal automaticamente
+4. Aplica desconto global (NENHUM/PERCENTUAL/VALOR_FIXO):
+   - Model.save() calcula desconto em R$
+   - Calcula valor_final = valor_total - desconto
+5. Adiciona parcelas:
+   - Número da parcela, descrição, vencimento, valor, forma_pagamento
+   - JavaScript valida soma das parcelas
+6. Salva orçamento:
+   - View criar_orcamento valida form + formset_itens + formset_parcelas
+   - Calcula valor_total somando itens válidos
+   - Salva Orcamento com código auto (ORC-2026-0001)
+   - Salva itens (busca código do item via item_ref)
+   - Salva parcelas
+   - Registra histórico (OrcamentoHistorico)
+7. Redireciona para visualizar_orcamento
+
+PROBLEMAS ATUAIS:
+- Item do orçamento aceita FK para Item (estoque) mas produtos estão em Produto
+- item_ref é string "tipo_id" mas não é validado consistentemente
+- Desconto global calculado no save() mas não valida se é > valor_total
+- Soma das parcelas não é validada no backend (só no JS)
+- Não gera títulos financeiros automaticamente
+
+----------------------------------------------
+B) APROVAR ORÇAMENTO → CONVERTER EM OBRA
+----------------------------------------------
+
+MÓDULO: projetos
+
+1. Usuário visualiza orçamento (visualizar_orcamento)
+2. Clica em "Aprovar"
+3. View aprovar_orcamento:
+   - Altera status para APROVADO
+   - Redireciona para criar_projeto com ?orcamento_id=X
+4. View criar_projeto:
+   - Detecta orcamento_id no GET
+   - Pré-preenche formulário com dados do orçamento:
+     * Cliente, vendedor, descrição
+     * Valor_orcado = orcamento.valor_final
+     * Copia itens do orçamento (NÃO IMPLEMENTADO AINDA)
+5. Usuário completa dados da obra:
+   - Datas (contratação, início, término)
+   - Endereço da obra
+   - Valor contratado (pode diferir do orçamento)
+6. Salva projeto:
+   - Gera código PROJ-2026-0001
+   - Salva com referência orcamento_id
+   - NÃO CRIA CENTRO DE CUSTO AUTOMATICAMENTE
+   - NÃO CRIA TÍTULOS A RECEBER AUTOMATICAMENTE
+
+FLUXO ESPERADO (não implementado):
+- Criar CentroCusto vinculado ao projeto
+- Criar TituloFinanceiro (RECEBER) baseado nas parcelas do orçamento
+- Atualizar orcamento.status = 'CONVERTIDO'
+
+----------------------------------------------
+C) LANÇAR CUSTOS APONTANDO PARA OBRA
+----------------------------------------------
+
+MÓDULO: projetos (AlocacaoProjeto)
+
+1. Usuário acessa obra: /projetos/projetos/<pk>/
+2. Adiciona alocação (NÃO ENCONTRADO: View específica)
+3. Preenche:
+   - Tipo: MATERIAL/MO_INTERNA/MO_TERCEIRO/SERVICO/EQUIPAMENTO
+   - Data da alocação
+   - Dependendo do tipo:
+     SE MATERIAL: item, quantidade, valor_unitario
+     SE MO_INTERNA: funcionario, horas, valor_hora
+     SE TERCEIRO: fornecedor, descricao_servico
+   - Documento (NF, recibo)
+4. AlocacaoProjeto.save():
+   - Calcula valor_total
+   - Se MATERIAL: cria MovimentoEstoque (SAIDA)
+   - Cria registro em ContaCorrenteProjeto (tipo=PAGAMENTO)
+   - Atualiza saldo do projeto
+5. Projeto.valor_total_alocado é calculado via aggregate
+
+----------------------------------------------
+D) REGISTRAR RECEBIMENTOS APONTANDO PARA OBRA
+----------------------------------------------
+
+FLUXO ATUAL: NÃO IMPLEMENTADO
+
+FLUXO ESPERADO:
+1. Sistema gera TituloFinanceiro (RECEBER) ao aprovar orçamento
+2. TituloFinanceiro gera ParcelaFinanceira (1 para cada parcela orçamento)
+3. ParcelaFinanceira vinculada a centro_custo ou projeto
+4. Ao receber:
+   - Cria BaixaFinanceira na parcela
+   - Atualiza saldo_aberto da parcela
+   - Atualiza status (PARCIAL/QUITADO)
+   - ContaCorrenteProjeto recebe lançamento (tipo=RECEBIMENTO)
+
+----------------------------------------------
+E) RELATÓRIO "RESULTADO POR OBRA"
+----------------------------------------------
+
+CÁLCULO ATUAL (baseado em ContaCorrenteProjeto):
+
+1. Listar todos os projetos
+2. Para cada projeto:
+   RECEITAS:
+   - Soma ContaCorrenteProjeto.filter(tipo=RECEBIMENTO).aggregate(Sum(valor))
+   
+   CUSTOS:
+   - Soma ContaCorrenteProjeto.filter(tipo=PAGAMENTO).aggregate(Sum(valor))
+   - OU Soma AlocacaoProjeto.aggregate(Sum(valor_total))
+   
+   MARGEM:
+   - Margem R$ = Receitas - Custos
+   - Margem % = (Margem / Receitas) * 100
+   
+   COMPARAÇÃO COM ORÇADO:
+   - Valor Orçado = Projeto.valor_orcado
+   - Desvio = Valor Contratado - Valor Orçado
+
+PROBLEMA:
+- Se TituloFinanceiro não é gerado automaticamente, receitas podem estar
+  fora do ContaCorrenteProjeto
+- Falta integração financeiro → projetos
+
+================================================================================
+6) TELAS / URLS / VIEWS
+================================================================================
+
+----------------------------------------------
+APP: PROJETOS
+----------------------------------------------
+
+URLS (projetos/urls.py):
+
+# Dashboard
+/projetos/ → dashboard (view) → projetos/dashboard.html
+
+# Orçamentos
+/projetos/orcamentos/ → listar_orcamentos → projetos/listar_orcamentos.html
+/projetos/orcamentos/criar/ → criar_orcamento → projetos/criar_orcamento.html
+/projetos/orcamentos/<pk>/ → visualizar_orcamento → projetos/visualizar_orcamento.html
+/projetos/orcamentos/<pk>/editar/ → editar_orcamento → projetos/criar_orcamento.html
+/projetos/orcamentos/<pk>/aprovar/ → aprovar_orcamento → redirect
+/projetos/orcamentos/<pk>/rejeitar/ → rejeitar_orcamento → redirect
+/projetos/orcamentos/<pk>/pdf/ → imprimir_orcamento_pdf → PDF
+
+# APIs/AJAX
+/projetos/api/buscar-itens-por-tipo/ → buscar_itens_por_tipo → JSON
+/projetos/api/buscar-dados-item/ → buscar_dados_item → JSON
+/projetos/api/orcamento/<id>/visitas/ → buscar_dados_visitas_orcamento → JSON
+
+# Projetos/Obras
+/projetos/projetos/ → listar_projetos → projetos/listar_projetos.html
+/projetos/projetos/criar/ → criar_projeto → projetos/criar_projeto.html
+/projetos/projetos/<pk>/ → visualizar_projeto → projetos/visualizar_projeto.html
+/projetos/projetos/<pk>/editar/ → editar_projeto → projetos/criar_projeto.html
+
+# Diário da Obra
+/projetos/projetos/<projeto_id>/diario/ → listar_diario_obra
+/projetos/projetos/<projeto_id>/diario/adicionar/ → adicionar_diario_obra
+/projetos/diario/<pk>/ → visualizar_diario_obra
+/projetos/diario/<pk>/editar/ → editar_diario_obra
+/projetos/diario/<pk>/deletar/ → deletar_diario_obra
+
+# Vendas Diretas
+/projetos/vendas/ → listar_vendas → projetos/listar_vendas.html
+/projetos/vendas/criar/ → criar_venda → projetos/criar_venda.html
+
+# Visitas Técnicas
+/projetos/visitas-tecnicas/ → listar_visitas_tecnicas
+/projetos/visitas-tecnicas/criar/ → criar_visita_tecnica
+/projetos/visitas-tecnicas/<pk>/ → visualizar_visita_tecnica
+/projetos/visitas-tecnicas/<pk>/editar/ → editar_visita_tecnica
+/projetos/visitas-tecnicas/<pk>/cancelar/ → cancelar_visita_tecnica
+/projetos/visitas-tecnicas/<pk>/marcar-realizada/ → marcar_visita_realizada
+
+VIEWS PRINCIPAIS:
+
+criar_orcamento (FUNCTION VIEW):
+- GET: Renderiza form + formset_itens + formset_parcelas vazios
+- POST: 
+  * Valida OrcamentoForm + OrcamentoItemFormSet + OrcamentoParcelaFormSet
+  * Calcula valor_total somando itens válidos
+  * Salva orçamento (gera código ORC-YYYY-NNNN)
+  * Salva itens (converte item_ref → item_codigo)
+  * Salva parcelas
+  * Redireciona para visualizar_orcamento
+- Template: projetos/criar_orcamento.html
+- Formsets: inlineformset_factory
+
+editar_orcamento (FUNCTION VIEW):
+- Similar a criar_orcamento mas com instance
+- Carrega itens e parcelas existentes
+- Processa exclusões (formset.deleted_objects)
+- Template: projetos/criar_orcamento.html (mesmo)
+
+visualizar_orcamento (FUNCTION VIEW):
+- Renderiza orçamento com itens e parcelas
+- Calcula e atualiza totais (workaround por bug)
+- Template: projetos/visualizar_orcamento.html
+
+aprovar_orcamento (FUNCTION VIEW):
+- Altera status = APROVADO
+- Redireciona para criar_projeto?orcamento_id=X
+
+buscar_itens_por_tipo (FUNCTION VIEW - AJAX):
+- Recebe tipo (PRODUTO/MATERIAL/SERVICO/MAO_OBRA)
+- Busca em Produto (cadastros) e Item (estoque)
+- Retorna JSON: [{"id": "tipo_id", "text": "codigo - descricao"}]
+- Usado pelo Select2
+
+buscar_dados_item (FUNCTION VIEW - AJAX):
+- Recebe item_id (formato "tipo_id")
+- Busca preço_venda, unidade, descricao
+- Retorna JSON para preencher formulário
+
+----------------------------------------------
+APP: VENDAS (Novo - Paralelo)
+----------------------------------------------
+
+URLS (vendas/urls.py):
+
+# Orçamentos CRUD
+/vendas/orcamentos/ → orcamento_list
+/vendas/orcamentos/novo/ → orcamento_create
+/vendas/orcamentos/<pk>/ → orcamento_detail
+/vendas/orcamentos/<pk>/editar/ → orcamento_edit
+
+# Ações
+/vendas/orcamentos/<pk>/mudar-status/ → orcamento_mudar_status
+/vendas/orcamentos/<pk>/aprovar/ → orcamento_aprovar
+/vendas/orcamentos/<pk>/reprovar/ → orcamento_reprovar
+/vendas/orcamentos/<pk>/pdf/ → orcamento_pdf
+
+# Itens AJAX
+/vendas/orcamentos/<pk>/adicionar-item/ → orcamento_add_item
+/vendas/orcamentos/<pk>/remover-item/<item_id>/ → orcamento_remove_item
+
+# Relatórios
+/vendas/relatorios/funil-vendas/ → relatorio_funil_vendas
+/vendas/relatorios/conversao-vendedor/ → relatorio_conversao_vendedor
+/vendas/relatorios/backlog/ → relatorio_backlog
+
+VIEWS PRINCIPAIS:
+- NÃO ENCONTRADO: Views completas não analisadas (módulo novo)
+
+----------------------------------------------
+APP: FINANCEIRO
+----------------------------------------------
+
+URLS PRINCIPAIS:
+- /financeiro/contas-receber/ → listar contas a receber
+- /financeiro/contas-pagar/ → listar contas a pagar
+- /financeiro/titulos/ → CRUD de títulos
+- /financeiro/parcelas/ → Baixas de parcelas
+- /financeiro/centros-custo/ → CRUD centros de custo
+- /financeiro/budget/ → Orçamento empresarial
+
+VIEWS PRINCIPAIS:
+- NÃO ENCONTRADO: Views completas não analisadas
+
+----------------------------------------------
+TEMPLATES IMPORTANTES
+----------------------------------------------
+
+TEMPLATE BASE:
+- templates/base.html - Base simples
+- templates/base_with_sidebar.html - Base com sidebar (PRINCIPAL)
+
+TEMPLATE ORÇAMENTO:
+- projetos/templates/projetos/criar_orcamento.html (866 linhas)
+  * Usa Bootstrap 5
+  * Select2 para busca de itens
+  * Formset Django para itens e parcelas
+  * JavaScript inline para:
+    - Adicionar/remover itens dinamicamente
+    - Calcular subtotais por item
+    - Calcular total geral
+    - Aplicar desconto global
+    - Adicionar/remover parcelas
+    - Validar soma de parcelas vs total
+    - Renumerar parcelas automaticamente
+  * AJAX para buscar produtos/serviços (Select2)
+
+TEMPLATES DE LISTAGEM:
+- projetos/listar_orcamentos.html
+- projetos/listar_projetos.html
+- projetos/listar_vendas.html
+- projetos/listar_visitas_tecnicas.html
+
+================================================================================
+7) LÓGICA DE CÁLCULO DO ORÇAMENTO
+================================================================================
+
+----------------------------------------------
+CÁLCULO DE SUBTOTAL POR ITEM
+----------------------------------------------
+
+ONDE: OrcamentoItem.save() (projetos/models.py linha ~197)
+
+LÓGICA:
+1. Garantir valores não-nulos:
+   - quantidade = quantidade ou Decimal('1.000')
+   - valor_unitario = valor_unitario ou Decimal('0.0000')
+   - desconto = desconto ou Decimal('0.00')
+
+2. Calcular:
+   subtotal = quantidade * Decimal(str(valor_unitario))
+   valor_total = subtotal - desconto
+
+3. Salvar valor_total no item
+
+FRONTEND (JavaScript):
+- Arquivo: projetos/templates/projetos/criar_orcamento.html (linhas 500+)
+- Função: calcularSubtotal(row)
+- Trigger: input em quantidade, valor_unitario, desconto
+- Cálculo:
+  const qtd = parseFloat(row.find('input[name$="-quantidade"]').val()) || 0;
+  const valorUnit = parseFloat(row.find('input[name$="-valor_unitario"]').val()) || 0;
+  const desconto = parseFloat(row.find('input[name$="-desconto"]').val()) || 0;
+  const subtotal = (qtd * valorUnit) - desconto;
+- Exibe em campo read-only na interface
+
+----------------------------------------------
+CÁLCULO DE TOTAL GERAL
+----------------------------------------------
+
+ONDE: criar_orcamento view (projetos/views.py linha ~330)
+
+LÓGICA:
+1. Iterar formset_itens:
+   for item_form in formset_itens:
+       if item_form.cleaned_data and not item_form.cleaned_data.get('DELETE'):
+           qtd = item_form.cleaned_data.get('quantidade', 0) or 0
+           valor_unit = item_form.cleaned_data.get('valor_unitario', 0) or 0
+           desconto_item = item_form.cleaned_data.get('desconto', 0) or 0
+           
+           valor_total += (Decimal(str(qtd)) * Decimal(str(valor_unit))) - Decimal(str(desconto_item))
+
+2. Atribuir ao orçamento:
+   orcamento.valor_total = valor_total
+
+FRONTEND (JavaScript):
+- Função: calcularTotalGeral()
+- Trigger: após calcularSubtotal de qualquer item
+- Lógica:
+  let total = 0;
+  $('.formset-form').each(function() {
+      if (!$(this).find('input[name$="-DELETE"]').is(':checked')) {
+          const subtotal = parseFloat($(this).find('input[name$="-valor_total"]').val()) || 0;
+          total += subtotal;
+      }
+  });
+  $('#total-orcamento').val('R$ ' + total.toFixed(2).replace('.', ','));
+
+----------------------------------------------
+CÁLCULO DE DESCONTO NO ORÇAMENTO
+----------------------------------------------
+
+ONDE: Orcamento._calcular_desconto() (projetos/models.py linha ~101)
+
+LÓGICA:
+1. Se tipo_desconto == 'PERCENTUAL':
+   - Limita percentual a 100%: min(desconto_valor, 100)
+   - desconto = (valor_total * percentual / 100).quantize(Decimal('0.01'))
+
+2. Se tipo_desconto == 'VALOR_FIXO':
+   - Limita desconto ao total: min(desconto_valor, valor_total)
+   - desconto = desconto_valor
+
+3. Caso contrário: desconto = 0.00
+
+4. Salvar em orcamento.desconto (campo calculado em R$)
+
+5. Calcular valor_final:
+   valor_final = max(valor_total - desconto, Decimal('0.00'))
+
+PROBLEMA IDENTIFICADO:
+- Desconto calculado no save() mas se valor_total mudar (edição de itens),
+  desconto não é recalculado automaticamente
+- Falta validação: desconto percentual não pode resultar em valor negativo
+
+----------------------------------------------
+VALIDAÇÃO TOTAL DAS PARCELAS vs VALOR FINAL
+----------------------------------------------
+
+ONDE: APENAS NO FRONTEND (JavaScript)
+
+FRONTEND:
+- Função: calcularTotalParcelas()
+- Exibe soma das parcelas em campo #total-parcelas
+- NÃO VALIDA automaticamente se soma == valor_final
+
+BACKEND: NÃO VALIDA
+- PROBLEMA: Usuário pode salvar orçamento com soma de parcelas != valor_final
+- SOLUÇÃO ESPERADA: Validação no OrcamentoParcelaFormSet.clean()
+
+----------------------------------------------
+RESUMO DOS PROBLEMAS DE CÁLCULO
+----------------------------------------------
+
+1. INCONSISTÊNCIA ITEM:
+   - OrcamentoItem.item aceita FK para Item (estoque)
+   - Mas produtos/serviços estão em Produto (cadastros)
+   - item_ref é string "tipo_id" mas conversão não é robusta
+
+2. DESCONTO NÃO RECALCULADO:
+   - Se editou itens, valor_total muda
+   - Mas desconto em R$ permanece o anterior (se percentual)
+
+3. PARCELAS NÃO VALIDADAS:
+   - Soma parcelas vs valor_final só no JS
+   - Backend não valida
+
+4. VALOR_TOTAL DESATUALIZADO:
+   - Em visualizar_orcamento, tem workaround para recalcular
+   - Indica que save() nem sempre calcula corretamente
+
+5. FALTA MÉTODOS HELPER:
+   - Orcamento não tem método calcular_totais() público
+   - Cálculos espalhados entre model, view e JS
+
+================================================================================
+8) FRONTEND DO ORÇAMENTO
+================================================================================
+
+----------------------------------------------
+JAVASCRIPT ENVOLVIDO
+----------------------------------------------
+
+LOCAL: Inline em projetos/templates/projetos/criar_orcamento.html
+
+BLOCOS PRINCIPAIS:
+
+1. INICIALIZAÇÃO SELECT2 (linhas ~660):
+   - Inicializa Select2 em campos de cliente, vendedor, tipo
+   - Configuração: tema bootstrap-5, placeholder, allowClear
+
+2. BUSCA DINÂMICA DE ITENS (linhas ~420):
+   - Event: change em select tipo (PRODUTO/MATERIAL/SERVICO/MAO_OBRA)
+   - AJAX: GET /projetos/api/buscar-itens-por-tipo/?tipo=X
+   - Response: JSON com [{"id": "tipo_id", "text": "descricao"}]
+   - Select2 "ajax" integrado:
+     ajax: {
+         url: "{% url 'projetos:buscar_itens_por_tipo' %}",
+         data: function(params) {
+             return { tipo: tipoSelecionado }
+         },
+         processResults: function(data) {
+             return { results: data.results };
+         }
+     }
+
+3. PREENCHER DADOS DO ITEM (linhas ~450):
+   - Event: select em campo item (Select2)
+   - AJAX: GET /projetos/api/buscar-dados-item/?item_id=X
+   - Response: JSON {"preco_venda": X, "unidade": Y, "descricao": Z}
+   - Preenche automaticamente: valor_unitario, descricao
+
+4. ADICIONAR ITEM (linhas ~350):
+   - Event: click em #addItemBtn
+   - Lógica:
+     * Busca formIdx do management_form TOTAL_FORMS
+     * Clona última linha da tabela (ou cria nova)
+     * Atualiza índices do formset (name="itens-X-campo")
+     * Incrementa TOTAL_FORMS
+     * Inicializa Select2 nos novos campos
+     * Anexa eventos de cálculo
+
+5. REMOVER ITEM (linhas ~380):
+   - Event: click em .btn-excluir
+   - Lógica:
+     * Marca checkbox DELETE como checked
+     * Esconde linha (fadeOut + addClass d-none)
+     * Recalcula total geral
+
+6. CALCULAR SUBTOTAL (linhas ~500):
+   - Event: input em quantidade, valor_unitario, desconto
+   - Lógica:
+     const qtd = parseFloat(...) || 0;
+     const valorUnit = parseFloat(...) || 0;
+     const desconto = parseFloat(...) || 0;
+     const subtotal = (qtd * valorUnit) - desconto;
+     row.find('input[name$="-valor_total"]').val(subtotal.toFixed(2));
+   - Chama calcularTotalGeral()
+
+7. CALCULAR TOTAL GERAL (linhas ~540):
+   - Lógica:
+     let total = 0;
+     $('.formset-form').each(function() {
+         if (!isDeleted) {
+             total += parseFloat(valorTotalItem) || 0;
+         }
+     });
+     $('#total-orcamento').val('R$ ' + total.toFixed(2));
+
+8. ADICIONAR PARCELA (linhas ~750):
+   - Event: click em #addParcelaBtn
+   - Lógica:
+     * Similar a adicionar item
+     * Gera HTML da nova linha de parcela
+     * Incrementa formset parcelas-TOTAL_FORMS
+     * Inicializa Select2 em forma_pagamento
+     * Renumera parcelas
+
+9. REMOVER PARCELA (linhas ~780):
+   - Event: click em .btn-excluir-parcela
+   - Validação: Deve ter pelo menos 1 parcela
+   - Marca DELETE e esconde
+   - Chama renumerarParcelas()
+
+10. RENUMERAR PARCELAS (linhas ~800):
+    - Função: renumerarParcelas()
+    - Atualiza número sequencial visual e campo hidden
+    - Garante numeração contínua (1, 2, 3...) mesmo após exclusões
+
+11. CALCULAR TOTAL PARCELAS (linhas ~820):
+    - Event: input em valor da parcela
+    - Soma todos os valores de parcelas não deletadas
+    - Exibe em #total-parcelas
+
+----------------------------------------------
+COMO FUNCIONA "ADICIONAR ITEM"
+----------------------------------------------
+
+TIPO: Formset Django + JavaScript Dinâmico
+
+PASSO A PASSO:
+1. Template renderiza formset vazio ou com dados (edição)
+2. Management form controla TOTAL_FORMS, INITIAL_FORMS, MAX_NUM_FORMS
+3. Cada linha da tabela é um form do formset
+4. JavaScript:
+   - Ao clicar "Adicionar Item":
+     * Lê TOTAL_FORMS atual (ex: 3)
+     * Cria nova linha HTML com name="itens-3-campo"
+     * Incrementa TOTAL_FORMS para 4
+     * Anexa à tabela
+   - Ao clicar "Excluir":
+     * Marca input[name="itens-X-DELETE"] como checked
+     * Django processa exclusão no backend
+5. Ao submeter form:
+   - Django valida formset completo
+   - formset.save() salva novos, atualiza editados, deleta marcados
+
+----------------------------------------------
+COMO FUNCIONA "ADICIONAR PARCELA"
+----------------------------------------------
+
+IDÊNTICO AO ADICIONAR ITEM:
+- Formset separado: formset_parcelas
+- Management form: parcelas-TOTAL_FORMS
+- JavaScript gera linha com parcelas-X-campo
+- Renumeração automática para manter sequência visual
+
+----------------------------------------------
+SELECT2 E AJAX
+----------------------------------------------
+
+CONFIGURAÇÃO SELECT2 + AJAX:
+$('#id_item').select2({
+    theme: 'bootstrap-5',
+    ajax: {
+        url: "{% url 'projetos:buscar_itens_por_tipo' %}",
+        dataType: 'json',
+        delay: 250,
+        data: function(params) {
+            return {
+                tipo: $('#id_tipo').val(),
+                q: params.term
+            };
+        },
+        processResults: function(data) {
+            return {
+                results: data.results
+            };
+        }
+    },
+    minimumInputLength: 0
+});
+
+ENDPOINT BUSCAR ITENS:
+- URL: /projetos/api/buscar-itens-por-tipo/
+- Método: GET
+- Params: ?tipo=PRODUTO
+- Response:
+  {
+      "results": [
+          {"id": "produto_1", "text": "001 - Janela 1x1"},
+          {"id": "produto_2", "text": "002 - Porta 2x3"}
+      ]
+  }
+
+ENDPOINT BUSCAR DADOS DO ITEM:
+- URL: /projetos/api/buscar-dados-item/
+- Método: GET
+- Params: ?item_id=produto_1
+- Response:
+  {
+      "success": true,
+      "preco_venda": 150.00,
+      "unidade": "UN",
+      "descricao": "Janela de Alumínio 1x1"
+  }
+
+----------------------------------------------
+CDN UTILIZADOS
+----------------------------------------------
+
+BOOTSTRAP 5:
+- CSS: https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css
+- JS: https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js
+- Icons: https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css
+
+SELECT2:
+- CSS: https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css
+- Theme: https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css
+- JS: https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js
+
+JQUERY:
+- https://code.jquery.com/jquery-3.6.0.min.js
+
+OUTROS:
+- Font Awesome (ícones): Não encontrado (usando Bootstrap Icons)
+
+================================================================================
+9) PONTOS FRACOS ATUAIS (ACHADOS)
+================================================================================
+
+1. DUPLICIDADE DE MÓDULOS DE ORÇAMENTO:
+   - Existem 2 apps com orçamentos: projetos.Orcamento e vendas.Orcamento
+   - Models similares mas não integrados
+   - Confusão sobre qual usar
+   - Impacto: Dados fragmentados, manutenção duplicada
+   - Solução: Unificar em um único modelo ou deprecar um
+
+2. INCONSISTÊNCIA NO MODELO DE ITENS:
+   - OrcamentoItem.item → FK para Item (estoque)
+   - Mas produtos estão em Produto (cadastros)
+   - item_ref é string "tipo_id" mas conversão falha silenciosamente
+   - Impacto: Vínculos quebrados, dados inconsistentes
+   - Solução: GenericForeignKey ou campo polimórfico
+
+3. FALTA INTEGRAÇÃO ORÇAMENTO → FINANCEIRO:
+   - Aprovar orçamento não gera TituloFinanceiro automaticamente
+   - Parcelas do orçamento não viram ParcelaFinanceira
+   - Impacto: Entrada manual duplicada, erros de digitação
+   - Solução: Signal post_save em Orcamento status=APROVADO
+
+4. FALTA INTEGRAÇÃO PROJETO → CENTRO DE CUSTO:
+   - Criar projeto não cria CentroCusto automaticamente
+   - Vínculo é opcional (CentroCusto.projeto pode ser null)
+   - Impacto: Relatórios financeiros não segregam por obra
+   - Solução: Signal post_save ou método helper
+
+5. VALIDAÇÃO APENAS NO FRONTEND:
+   - Soma de parcelas não validada no backend
+   - Desconto não valida se > valor_total
+   - Valor_total pode ficar desatualizado
+   - Impacto: Dados inválidos salvos no banco
+   - Solução: Validações no Form.clean() e Model.clean()
+
+6. CÁLCULOS ESPALHADOS:
+   - Cálculo de totais em: Model.save(), View, JavaScript
+   - Não há fonte única de verdade
+   - Visualizar_orcamento tem workaround para recalcular
+   - Impacto: Bugs sutis, difícil manutenção
+   - Solução: Centralizar em método Model.calcular_totais()
+
+7. AUSÊNCIA DE SOFT DELETE:
+   - Exclusão física de itens/parcelas
+   - Sem auditoria de exclusões
+   - Impacto: Perda de histórico, impossível desfazer
+   - Solução: Campo deleted_at + manager customizado
+
+8. FALTA CONTROLE DE ESTOQUE AUTOMÁTICO:
+   - AlocacaoProjeto cria MovimentoEstoque manualmente
+   - OrcamentoItem não baixa estoque
+   - VendaDiretaItem baixa mas pode falhar silenciosamente
+   - Impacto: Estoque desatualizado, overselling
+   - Solução: Signals consistentes + transações atômicas
+
+9. SEM TESTES AUTOMATIZADOS:
+   - NÃO ENCONTRADO: Pasta tests/ ou arquivos test_*.py
+   - Cálculos críticos sem cobertura
+   - Impacto: Regressões não detectadas, medo de refatorar
+   - Solução: pytest + factory_boy + 80% coverage
+
+10. PERFORMANCE: N+1 QUERIES:
+    - Listagens sem select_related/prefetch_related
+    - Renderização de orçamentos consulta itens 1 a 1
+    - Impacto: Lentidão com muitos registros
+    - Solução: Otimizar querysets, usar django-debug-toolbar
+
+OUTROS ACHADOS MENORES:
+- Senhas em settings.py (usar environment variables)
+- DEBUG=True em produção (risco de segurança)
+- ALLOWED_HOSTS=['*'] (aberto demais)
+- Falta paginação em listagens
+- Falta filtros/busca em listagens
+- Códigos em português e inglês misturados
+- Docstrings incompletas
+- Falta type hints (Python 3.10+)
+
+================================================================================
+10) DADOS DE EXEMPLO (OPCIONAL)
+================================================================================
+
+FIXTURES:
+- NÃO ENCONTRADO: Pasta fixtures/ ou arquivos .json
+
+SCRIPTS DE POPULAÇÃO:
+- usuarios/management/commands/popular_dados.py (provável)
+- cadastros/management/commands/popular_localizacao.py (provável)
+- Não analisados em detalhes
+
+COMANDOS MENCIONADOS NO README:
+python manage.py popular_dados
+python manage.py popular_localizacao
+
+DADOS HARDCODED:
+- settings.py: senha do banco MBRHELP2023DEV@
+- README: usuário admin/senha admin123
+
+EXEMPLOS NO CÓDIGO:
+- Códigos automáticos: ORC-2026-0001, PROJ-2026-0001
+- Descrições de exemplo em help_text dos models
+- Choices pré-definidos (formas de pagamento, status, etc)
+
+================================================================================
+11) PERGUNTAS PARA O DONO DO PROJETO (MARCOS)
+================================================================================
+
+1. MÓDULOS DUPLICADOS:
+   Q: Qual módulo de orçamento é o oficial: projetos ou vendas?
+   Contexto: Existem 2 apps com models Orcamento diferentes.
+   Decisão necessária: Deprecar um ou integrar ambos?
+
+2. FLUXO ORÇAMENTO → OBRA:
+   Q: Ao aprovar orçamento, deve gerar automaticamente:
+      a) Projeto/Obra?
+      b) Centro de Custo?
+      c) Títulos a Receber (parcelas)?
+   Contexto: Atualmente é manual, causando retrabalho.
+
+3. FORMA DE PAGAMENTO NAS PARCELAS:
+   Q: Cada parcela pode ter forma de pagamento diferente?
+   Contexto: OrcamentoParcela tem campo forma_pagamento individual.
+   Impacto: Complexidade no financeiro.
+
+4. VISITAS TÉCNICAS:
+   Q: Valor da visita sempre vira desconto no orçamento aprovado?
+   Contexto: Há flag virou_desconto mas não está automatizado.
+   Decisão: Automático ou manual?
+
+5. PRODUTOS vs ITENS DE ESTOQUE:
+   Q: Produtos (cadastros) e Itens (estoque) são entidades separadas ou devem unificar?
+   Contexto: OrcamentoItem aceita FK para Item mas Select2 busca Produto.
+   Impacto: Inconsistência de dados.
+
+6. CONTROLE DE ESTOQUE:
+   Q: Orçamento APROVADO deve dar baixa em estoque ou só na execução da obra?
+   Contexto: Atualmente só AlocacaoProjeto baixa.
+   Decisão: Reserva vs baixa efetiva?
+
+7. DESCONTO GLOBAL:
+   Q: Desconto global no orçamento é:
+      a) Apenas informativo (registrar negociação)?
+      b) Deve recalcular todos os itens?
+      c) Desconto fixo no total?
+   Contexto: Atualmente é fixo, mas ao editar itens fica desatualizado.
+
+8. MULTIEMPRESA:
+   Q: Sistema vai ter multiempresa ATIVO sempre?
+   Contexto: Middleware e empresa_id em todos os models.
+   Impacto: Se único tenant, simplificar arquitetura.
+
+9. CUSTO ESTIMADO vs CUSTO REAL:
+   Q: Para relatório de margem por obra, qual é a métrica principal:
+      a) Margem estimada (orçamento - custo estimado)?
+      b) Margem real (contratado - custos efetivos)?
+   Contexto: Orcamento tem custo estimado mas pode divergir da execução.
+
+10. RÉGUA DE COBRANÇA:
+    Q: Régua de cobrança está ativa e em uso?
+    Contexto: Models existem (ParcelaFinanceira.regua) mas views não foram mapeadas.
+    Decisão: Priorizar desenvolvimento ou deixar para fase 2?
+
+================================================================================
+                          FIM DO MAPEAMENTO
+================================================================================
+
+OBSERVAÇÕES FINAIS:
+
+Este mapeamento foi gerado com base na análise do código-fonte em 23/02/2026.
+Informações marcadas como "NÃO ENCONTRADO" indicam que o recurso não foi
+localizado durante a varredura ou não está implementado ainda.
+
+PRÓXIMOS PASSOS SUGERIDOS:
+1. Resolver duplicidade de módulos (projetos vs vendas)
+2. Implementar integração orçamento → financeiro automática
+3. Centralizar cálculos em métodos do model
+4. Adicionar validações no backend
+5. Escrever testes automatizados para cálculos críticos
+6. Implementar soft delete com auditoria completa
+
+Para evoluir o módulo de orçamento, responda às 10 perguntas acima e
+compartilhe com o desenvolvedor/ChatGPT especialista que vai dar continuidade.
+
+================================================================================

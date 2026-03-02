@@ -1,0 +1,178 @@
+{% extends "base_with_sidebar.html" %}
+
+{% block title %}Gerenciar Etapas - {{ pipeline.nome }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-cog"></i> Gerenciar Etapas - {{ pipeline.nome }}</h2>
+        <a href="{% url 'crm:kanban' %}?pipeline={{ pipeline.id }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> Voltar ao Funil
+        </a>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Etapas Existentes</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Ordem</th>
+                                    <th>Nome</th>
+                                    <th>Cor</th>
+                                    <th>Final?</th>
+                                    <th>Tipo</th>
+                                    <th>Ativo</th>
+                                    <th>Oport.</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for etapa in etapas %}
+                                <tr>
+                                    <td>{{ etapa.ordem }}</td>
+                                    <td>
+                                        <span class="badge" style="background-color: {{ etapa.cor }}">
+                                            {{ etapa.nome }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge" style="background-color: {{ etapa.cor }}">
+                                            {{ etapa.cor }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if etapa.is_final %}
+                                        <i class="fas fa-check text-success"></i>
+                                        {% else %}
+                                        <i class="fas fa-times text-muted"></i>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ etapa.get_tipo_final_display }}</td>
+                                    <td>
+                                        {% if etapa.ativo %}
+                                        <span class="badge bg-success">Ativo</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">Inativo</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ etapa.oportunidades.count }}</td>
+                                    <td>
+                                        {% if etapa.oportunidades.count == 0 %}
+                                        <form method="post" action="{% url 'crm:deletar_etapa' etapa.id %}" 
+                                              style="display: inline;" 
+                                              class="form-deletar-etapa">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-sm btn-danger">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </form>
+                                        {% else %}
+                                        <span class="text-muted small">Tem oportunidades</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="8" class="text-center text-muted">Nenhuma etapa cadastrada</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Nova Etapa</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" action="{% url 'crm:criar_etapa' pipeline.id %}">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Nome da Etapa *</label>
+                            <input type="text" name="nome" class="form-control" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Cor</label>
+                            <input type="color" name="cor" class="form-control form-control-color" value="#3498db">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input type="checkbox" name="is_final" class="form-check-input" id="checkFinal">
+                                <label class="form-check-label" for="checkFinal">
+                                    É etapa final?
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Tipo de Etapa Final</label>
+                            <select name="tipo_final" class="form-select">
+                                <option value="none">Não é final</option>
+                                <option value="ganho">Ganho (Deal fechado)</option>
+                                <option value="perdido">Perdido (Deal não fechado)</option>
+                            </select>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-plus"></i> Criar Etapa
+                        </button>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h6><i class="fas fa-info-circle"></i> Dicas</h6>
+                    <ul class="small">
+                        <li>A ordem das etapas é definida automaticamente pela criação</li>
+                        <li>Etapas com oportunidades não podem ser excluídas</li>
+                        <li>Etapas finais tipo "Ganho" são usadas quando orçamento vira projeto</li>
+                        <li>Cores ajudam a identificar visualmente cada etapa no Kanban</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Confirmar exclusão de etapa com SweetAlert2
+    document.querySelectorAll('.form-deletar-etapa').forEach(form => {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            Swal.fire({
+                title: 'Excluir etapa?',
+                text: 'Esta ação não pode ser desfeita!',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Sim, excluir',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    form.submit();
+                }
+            });
+        });
+    });
+});
+</script>
+{% endblock %}

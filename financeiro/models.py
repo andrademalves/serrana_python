@@ -154,8 +154,15 @@ class CentroCusto(models.Model):
     nome = models.CharField('Nome', max_length=100)
     tipo = models.CharField('Tipo', max_length=20, choices=TIPO_CHOICES)
     
-    # Relacionamento opcional com projetos (se houver módulo de projetos)
-    projeto = models.ForeignKey('projetos.Projeto', on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Projeto Relacionado')
+    # Relacionamento 1-to-1 com projetos (cada projeto tem um centro de custo único)
+    projeto = models.OneToOneField(
+        'projetos.Projeto', 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        related_name='centro_custo',
+        verbose_name='Projeto Relacionado'
+    )
     
     responsavel = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='centros_custo_responsavel', verbose_name='Responsável')
     
@@ -178,6 +185,34 @@ class CentroCusto(models.Model):
     
     def __str__(self):
         return f"{self.codigo} - {self.nome}"
+    
+    def save(self, *args, **kwargs):
+        # Gerar código automático se não informado
+        if not self.codigo:
+            self.codigo =  self._gerar_codigo_automatico()
+        super().save(*args, **kwargs)
+    
+    def _gerar_codigo_automatico(self):
+        """Gera código automático no formato CC-YYYY-NNNN"""
+        from datetime import datetime
+        ano = datetime.now().year
+        
+        # Buscar último centro de custo do ano
+        ultimo_cc = CentroCusto.objects.filter(
+            empresa=self.empresa,
+            codigo__startswith=f'CC-{ano}'
+        ).order_by('-codigo').first()
+        
+        if ultimo_cc:
+            try:
+                ultimo_numero = int(ultimo_cc.codigo.split('-')[-1])
+                novo_numero = ultimo_numero + 1
+            except (ValueError, IndexError):
+                novo_numero = 1
+        else:
+            novo_numero = 1
+        
+        return f'CC-{ano}-{novo_numero:04d}'
 
 
 class PlanoConta(models.Model):

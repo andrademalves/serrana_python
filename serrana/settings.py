@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'vendas',
     'financeiro.apps.FinanceiroConfig',  # Carrega signals automaticamente
     'dashboard',  # Dashboard BI
+    'crm.apps.CrmConfig',  # CRM e Funil de Vendas (carrega signals automaticamente)
 ]
 
 MIDDLEWARE = [

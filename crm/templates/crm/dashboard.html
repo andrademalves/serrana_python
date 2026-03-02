@@ -1,0 +1,487 @@
+{% extends "base_with_sidebar.html" %}
+{% load static %}
+
+{% block title %}Dashboard CRM{% if vendedor_nome %} - {{ vendedor_nome }}{% endif %} - Sistema Serrana{% endblock %}
+
+{% block extra_css %}
+<style>
+    .kpi-card {
+        border-left: 4px solid;
+        transition: transform 0.2s;
+    }
+    .kpi-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,.1);
+    }
+    .kpi-card.kpi-primary { border-left-color: #0d6efd; }
+    .kpi-card.kpi-success { border-left-color: #198754; }
+    .kpi-card.kpi-warning { border-left-color: #ffc107; }
+    .kpi-card.kpi-info { border-left-color: #0dcaf0; }
+    
+    .kpi-value {
+        font-size: 2rem;
+        font-weight: 700;
+        margin: 0;
+    }
+    .kpi-label {
+        color: #6c757d;
+        font-size: 0.875rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .chart-container {
+        position: relative;
+        height: 350px;
+    }
+    
+    .ranking-table .badge {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+    }
+    
+    .meta-progress {
+        height: 30px;
+        font-size: 14px;
+        font-weight: 600;
+    }
+    
+    .funil-item {
+        margin-bottom: 15px;
+        padding: 15px;
+        background: linear-gradient(90deg, var(--cor-etapa) 0%, transparent 100%);
+        border-left: 4px solid var(--cor-etapa);
+        border-radius: 4px;
+    }
+    
+    .filtros-dashboard {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,.05);
+        margin-bottom: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Cabeçalho -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="bi bi-bar-chart-fill"></i> Dashboard CRM</h2>
+            {% if vendedor_nome %}
+            <p class="text-muted mb-0">Vendedor: <strong>{{ vendedor_nome }}</strong></p>
+            {% endif %}
+            {% if not is_admin %}
+            <p class="text-muted mb-0 small"><i class="bi bi-info-circle"></i> Visualizando apenas seus leads</p>
+            {% endif %}
+        </div>
+        <div>
+            <a href="{% url 'crm:kanban' %}" class="btn btn-outline-primary">
+                <i class="bi bi-kanban"></i> Funil Kanban
+            </a>
+        </div>
+    </div>
+
+    <!-- FILTROS -->
+    <div class="filtros-dashboard">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label"><i class="bi bi-calendar"></i> Data Início</label>
+                <input type="date" name="data_inicio" class="form-control" value="{{ filtros.data_inicio_str }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label"><i class="bi bi-calendar"></i> Data Fim</label>
+                <input type="date" name="data_fim" class="form-control" value="{{ filtros.data_fim_str }}">
+            </div>
+            
+            {% if is_admin and vendedores %}
+            <div class="col-md-3">
+                <label class="form-label"><i class="bi bi-person"></i> Vendedor</label>
+                <select name="vendedor" class="form-select">
+                    <option value="">Todos os vendedores</option>
+                    {% for v in vendedores %}
+                    <option value="{{ v.id }}" {% if filtros.vendedor_id == v.id %}selected{% endif %}>
+                        {{ v.get_full_name|default:v.username }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
+            
+            <div class="col-md-3">
+                <label class="form-label"><i class="bi bi-funnel"></i> Pipeline</label>
+                <select name="pipeline" class="form-select">
+                    <option value="">Todos</option>
+                    {% for p in pipelines %}
+                    <option value="{{ p.id }}" {% if filtros.pipeline_id == p.id %}selected{% endif %}>
+                        {{ p.nome }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="col-md-12">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-funnel-fill"></i> Aplicar Filtros
+                </button>
+                <a href="{% url 'crm:dashboard' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-x-circle"></i> Limpar
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- KPIs PRINCIPAIS -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card kpi-card kpi-primary">
+                <div class="card-body">
+                    <p class="kpi-label mb-1">Total de Leads</p>
+                    <p class="kpi-value text-primary">{{ kpis.total_leads }}</p>
+                    <small class="text-muted">
+                        <i class="bi bi-clock"></i> {{ kpis.leads_abertos }} em andamento
+                    </small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card kpi-card kpi-success">
+                <div class="card-body">
+                    <p class="kpi-label mb-1">Taxa de Conversão</p>
+                    <p class="kpi-value text-success">{{ kpis.taxa_conversao }}%</p>
+                    <small class="text-muted">
+                        <i class="bi bi-trophy"></i> Fechamentos/Total
+                    </small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card kpi-card kpi-warning">
+                <div class="card-body">
+                    <p class="kpi-label mb-1">Ticket Médio</p>
+                    <p class="kpi-value text-warning">R$ {{ kpis.ticket_medio|floatformat:2 }}</p>
+                    <small class="text-muted">
+                        <i class="bi bi-currency-dollar"></i> Média de fechamento
+                    </small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card kpi-card kpi-info">
+                <div class="card-body">
+                    <p class="kpi-label mb-1">Tempo Médio</p>
+                    <p class="kpi-value text-info">{{ kpis.tempo_medio_fechamento }} dias</p>
+                    <small class="text-muted">
+                        <i class="bi bi-hourglass-split"></i> Para fechamento
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- META MENSAL (se existir) -->
+    {% if meta %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-bullseye"></i> Meta do Mês ({{ filtros.mes|stringformat:"02d" }}/{{ filtros.ano }})</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p class="mb-2"><strong>Meta de Valor:</strong> R$ {{ meta.meta_valor|floatformat:2 }}</p>
+                            <div class="progress meta-progress mb-3">
+                                <div class="progress-bar {% if meta.percentual_valor >= 100 %}bg-success{% elif meta.percentual_valor >= 70 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                     style="width: {{ meta.percentual_valor }}%">
+                                    {{ meta.percentual_valor }}% (R$ {{ meta.realizado_valor|floatformat:2 }})
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <p class="mb-2"><strong>Meta de Quantidade:</strong> {{ meta.meta_quantidade }} negócios</p>
+                            <div class="progress meta-progress mb-3">
+                                <div class="progress-bar {% if meta.percentual_quantidade >= 100 %}bg-success{% elif meta.percentual_quantidade >= 70 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                     style="width: {{ meta.percentual_quantidade }}%">
+                                    {{ meta.percentual_quantidade }}% ({{ meta.realizado_quantidade }})
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- PREVISÃO DE FATURAMENTO -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="bi bi-cash-stack"></i> Previsão de Faturamento</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <p class="text-muted mb-1">Receita Potencial</p>
+                            <h3 class="text-primary mb-0">R$ {{ previsao.receita_potencial|floatformat:2 }}</h3>
+                            <small class="text-muted">{{ previsao.quantidade_leads }} leads em andamento</small>
+                        </div>
+                        <div class="col-6">
+                            <p class="text-muted mb-1">Receita Provável</p>
+                            <h3 class="text-success mb-0">R$ {{ previsao.receita_provavel|floatformat:2 }}</h3>
+                            <small class="text-muted">Ponderada por probabilidade</small>
+                        </div>
+                    </div>
+                    <hr>
+                    <p class="small text-muted mb-0">
+                        <i class="bi bi-info-circle"></i> A receita provável considera a probabilidade de conversão de cada lead.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- GRÁFICO DE PERFORMANCE -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-graph-up"></i> Performance</h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="chartPerformance"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- GRÁFICOS -->
+    <div class="row mb-4">
+        <!-- LEADS POR ETAPA -->
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-bar-chart"></i> Leads por Etapa</h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="chartEtapas"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- GRÁFICO DE FUNIL -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0"><i class="bi bi-funnel"></i> Funil de Conversão</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-center mb-3">
+                        <strong>Taxa de Conversão Final:</strong> 
+                        <span class="badge bg-{% if funil.conversao_final >= 30 %}success{% elif funil.conversao_final >= 15 %}warning{% else %}danger{% endif %} fs-6">
+                            {{ funil.conversao_final }}%
+                        </span>
+                    </p>
+                    
+                    {{ dados_funil_json|json_script:"dados-funil" }}
+                    <div id="funilVisual"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- RANKING DE VENDEDORES -->
+    {% if is_admin and ranking %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0"><i class="bi bi-trophy-fill"></i> Ranking de Vendedores</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover ranking-table">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Vendedor</th>
+                                    <th class="text-center">Total Leads</th>
+                                    <th class="text-center">Fechados</th>
+                                    <th class="text-center">Perdidos</th>
+                                    <th class="text-center">Em Andamento</th>
+                                    <th class="text-end">Valor Fechado</th>
+                                    <th class="text-center">Taxa Conversão</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in ranking %}
+                                <tr>
+                                    <td>
+                                        {% if forloop.counter == 1 %}
+                                        <i class="bi bi-trophy-fill text-warning fs-5"></i>
+                                        {% elif forloop.counter == 2 %}
+                                        <i class="bi bi-trophy-fill text-secondary fs-5"></i>
+                                        {% elif forloop.counter == 3 %}
+                                        <i class="bi bi-trophy-fill text-warning fs-5" style="opacity: 0.6;"></i>
+                                        {% else %}
+                                        {{ forloop.counter }}
+                                        {% endif %}
+                                    </td>
+                                    <td><strong>{{ item.vendedor_nome }}</strong></td>
+                                    <td class="text-center">{{ item.total_leads }}</td>
+                                    <td class="text-center">
+                                        <span class="badge bg-success">{{ item.fechados }}</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-danger">{{ item.perdidos }}</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-primary">{{ item.em_andamento }}</span>
+                                    </td>
+                                    <td class="text-end">
+                                        <strong class="text-success">R$ {{ item.valor_fechado|floatformat:2 }}</strong>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-{% if item.taxa_conversao >= 30 %}success{% elif item.taxa_conversao >= 15 %}warning{% else %}secondary{% endif %}">
+                                            {{ item.taxa_conversao }}%
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // ========== DADOS DOS GRÁFICOS (vindos do backend) ==========
+    const dadosEtapas = {{ dados_etapas_json|safe }};
+    const dadosPerformance = {{ dados_performance_json|safe }};
+    const dadosFunil = {{ dados_funil_json|safe }};
+    
+    // ========== GRÁFICO: LEADS POR ETAPA ==========
+    const ctxEtapas = document.getElementById('chartEtapas').getContext('2d');
+    new Chart(ctxEtapas, {
+        type: 'bar',
+        data: {
+            labels: dadosEtapas.labels,
+            datasets: [{
+                label: 'Quantidade de Leads',
+                data: dadosEtapas.data,
+                backgroundColor: dadosEtapas.colors,
+                borderColor: dadosEtapas.colors.map(c => c),
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return context.parsed.y + ' leads';
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            }
+        }
+    });
+    
+    // ========== GRÁFICO DE PERFORMANCE ==========
+    const ctxPerformance = document.getElementById('chartPerformance').getContext('2d');
+    new Chart(ctxPerformance, {
+        type: 'doughnut',
+        data: {
+            labels: dadosPerformance.labels,
+            datasets: [{
+                data: dadosPerformance.data,
+                backgroundColor: dadosPerformance.colors,
+                borderWidth: 2,
+                borderColor: '#fff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.label || '';
+                            const value = context.parsed || 0;
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = ((value / total) * 100).toFixed(1);
+                            return label + ': ' + value + ' (' + percentage + '%)';
+                        }
+                    }
+                }
+            }
+        }
+    });
+    
+    // ========== VISUALIZAÇÃO DO FUNIL ==========
+    const funilContainer = document.getElementById('funilVisual');
+    
+    if (dadosFunil.etapas && dadosFunil.etapas.length > 0) {
+        let maxQtd = Math.max(...dadosFunil.etapas.map(e => e.quantidade));
+        
+        dadosFunil.etapas.forEach((etapa, idx) => {
+            const larguraPercent = (etapa.quantidade / maxQtd * 100);
+            
+            const div = document.createElement('div');
+            div.className = 'funil-item';
+            div.style.setProperty('--cor-etapa', etapa.cor || '#6c757d');
+            div.style.width = larguraPercent + '%';
+            div.style.minWidth = '150px';
+            
+            div.innerHTML = `
+                <div class="d-flex justify-content-between align-items-center">
+                    <strong style="font-size: 0.9rem;">${etapa.nome}</strong>
+                    <span class="badge bg-dark">${etapa.quantidade}</span>
+                </div>
+                <div class="small mt-1">
+                    <span class="text-muted">${etapa.percentual}% do total</span>
+                    ${idx > 0 ? `<span class="ms-2 text-success">↓ ${etapa.conversao_proxima}% conversão</span>` : ''}
+                </div>
+            `;
+            
+            funilContainer.appendChild(div);
+        });
+    } else {
+        funilContainer.innerHTML = '<p class="text-muted text-center">Sem dados para exibir</p>';
+    }
+});
+</script>
+{% endblock %}
