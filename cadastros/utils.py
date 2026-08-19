@@ -1,100 +1,76 @@
-"""
-Utilitários para validação de documentos
-"""
-
-def validar_cpf(cpf):
-    """
-    Valida um CPF
-    """
-    # Remove caracteres não numéricos
-    cpf = ''.join(filter(str.isdigit, cpf))
-    
-    # Verifica se tem 11 dígitos
-    if len(cpf) != 11:
-        return False
-    
-    # Verifica se todos os dígitos são iguais
-    if cpf == cpf[0] * 11:
-        return False
-    
-    # Calcula primeiro dígito verificador
-    soma = sum(int(cpf[i]) * (10 - i) for i in range(9))
-    digito1 = 11 - (soma % 11)
-    if digito1 > 9:
-        digito1 = 0
-    
-    # Verifica primeiro dígito
-    if int(cpf[9]) != digito1:
-        return False
-    
-    # Calcula segundo dígito verificador
-    soma = sum(int(cpf[i]) * (11 - i) for i in range(10))
-    digito2 = 11 - (soma % 11)
-    if digito2 > 9:
-        digito2 = 0
-    
-    # Verifica segundo dígito
-    if int(cpf[10]) != digito2:
-        return False
-    
-    return True
+from PIL import Image
+from io import BytesIO
+from django.core.files.uploadedfile import InMemoryUploadedFile
+import sys
 
 
-def validar_cnpj(cnpj):
+def processar_foto_3x4(foto):
     """
-    Valida um CNPJ
+    Processa e redimensiona a foto para formato 3x4 (proporção 3:4).
+    Mantém boa qualidade e centraliza o recorte.
+    
+    Args:
+        foto: Arquivo de imagem enviado
+        
+    Returns:
+        InMemoryUploadedFile: Imagem processada
     """
-    # Remove caracteres não numéricos
-    cnpj = ''.join(filter(str.isdigit, cnpj))
+    if not foto:
+        return None
     
-    # Verifica se tem 14 dígitos
-    if len(cnpj) != 14:
-        return False
+    # Abrir a imagem
+    img = Image.open(foto)
     
-    # Verifica se todos os dígitos são iguais
-    if cnpj == cnpj[0] * 14:
-        return False
+    # Converter para RGB se necessário (remove alpha channel)
+    if img.mode in ('RGBA', 'LA', 'P'):
+        background = Image.new('RGB', img.size, (255, 255, 255))
+        if img.mode == 'P':
+            img = img.convert('RGBA')
+        background.paste(img, mask=img.split()[-1] if img.mode == 'RGBA' else None)
+        img = background
     
-    # Calcula primeiro dígito verificador
-    multiplicadores1 = [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]
-    soma = sum(int(cnpj[i]) * multiplicadores1[i] for i in range(12))
-    digito1 = 11 - (soma % 11)
-    if digito1 > 9:
-        digito1 = 0
+    # Dimensões do formato 3x4 (300x400 pixels é um bom tamanho)
+    largura_alvo = 300
+    altura_alvo = 400
+    proporcao_alvo = largura_alvo / altura_alvo  # 0.75 (3:4)
     
-    # Verifica primeiro dígito
-    if int(cnpj[12]) != digito1:
-        return False
+    # Calcular proporção atual
+    largura_original, altura_original = img.size
+    proporcao_original = largura_original / altura_original
     
-    # Calcula segundo dígito verificador
-    multiplicadores2 = [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]
-    soma = sum(int(cnpj[i]) * multiplicadores2[i] for i in range(13))
-    digito2 = 11 - (soma % 11)
-    if digito2 > 9:
-        digito2 = 0
+    # Redimensionar mantendo a proporção para cobrir o tamanho alvo
+    if proporcao_original > proporcao_alvo:
+        # Imagem mais larga - ajustar pela altura
+        nova_altura = altura_alvo
+        nova_largura = int(altura_alvo * proporcao_original)
+    else:
+        # Imagem mais alta - ajustar pela largura
+        nova_largura = largura_alvo
+        nova_altura = int(largura_alvo / proporcao_original)
     
-    # Verifica segundo dígito
-    if int(cnpj[13]) != digito2:
-        return False
+    # Redimensionar com alta qualidade
+    img = img.resize((nova_largura, nova_altura), Image.Resampling.LANCZOS)
     
-    return True
-
-
-def formatar_cpf(cpf):
-    """
-    Formata CPF no padrão 000.000.000-00
-    """
-    cpf = ''.join(filter(str.isdigit, cpf))
-    if len(cpf) == 11:
-        return f"{cpf[:3]}.{cpf[3:6]}.{cpf[6:9]}-{cpf[9:]}"
-    return cpf
-
-
-def formatar_cnpj(cnpj):
-    """
-    Formata CNPJ no padrão 00.000.000/0000-00
-    """
-    cnpj = ''.join(filter(str.isdigit, cnpj))
-    if len(cnpj) == 14:
-        return f"{cnpj[:2]}.{cnpj[2:5]}.{cnpj[5:8]}/{cnpj[8:12]}-{cnpj[12:]}"
-    return cnpj
+    # Calcular o crop centralizado
+    left = (nova_largura - largura_alvo) // 2
+    top = (nova_altura - altura_alvo) // 2
+    right = left + largura_alvo
+    bottom = top + altura_alvo
+    
+    # Fazer o crop centralizado
+    img = img.crop((left, top, right, bottom))
+    
+    # Salvar em memória
+    output = BytesIO()
+    img.save(output, format='JPEG', quality=95, optimize=True)
+    output.seek(0)
+    
+    # Retornar como InMemoryUploadedFile
+    return InMemoryUploadedFile(
+        output,
+        'ImageField',
+        foto.name,
+        'image/jpeg',
+        sys.getsizeof(output),
+        None
+    )

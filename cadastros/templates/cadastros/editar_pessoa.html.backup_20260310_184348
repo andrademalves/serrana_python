@@ -91,11 +91,11 @@
                 </div>
                 <div class="col-md-3" id="divDataEmissaoRg" {% if pessoa.tipo == 'J' %}style="display:none;"{% endif %}>
                     <label class="form-label">Data Emissão RG</label>
-                    <input type="date" class="form-control" name="data_emissao_rg" value="{{ pessoa.data_emissao_rg|date:'Y-m-d'|default:'' }}">
+                    <input type="date" class="form-control" name="data_emissao_rg">
                 </div>
                 <div class="col-md-3" id="divOrgaoEmissor" {% if pessoa.tipo == 'J' %}style="display:none;"{% endif %}>
                     <label class="form-label">Órgão Emissor</label>
-                    <input type="text" class="form-control" name="orgao_emissor" value="{{ pessoa.orgao_emissor|default:'' }}">
+                    <input type="text" class="form-control" name="orgao_emissor">
                 </div>
             </div>
 
@@ -138,7 +138,7 @@
             <div class="row mb-3">
                 <div class="col-md-4">
                     <label class="form-label">Complemento</label>
-                    <input type="text" class="form-control" name="complemento" value="{{ pessoa.complemento|default:'' }}">
+                    <input type="text" class="form-control" name="complemento">
                 </div>
                 <div class="col-md-4">
                     <label class="form-label">Bairro</label>
@@ -161,19 +161,19 @@
             <div class="row mb-3">
                 <div class="col-md-3">
                     <label class="form-label">Telefone</label>
-                    <input type="text" class="form-control" name="telefone" value="{{ pessoa.telefone|default:'' }}">
+                    <input type="text" class="form-control" name="telefone">
                 </div>
                 <div class="col-md-3">
                     <label class="form-label">Celular 1</label>
-                    <input type="text" class="form-control" name="celular1" value="{{ pessoa.celular1|default:'' }}">
+                    <input type="text" class="form-control" name="celular1">
                 </div>
                 <div class="col-md-3">
                     <label class="form-label">Celular 2</label>
-                    <input type="text" class="form-control" name="celular2" value="{{ pessoa.celular2|default:'' }}">
+                    <input type="text" class="form-control" name="celular2">
                 </div>
                 <div class="col-md-3">
                     <label class="form-label">E-mail</label>
-                    <input type="email" class="form-control" name="email" value="{{ pessoa.email|default:'' }}">
+                    <input type="email" class="form-control" name="email">
                 </div>
                 <div class="col-md-3">
                     <label class="form-label">E-mail 2</label>
@@ -217,11 +217,11 @@
                 <div class="row mb-3">
                     <div class="col-md-6">
                         <label class="form-label">Ramo de Atividade</label>
-                        <input type="text" class="form-control" name="ramo_atividade" value="{{ pessoa.ramo_atividade|default:'' }}">
+                        <input type="text" class="form-control" name="ramo_atividade">
                     </div>
                     <div class="col-md-6">
                         <label class="form-label">Descrição do Ramo</label>
-                        <input type="text" class="form-control" name="descricao_ramo" value="{{ pessoa.descricao_ramo|default:'' }}">
+                        <input type="text" class="form-control" name="descricao_ramo">
                     </div>
                 </div>
             </div>
@@ -250,24 +250,24 @@
                 <div class="row mb-3">
                     <div class="col-md-3">
                         <label class="form-label">Título de Eleitor</label>
-                        <input type="text" class="form-control" name="titulo_eleitoral" value="{{ pessoa.titulo_eleitoral|default:'' }}">
+                        <input type="text" class="form-control" name="titulo_eleitoral">
                     </div>
                     <div class="col-md-2">
                         <label class="form-label">Zona</label>
-                        <input type="text" class="form-control" name="zona" value="{{ pessoa.zona|default:'' }}">
+                        <input type="text" class="form-control" name="zona">
                     </div>
                     <div class="col-md-2">
                         <label class="form-label">Seção</label>
-                        <input type="text" class="form-control" name="secao" value="{{ pessoa.secao|default:'' }}">
+                        <input type="text" class="form-control" name="secao">
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label">CTPS </label>
-                        <input type="text" class="form-control" name="ctps" value="{{ pessoa.ctps|default:'' }}">
+                        <label class="form-label">CTPS <span class="text-danger" id="asterisco-ctps" style="display:none;">*</span></label>
+                        <input type="text" class="form-control" name="ctps">
                         <div class="invalid-feedback">CTPS é obrigatório para funcionários</div>
                     </div>
                     <div class="col-md-2">
                         <label class="form-label">Série</label>
-                        <input type="text" class="form-control" name="serie" value="{{ pessoa.serie|default:'' }}">
+                        <input type="text" class="form-control" name="serie">
                     </div>
                 </div>
 
@@ -278,22 +278,22 @@
                     </div>
                     <div class="col-md-3">
                         <label class="form-label">Data Expedição CTPS</label>
-                        <input type="date" class="form-control" name="data_expedicao_ctps" value="{{ pessoa.data_expedicao_ctps|date:'Y-m-d'|default:'' }}">
+                        <input type="date" class="form-control" name="data_expedicao_ctps">
                     </div>
                     <div class="col-md-4">
                         <label class="form-label">CNH</label>
-                        <input type="text" class="form-control" name="cnh" value="{{ pessoa.cnh|default:'' }}">
+                        <input type="text" class="form-control" name="cnh">
                     </div>
                     <div class="col-md-3">
                         <label class="form-label">Categoria CNH</label>
                         <select class="form-select" name="cnh_categoria">
                             <option value="">Selecione...</option>
-                            <option value="A" {% if pessoa.cnh_categoria == 'A' %}selected{% endif %}>A</option>
-                            <option value="B" {% if pessoa.cnh_categoria == 'B' %}selected{% endif %}>B</option>
-                            <option value="AB" {% if pessoa.cnh_categoria == 'AB' %}selected{% endif %}>AB</option>
-                            <option value="C" {% if pessoa.cnh_categoria == 'C' %}selected{% endif %}>C</option>
-                            <option value="D" {% if pessoa.cnh_categoria == 'D' %}selected{% endif %}>D</option>
-                            <option value="E" {% if pessoa.cnh_categoria == 'E' %}selected{% endif %}>E</option>
+                            <option value="A">{% if pessoa.cnh_categoria == 'A' %}selected{% endif %}>A</option>
+                            <option value="B">{% if pessoa.cnh_categoria == 'B' %}selected{% endif %}>B</option>
+                            <option value="AB">{% if pessoa.cnh_categoria == 'AB' %}selected{% endif %}>AB</option>
+                            <option value="C">{% if pessoa.cnh_categoria == 'C' %}selected{% endif %}>C</option>
+                            <option value="D">{% if pessoa.cnh_categoria == 'D' %}selected{% endif %}>D</option>
+                            <option value="E">{% if pessoa.cnh_categoria == 'E' %}selected{% endif %}>E</option>
                         </select>
                     </div>
                 </div>
@@ -305,20 +305,20 @@
                         <label class="form-label">Escolaridade</label>
                         <select class="form-select" name="escolaridade">
                             <option value="">Selecione...</option>
-                            <option value="fundamental_incompleto" {% if pessoa.escolaridade == 'fundamental_incompleto' %}selected{% endif %}>Fundamental Incompleto</option>
-                            <option value="fundamental_completo" {% if pessoa.escolaridade == 'fundamental_completo' %}selected{% endif %}>Fundamental Completo</option>
-                            <option value="medio_incompleto" {% if pessoa.escolaridade == 'medio_incompleto' %}selected{% endif %}>Médio Incompleto</option>
-                            <option value="medio_completo" {% if pessoa.escolaridade == 'medio_completo' %}selected{% endif %}>Médio Completo</option>
-                            <option value="superior_incompleto" {% if pessoa.escolaridade == 'superior_incompleto' %}selected{% endif %}>Superior Incompleto</option>
-                            <option value="superior_completo" {% if pessoa.escolaridade == 'superior_completo' %}selected{% endif %}>Superior Completo</option>
-                            <option value="pos_graduacao" {% if pessoa.escolaridade == 'pos_graduacao' %}selected{% endif %}>Pós-Graduação</option>
-                            <option value="mestrado" {% if pessoa.escolaridade == 'mestrado' %}selected{% endif %}>Mestrado</option>
-                            <option value="doutorado" {% if pessoa.escolaridade == 'doutorado' %}selected{% endif %}>Doutorado</option>
+                            <option value="fundamental_incompleto">{% if pessoa.escolaridade == 'fundamental_incompleto' %}selected{% endif %}>Fundamental Incompleto</option>
+                            <option value="fundamental_completo">{% if pessoa.escolaridade == 'fundamental_completo' %}selected{% endif %}>Fundamental Completo</option>
+                            <option value="medio_incompleto">{% if pessoa.escolaridade == 'medio_incompleto' %}selected{% endif %}>Médio Incompleto</option>
+                            <option value="medio_completo">{% if pessoa.escolaridade == 'medio_completo' %}selected{% endif %}>Médio Completo</option>
+                            <option value="superior_incompleto">{% if pessoa.escolaridade == 'superior_incompleto' %}selected{% endif %}>Superior Incompleto</option>
+                            <option value="superior_completo">{% if pessoa.escolaridade == 'superior_completo' %}selected{% endif %}>Superior Completo</option>
+                            <option value="pos_graduacao">{% if pessoa.escolaridade == 'pos_graduacao' %}selected{% endif %}>Pós-Graduação</option>
+                            <option value="mestrado">{% if pessoa.escolaridade == 'mestrado' %}selected{% endif %}>Mestrado</option>
+                            <option value="doutorado">{% if pessoa.escolaridade == 'doutorado' %}selected{% endif %}>Doutorado</option>
                         </select>
                     </div>
                     <div class="col-md-4">
                         <label class="form-label">Cargo</label>
-                        <input type="text" class="form-control" name="cargo" value="{{ pessoa.cargo|default:'' }}">
+                        <input type="text" class="form-control" name="cargo">
                     </div>
                     <div class="col-md-4">
                         <div class="form-check mt-4">
@@ -330,13 +330,13 @@
 
                 <div class="row mb-3">
                     <div class="col-md-6">
-                        <label class="form-label">Data Admissão </label>
-                        <input type="date" class="form-control" name="data_admissao" value="{{ pessoa.data_admissao|date:'Y-m-d'|default:'' }}">
+                        <label class="form-label">Data Admissão <span class="text-danger" id="asterisco-admissao" style="display:none;">*</span></label>
+                        <input type="date" class="form-control" name="data_admissao">
                         <div class="invalid-feedback">Data de admissão é obrigatória para funcionários</div>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label">Data Demissão</label>
-                        <input type="date" class="form-control" name="data_demissao" value="{{ pessoa.data_demissao|date:'Y-m-d'|default:'' }}">
+                        <input type="date" class="form-control" name="data_demissao">
                     </div>
                 </div>
                 <!-- Dados PIX e Bancários -->
@@ -426,6 +426,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // Função para definir campos obrigatórios de funcionário
     function setRequiredFuncionario(required) {
         const camposObrigatorios = [
+            { nome: 'ctps', asterisco: 'asterisco-ctps' },
+            { nome: 'data_admissao', asterisco: 'asterisco-admissao' }
         ];
         
         camposObrigatorios.forEach(function(config) {

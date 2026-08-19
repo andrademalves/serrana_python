@@ -5,7 +5,9 @@ from django.http import JsonResponse
 from django.db.models import Q
 from django.db import models
 from .models import Pessoa, Produto, Cidade, Estado
+from financeiro.models import Banco
 from usuarios.decorators import verificar_permissao_menu, verificar_permissao_acao, require_empresa
+from .utils import processar_foto_3x4
 
 # Create your views here.
 
@@ -96,52 +98,67 @@ def criar_pessoa(request):
             pessoa = Pessoa.objects.create(
                 empresa=request.empresa,  # Empresa ativa
                 tipo=request.POST.get('tipo'),
-                nome=request.POST.get('nome'),
-                nome_fantasia=request.POST.get('nome_fantasia', '') or None,
+                nome=request.POST.get('nome', '').strip().upper(),
+                nome_fantasia=(request.POST.get('nome_fantasia', '') or '').strip().upper() or None,
                 cpf_cnpj=cpf_cnpj or None,
-                rg=request.POST.get('rg', '') or None,
-                ie=request.POST.get('ie', '') or None,
+                rg=(request.POST.get('rg', '') or '').strip().upper() or None,
+                ie=(request.POST.get('ie', '') or '').strip().upper() or None,
                 data_emissao_rg=parse_date(request.POST.get('data_emissao_rg')),
-                orgao_emissor=request.POST.get('orgao_emissor', '') or None,
+                orgao_emissor=(request.POST.get('orgao_emissor', '') or '').strip().upper() or None,
                 sexo=request.POST.get('sexo', '') or None,
+                data_nascimento=parse_date(request.POST.get('data_nascimento')),
                 cep=request.POST.get('cep', '') or None,
-                logradouro=request.POST.get('logradouro', '') or None,
+                logradouro=(request.POST.get('logradouro', '') or '').strip().upper() or None,
                 numero=request.POST.get('numero', '') or None,
-                complemento=request.POST.get('complemento', '') or None,
-                bairro=request.POST.get('bairro', '') or None,
-                cidade=request.POST.get('cidade', '') or None,
-                uf=request.POST.get('uf', '') or None,
+                complemento=(request.POST.get('complemento', '') or '').strip().upper() or None,
+                bairro=(request.POST.get('bairro', '') or '').strip().upper() or None,
+                cidade=(request.POST.get('cidade', '') or '').strip().upper() or None,
+                uf=(request.POST.get('uf', '') or '').strip().upper() or None,
                 telefone=request.POST.get('telefone', '') or None,
                 celular1=request.POST.get('celular1', '') or None,
                 celular2=request.POST.get('celular2', '') or None,
                 email=request.POST.get('email', '') or None,
+                email2=request.POST.get('email2', '') or None,
                 cliente=request.POST.get('cliente') == 'on',
                 fornecedor=request.POST.get('fornecedor') == 'on',
                 funcionario=request.POST.get('funcionario') == 'on',
                 terceiro=request.POST.get('terceiro') == 'on',
                 vendedor=request.POST.get('vendedor') == 'on',
-                ramo_atividade=request.POST.get('ramo_atividade', '') or None,
-                descricao_ramo=request.POST.get('descricao_ramo', '') or None,
-                titulo_eleitoral=request.POST.get('titulo_eleitoral', '') or None,
-                zona=request.POST.get('zona', '') or None,
-                secao=request.POST.get('secao', '') or None,
-                ctps=request.POST.get('ctps', '') or None,
-                serie=request.POST.get('serie', '') or None,
-                uf_ctps=request.POST.get('uf_ctps', '') or None,
+                ramo_atividade=(request.POST.get('ramo_atividade', '') or '').strip().upper() or None,
+                descricao_ramo=(request.POST.get('descricao_ramo', '') or '').strip().upper() or None,
+                titulo_eleitoral=(request.POST.get('titulo_eleitoral', '') or '').strip().upper() or None,
+                zona=(request.POST.get('zona', '') or '').strip().upper() or None,
+                secao=(request.POST.get('secao', '') or '').strip().upper() or None,
+                ctps=(request.POST.get('ctps', '') or '').strip().upper() or None,
+                serie=(request.POST.get('serie', '') or '').strip().upper() or None,
+                uf_ctps=(request.POST.get('uf_ctps', '') or '').strip().upper() or None,
                 data_expedicao_ctps=parse_date(request.POST.get('data_expedicao_ctps')),
-                cnh=request.POST.get('cnh', '') or None,
+                cnh=(request.POST.get('cnh', '') or '').strip().upper() or None,
                 cnh_categoria=request.POST.get('cnh_categoria', '') or None,
                 escolaridade=request.POST.get('escolaridade', '') or None,
                 deficiencia=request.POST.get('deficiencia') == 'on',
-                cargo=request.POST.get('cargo', '') or None,
+                cargo=(request.POST.get('cargo', '') or '').strip().upper() or None,
                 data_admissao=parse_date(request.POST.get('data_admissao')),
                 data_demissao=parse_date(request.POST.get('data_demissao')),
+                tipo_pix=request.POST.get('tipo_pix', '') or None,
+                chave_pix=request.POST.get('chave_pix', '').strip().upper() or None,
+                banco_id=request.POST.get('banco') or None,
+                agencia=request.POST.get('agencia', '').strip().upper() or None,
+                conta=request.POST.get('conta', '').strip().upper() or None,
                 observacoes=request.POST.get('observacoes', '') or None,
                 criado_por=request.user
             )
+            # Processar foto do funcionário se enviada
+            if request.POST.get('funcionario') == 'on' and 'foto_funcionario' in request.FILES:
+                foto = request.FILES['foto_funcionario']
+                foto_processada = processar_foto_3x4(foto)
+                if foto_processada:
+                    pessoa.foto_funcionario = foto_processada
+                    pessoa.save()
+
             
             messages.success(request, f'Pessoa {pessoa.nome} criada com sucesso!')
-            return redirect('listar_pessoas')
+            return redirect('cadastros:listar_pessoas')
         except Exception as e:
             erro_msg = str(e)
             if 'Duplicate entry' in erro_msg and 'cpf_cnpj' in erro_msg:
@@ -155,7 +172,8 @@ def criar_pessoa(request):
                 messages.error(request, f'Erro ao criar pessoa: {erro_msg}')
     
     context = {
-        'fornecedores': Pessoa.objects.filter(empresa=request.empresa, fornecedor=True, ativo=True)
+        'fornecedores': Pessoa.objects.filter(empresa=request.empresa, fornecedor=True, ativo=True),
+        'bancos': Banco.objects.filter(ativo=True).order_by('nome'),
     }
     return render(request, 'cadastros/criar_pessoa.html', context)
 
@@ -181,48 +199,62 @@ def editar_pessoa(request, pessoa_id):
                 cpf_cnpj = cpf_cnpj.replace('.', '').replace('-', '').replace('/', '')
             
             pessoa.tipo = request.POST.get('tipo')
-            pessoa.nome = request.POST.get('nome')
-            pessoa.nome_fantasia = request.POST.get('nome_fantasia', '') or None
+            pessoa.nome = request.POST.get('nome', '').strip().upper()
+            pessoa.nome_fantasia = (request.POST.get('nome_fantasia', '') or '').strip().upper() or None
             pessoa.cpf_cnpj = cpf_cnpj or None
-            pessoa.rg = request.POST.get('rg', '') or None
-            pessoa.ie = request.POST.get('ie', '') or None
+            pessoa.rg = (request.POST.get('rg', '') or '').strip().upper() or None
+            pessoa.ie = (request.POST.get('ie', '') or '').strip().upper() or None
             pessoa.data_emissao_rg = parse_date(request.POST.get('data_emissao_rg'))
-            pessoa.orgao_emissor = request.POST.get('orgao_emissor', '') or None
+            pessoa.orgao_emissor = (request.POST.get('orgao_emissor', '') or '').strip().upper() or None
             pessoa.sexo = request.POST.get('sexo', '') or None
+            pessoa.data_nascimento = parse_date(request.POST.get('data_nascimento'))
             pessoa.cep = request.POST.get('cep', '') or None
-            pessoa.logradouro = request.POST.get('logradouro', '') or None
+            pessoa.logradouro = (request.POST.get('logradouro', '') or '').strip().upper() or None
             pessoa.numero = request.POST.get('numero', '') or None
-            pessoa.complemento = request.POST.get('complemento', '') or None
-            pessoa.bairro = request.POST.get('bairro', '') or None
-            pessoa.cidade = request.POST.get('cidade', '') or None
-            pessoa.uf = request.POST.get('uf', '') or None
+            pessoa.complemento = (request.POST.get('complemento', '') or '').strip().upper() or None
+            pessoa.bairro = (request.POST.get('bairro', '') or '').strip().upper() or None
+            pessoa.cidade = (request.POST.get('cidade', '') or '').strip().upper() or None
+            pessoa.uf = (request.POST.get('uf', '') or '').strip().upper() or None
             pessoa.telefone = request.POST.get('telefone', '') or None
             pessoa.celular1 = request.POST.get('celular1', '') or None
             pessoa.celular2 = request.POST.get('celular2', '') or None
             pessoa.email = request.POST.get('email', '') or None
+            pessoa.email2 = request.POST.get('email2', '') or None
             pessoa.cliente = request.POST.get('cliente') == 'on'
             pessoa.fornecedor = request.POST.get('fornecedor') == 'on'
             pessoa.funcionario = request.POST.get('funcionario') == 'on'
             pessoa.terceiro = request.POST.get('terceiro') == 'on'
             pessoa.vendedor = request.POST.get('vendedor') == 'on'
-            pessoa.ramo_atividade = request.POST.get('ramo_atividade', '') or None
-            pessoa.descricao_ramo = request.POST.get('descricao_ramo', '') or None
-            pessoa.titulo_eleitoral = request.POST.get('titulo_eleitoral', '') or None
-            pessoa.zona = request.POST.get('zona', '') or None
-            pessoa.secao = request.POST.get('secao', '') or None
-            pessoa.ctps = request.POST.get('ctps', '') or None
-            pessoa.serie = request.POST.get('serie', '') or None
-            pessoa.uf_ctps = request.POST.get('uf_ctps', '') or None
+            pessoa.ramo_atividade = (request.POST.get('ramo_atividade', '') or '').strip().upper() or None
+            pessoa.descricao_ramo = (request.POST.get('descricao_ramo', '') or '').strip().upper() or None
+            pessoa.titulo_eleitoral = (request.POST.get('titulo_eleitoral', '') or '').strip().upper() or None
+            pessoa.zona = (request.POST.get('zona', '') or '').strip().upper() or None
+            pessoa.secao = (request.POST.get('secao', '') or '').strip().upper() or None
+            pessoa.ctps = (request.POST.get('ctps', '') or '').strip().upper() or None
+            pessoa.serie = (request.POST.get('serie', '') or '').strip().upper() or None
+            pessoa.uf_ctps = (request.POST.get('uf_ctps', '') or '').strip().upper() or None
             pessoa.data_expedicao_ctps = parse_date(request.POST.get('data_expedicao_ctps'))
-            pessoa.cnh = request.POST.get('cnh', '') or None
+            pessoa.cnh = (request.POST.get('cnh', '') or '').strip().upper() or None
             pessoa.cnh_categoria = request.POST.get('cnh_categoria', '') or None
             pessoa.escolaridade = request.POST.get('escolaridade', '') or None
             pessoa.deficiencia = request.POST.get('deficiencia') == 'on'
-            pessoa.cargo = request.POST.get('cargo', '') or None
+            pessoa.cargo = (request.POST.get('cargo', '') or '').strip().upper() or None
             pessoa.data_admissao = parse_date(request.POST.get('data_admissao'))
             pessoa.data_demissao = parse_date(request.POST.get('data_demissao'))
+            pessoa.tipo_pix = request.POST.get('tipo_pix', '') or None
+            pessoa.chave_pix = request.POST.get('chave_pix', '').strip().upper() or None
+            pessoa.banco_id = request.POST.get('banco') or None
+            pessoa.agencia = request.POST.get('agencia', '').strip().upper() or None
+            pessoa.conta = request.POST.get('conta', '').strip().upper() or None
             pessoa.observacoes = request.POST.get('observacoes', '') or None
             pessoa.atualizado_por = request.user
+            # Processar foto do funcionário se enviada
+            if request.POST.get('funcionario') == 'on' and 'foto_funcionario' in request.FILES:
+                foto = request.FILES['foto_funcionario']
+                foto_processada = processar_foto_3x4(foto)
+                if foto_processada:
+                    pessoa.foto_funcionario = foto_processada
+
             pessoa.save()
             
             messages.success(request, f'Pessoa {pessoa.nome} atualizada com sucesso!')
@@ -233,18 +265,38 @@ def editar_pessoa(request, pessoa_id):
             traceback.print_exc()  # DEBUG
             
             erro_msg = str(e)
+            
+            # Erros de duplicação
             if 'Duplicate entry' in erro_msg and 'cpf_cnpj' in erro_msg:
                 cpf_cnpj_formatado = request.POST.get('cpf_cnpj', '')
-                messages.error(request, f'Erro: CPF/CNPJ {cpf_cnpj_formatado} já está cadastrado para outra pessoa!')
+                messages.error(request, f'⚠️ Este CPF/CNPJ ({cpf_cnpj_formatado}) já pertence a outro cadastro. Por favor, verifique os dados.')
             elif 'Duplicate entry' in erro_msg:
-                messages.error(request, 'Erro: Já existe outro cadastro com essas informações!')
+                messages.error(request, '⚠️ Já existe outro cadastro com essas informações. Por favor, verifique os dados informados.')
+            
+            # Erros de campo obrigatório
             elif 'cannot be null' in erro_msg.lower():
-                messages.error(request, 'Erro: Alguns campos obrigatórios não foram preenchidos!')
+                campo_faltante = ''
+                if 'tipo' in erro_msg.lower():
+                    campo_faltante = 'Tipo de Pessoa (Física ou Jurídica)'
+                elif 'nome' in erro_msg.lower():
+                    campo_faltante = 'Nome/Razão Social'
+                elif 'cpf_cnpj' in erro_msg.lower():
+                    campo_faltante = 'CPF/CNPJ'
+                else:
+                    campo_faltante = 'campo obrigatório'
+                
+                messages.error(request, f'⚠️ Por favor, preencha o campo: {campo_faltante}')
+            
+            # Erro genérico mais amigável
             else:
-                messages.error(request, f'Erro ao atualizar pessoa: {erro_msg}')
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f'Erro ao atualizar pessoa {pessoa.id}: {erro_msg}')
+                messages.error(request, '⚠️ Não foi possível salvar as alterações. Por favor, verifique os dados e tente novamente.')
     
     context = {
         'pessoa': pessoa,
+        'bancos': Banco.objects.filter(ativo=True).order_by('nome'),
     }
     return render(request, 'cadastros/editar_pessoa.html', context)
 
@@ -261,7 +313,7 @@ def excluir_pessoa(request, pessoa_id):
     pessoa.atualizado_por = request.user
     pessoa.save()
     messages.success(request, f'Pessoa {pessoa.nome} inativada com sucesso!')
-    return redirect('listar_pessoas')
+    return redirect('cadastros:listar_pessoas')
 
 
 @login_required

@@ -66,6 +66,7 @@
                 <table class="table table-hover">
                     <thead>
                         <tr>
+                            <th>Foto</th>
                             <th>Nome</th>
                             <th>CPF/CNPJ</th>
                             <th>Tipo</th>
@@ -78,10 +79,17 @@
                     <tbody>
                         {% for pessoa in pessoas %}
                         <tr>
+                            <td class="text-center" style="width: 80px;">
+                                {% if pessoa.foto_funcionario %}
+                                    <img src="{{ pessoa.foto_funcionario.url }}" alt="Foto" class="img-thumbnail" style="max-width: 60px; max-height: 80px; object-fit: cover;">
+                                {% else %}
+                                    <div class="text-muted small">Sem foto</div>
+                                {% endif %}
+                            </td>
                             <td>
                                 <strong>{{ pessoa.nome }}</strong>
                                 {% if pessoa.nome_fantasia %}
-                                    <br><small class="text-muted">{{ pessoa.nome_fantasia }}</small>
+                                    <br><small class="text-muted">{{ pessoa.nome_fantasia|upper }}</small>
                                 {% endif %}
                             </td>
                             <td>{{ pessoa.cpf_cnpj }}</td>

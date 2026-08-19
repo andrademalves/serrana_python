@@ -192,6 +192,10 @@
                 <i class="bi bi-box-seam"></i> <span class="sidebar-text">Itens</span>
             </a>
             
+            <a href="{% url 'estoque:listar_locais' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'locais' in request.path %}active{% endif %}" title="Locais de Estoque">
+                <i class="bi bi-geo-alt"></i> <span class="sidebar-text">Locais de Estoque</span>
+            </a>
+            
             <div class="list-group-item bg-dark text-white-50 small fw-bold mt-2">RELATÓRIOS</div>
             
             <a href="{% url 'estoque:relatorio_estoque_atual' %}" class="list-group-item list-group-item-action bg-dark text-white {% if 'estoque-atual' in request.path %}active{% endif %}" title="Estoque Atual">
