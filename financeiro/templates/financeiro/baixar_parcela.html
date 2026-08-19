@@ -161,14 +161,14 @@
                                 </label>
                                 <div class="input-group">
                                     <span class="input-group-text">R$</span>
-                                    <input type="number" 
-                                           class="form-control" 
-                                           id="valor_principal" 
-                                           name="valor_principal" 
-                                           step="0.01" 
+                                    <input type="number"
+                                           class="form-control"
+                                           id="valor_principal"
+                                           name="valor_principal"
+                                           step="0.01"
                                            min="0.01"
-                                           max="{{ parcela.saldo_aberto }}"
-                                           value="{{ parcela.saldo_aberto }}"
+                                           max="{{ parcela.saldo_aberto|stringformat:'.2f' }}"
+                                           value="{{ parcela.saldo_aberto|stringformat:'.2f' }}"
                                            required>
                                 </div>
                                 <small class="text-muted">Máximo: {{ parcela.saldo_aberto|currency }}</small>
@@ -308,8 +308,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const txs = parseFloat(taxas.value) || 0;
 
         const liquido = principal + jrs + mlt - desc + txs;
-        valorLiquido.value = liquido.toFixed(2);
-        
+        valorLiquido.value = liquido.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
         // Feedback visual
         if (liquido > 0) {
             valorLiquido.classList.remove('text-muted');
@@ -354,7 +354,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Confirma a baixa
         const confirmMsg = 'Confirma o registro desta baixa?\n\n' +
-                          'Valor Principal: R$ ' + principal.toFixed(2) + '\n' +
+                          'Valor Principal: R$ ' + valorPago.toFixed(2) + '\n' +
                           'Juros: R$ ' + parseFloat(juros.value || 0).toFixed(2) + '\n' +
                           'Multa: R$ ' + parseFloat(multa.value || 0).toFixed(2) + '\n' +
                           'Desconto: R$ ' + parseFloat(desconto.value || 0).toFixed(2) + '\n' +
