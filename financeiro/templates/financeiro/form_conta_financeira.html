@@ -230,9 +230,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const divAgencia = document.getElementById('divAgencia');
     const divConta = document.getElementById('divConta');
 
+    const TIPOS_BANCARIOS = ['CONTA_CORRENTE', 'CONTA_POUPANCA', 'CONTA_INVESTIMENTO'];
+
     function toggleCamposBanco() {
         const tipo = tipoSelect.value;
-        const isBanco = tipo === 'BANCO';
+        const isBanco = TIPOS_BANCARIOS.includes(tipo);
         
         divBanco.style.display = isBanco ? 'block' : 'none';
         divAgencia.style.display = isBanco ? 'block' : 'none';

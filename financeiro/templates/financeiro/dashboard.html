@@ -196,7 +196,7 @@
                                 {% for conta in contas_financeiras %}
                                 <tr>
                                     <td>
-                                        <strong>{{ conta.descricao }}</strong>
+                                        <strong>{{ conta.nome }}</strong>
                                     </td>
                                     <td>
                                         {% if conta.banco %}
@@ -206,7 +206,7 @@
                                         {% endif %}
                                     </td>
                                     <td>{{ conta.agencia|default:"-" }}</td>
-                                    <td>{{ conta.numero_conta|default:"-" }}</td>
+                                    <td>{{ conta.conta|default:"-" }}</td>
                                     <td>
                                         {% if conta.tipo == 'CONTA_CORRENTE' %}
                                             <span class="badge bg-primary">Conta Corrente</span>
