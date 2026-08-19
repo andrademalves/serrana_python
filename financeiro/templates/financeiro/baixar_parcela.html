@@ -335,7 +335,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Validação antes de enviar
     document.getElementById('formBaixa').addEventListener('submit', function(e) {
-        const saldoAberto = {{ parcela.saldo_aberto }};
+        const saldoAberto = {{ parcela.saldo_aberto|stringformat:'.2f' }};
         const valorPago = parseFloat(valorPrincipal.value) || 0;
 
         if (valorPago > saldoAberto) {
