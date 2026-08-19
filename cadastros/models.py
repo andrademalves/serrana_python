@@ -93,6 +93,7 @@ class Pessoa(models.Model):
     data_emissao_rg = models.DateField(blank=True, null=True, verbose_name='Data Emissão RG')
     orgao_emissor = models.CharField(max_length=20, blank=True, null=True, verbose_name='Órgão Emissor')
     sexo = models.CharField(max_length=1, choices=SEXO_CHOICES, blank=True, null=True, verbose_name='Sexo')
+    data_nascimento = models.DateField(blank=True, null=True, verbose_name='Data de Nascimento')
     
     # Endereço
     cep = models.CharField(max_length=9, blank=True, null=True, verbose_name='CEP')

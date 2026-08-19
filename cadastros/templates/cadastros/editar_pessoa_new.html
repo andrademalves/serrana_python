@@ -91,6 +91,10 @@
                         <option value="O">Outro</option>
                     </select>
                 </div>
+                <div class="col-md-3">
+                    <label class="form-label">Data de Nascimento</label>
+                    <input type="date" class="form-control" name="data_nascimento">
+                </div>
             </div>
 
             <hr>
@@ -1162,6 +1166,10 @@ document.addEventListener('DOMContentLoaded', function() {
                         <option value="F" {% if pessoa.sexo == 'F' %}selected{% endif %}>Feminino</option>
                         <option value="O" {% if pessoa.sexo == 'O' %}selected{% endif %}>Outro</option>
                     </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Data de Nascimento</label>
+                    <input type="date" class="form-control" name="data_nascimento" value="{{ pessoa.data_nascimento|date:'Y-m-d'|default:'' }}">
                 </div>
             </div>
 

@@ -1,0 +1,23 @@
+
+
+
+------------------------------------------------------------------
+Ajustes financeiro
+
+MOSTRAR CALCULO AUTOMATICO NA TELA
+
+http://147.79.83.242:8000/financeiro/parcelas/11/baixar/
+
+------------------------------------------------------------------
+
+http://147.79.83.242:8000/financeiro/titulos/
+--> Criar opção de estorno da baixa.
+
+------------------------------------------------------------------
+
+http://147.79.83.242:8000/financeiro/
+
+no menu dashboard
+table cliente e estorno
+
+------------------------------------------------------------------
