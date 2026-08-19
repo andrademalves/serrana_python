@@ -8,7 +8,7 @@ from django.db.models import Q, Sum
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.utils import timezone
 from django.http import HttpResponse
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 from decimal import Decimal, InvalidOperation
 import io
 
@@ -298,7 +298,7 @@ def listar_parcelas(request, tipo='RECEBER'):
     elif status != 'TODOS':
         parcelas = parcelas.filter(status=status)
 
-    # Filtro de vencimento
+    # Filtro de vencimento (presets rápidos)
     hoje = date.today()
     if vencimento == 'VENCIDAS':
         parcelas = parcelas.filter(data_vencimento__lt=hoje, status__in=['ABERTO', 'PARCIAL'])
@@ -308,16 +308,20 @@ def listar_parcelas(request, tipo='RECEBER'):
         parcelas = parcelas.filter(data_vencimento__lte=hoje + timedelta(days=7), data_vencimento__gte=hoje)
     elif vencimento == '30_DIAS':
         parcelas = parcelas.filter(data_vencimento__lte=hoje + timedelta(days=30), data_vencimento__gte=hoje)
-    elif vencimento == 'PERSONALIZADO':
-        # Filtro por data específica
-        if data_inicio:
-            from datetime import datetime
+
+    # Filtro de período específico (independente do preset acima, pode ser combinado)
+    if data_inicio:
+        try:
             data_inicio_obj = datetime.strptime(data_inicio, '%Y-%m-%d').date()
             parcelas = parcelas.filter(data_vencimento__gte=data_inicio_obj)
-        if data_fim:
-            from datetime import datetime
+        except ValueError:
+            pass
+    if data_fim:
+        try:
             data_fim_obj = datetime.strptime(data_fim, '%Y-%m-%d').date()
             parcelas = parcelas.filter(data_vencimento__lte=data_fim_obj)
+        except ValueError:
+            pass
 
     # Filtro de cliente/fornecedor
     if cliente_id:
@@ -354,6 +358,10 @@ def listar_parcelas(request, tipo='RECEBER'):
 
     from projetos.models import Projeto
     projetos_filtro = Projeto.objects.filter(empresa=request.empresa).order_by('codigo')
+
+    # Resumo (calculado sobre todo o resultado filtrado, não só a página atual)
+    total_saldo_aberto = parcelas.aggregate(total=Sum('saldo_aberto'))['total'] or 0
+    total_vencidas = parcelas.filter(data_vencimento__lt=hoje, status__in=['ABERTO', 'PARCIAL']).count()
 
     # Paginação
     try:
@@ -393,6 +401,8 @@ def listar_parcelas(request, tipo='RECEBER'):
         'por_pagina': por_pagina,
         'querystring': querystring.urlencode(),
         'hoje': hoje,
+        'total_saldo_aberto': total_saldo_aberto,
+        'total_vencidas': total_vencidas,
     }
 
     template = 'financeiro/listar_contas_pagar.html' if tipo == 'PAGAR' else 'financeiro/listar_contas_receber.html'
