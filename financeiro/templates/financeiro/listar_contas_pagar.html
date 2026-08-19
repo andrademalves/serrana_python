@@ -61,7 +61,22 @@
                         {% endfor %}
                     </select>
                 </div>
-                <div class="col-md-3" id="dateFilters" style="{% if vencimento != 'PERSONALIZADO' %}display: none;{% endif %}">
+                <div class="col-md-4">
+                    <label for="titulo" class="form-label">Título</label>
+                    <input type="text" name="titulo" id="titulo" class="form-control"
+                           value="{{ titulo_busca }}" placeholder="Número do documento ou descrição">
+                </div>
+                <div class="col-md-2">
+                    <label for="valor_min" class="form-label">Valor Mín.</label>
+                    <input type="number" name="valor_min" id="valor_min" class="form-control"
+                           step="0.01" min="0" value="{{ valor_min }}" placeholder="0,00">
+                </div>
+                <div class="col-md-2">
+                    <label for="valor_max" class="form-label">Valor Máx.</label>
+                    <input type="number" name="valor_max" id="valor_max" class="form-control"
+                           step="0.01" min="0" value="{{ valor_max }}" placeholder="0,00">
+                </div>
+                <div class="col-md-4" id="dateFilters" style="{% if vencimento != 'PERSONALIZADO' %}display: none;{% endif %}">
                     <label class="form-label">Período</label>
                     <div class="row g-2">
                         <div class="col-6">
@@ -74,20 +89,20 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-md-3 d-flex align-items-end">
-                    <button type="submit" class="btn btn-primary me-2">
-                        <i class="bi bi-funnel"></i> Filtrar
-                    </button>
+                <div class="col-12 d-flex justify-content-end gap-2">
                     <a href="{% url 'financeiro:contas_pagar' %}" class="btn btn-outline-secondary">
                         <i class="bi bi-x-circle"></i> Limpar
                     </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-funnel"></i> Filtrar
+                    </button>
                 </div>
             </form>
         </div>
     </div>
 
     <!-- Resumo -->
-    {% with total_pagar=parcelas|length %}
+    {% with total_pagar=parcelas.paginator.count %}
     {% with total_valor=0 %}
     <div class="row mb-4">
         <div class="col-md-4">
@@ -110,7 +125,7 @@
                         <div>
                             <p class="text-muted mb-1">Vencidas</p>
                             <h4 class="mb-0 text-warning">
-                                {{ parcelas|length }}
+                                {{ total_pagar }}
                             </h4>
                         </div>
                         <i class="bi bi-exclamation-triangle fs-1 text-warning"></i>
@@ -226,21 +241,51 @@
                 </table>
             </div>
         </div>
+        {% if parcelas.paginator.count > 0 %}
+        <div class="card-footer d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <div class="d-flex align-items-center gap-2">
+                <label for="por_pagina" class="form-label mb-0 small text-muted">Itens por página</label>
+                <select id="por_pagina" class="form-select form-select-sm" style="width: auto;" onchange="mudarPorPagina(this.value)">
+                    <option value="10" {% if por_pagina == 10 %}selected{% endif %}>10</option>
+                    <option value="25" {% if por_pagina == 25 %}selected{% endif %}>25</option>
+                    <option value="50" {% if por_pagina == 50 %}selected{% endif %}>50</option>
+                    <option value="100" {% if por_pagina == 100 %}selected{% endif %}>100</option>
+                </select>
+                <span class="small text-muted">
+                    Mostrando {{ parcelas.start_index }}–{{ parcelas.end_index }} de {{ parcelas.paginator.count }}
+                </span>
+            </div>
+            {% if parcelas.paginator.num_pages > 1 %}
+            <nav aria-label="Paginação">
+                <ul class="pagination pagination-sm mb-0">
+                    <li class="page-item {% if not parcelas.has_previous %}disabled{% endif %}">
+                        {% if parcelas.has_previous %}
+                        <a class="page-link" href="?{{ querystring }}&page={{ parcelas.previous_page_number }}">Anterior</a>
+                        {% else %}
+                        <span class="page-link">Anterior</span>
+                        {% endif %}
+                    </li>
+                    {% for num in parcelas.paginator.page_range %}
+                        {% if num == parcelas.number %}
+                        <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                        {% elif num > parcelas.number|add:'-3' and num < parcelas.number|add:'3' %}
+                        <li class="page-item"><a class="page-link" href="?{{ querystring }}&page={{ num }}">{{ num }}</a></li>
+                        {% endif %}
+                    {% endfor %}
+                    <li class="page-item {% if not parcelas.has_next %}disabled{% endif %}">
+                        {% if parcelas.has_next %}
+                        <a class="page-link" href="?{{ querystring }}&page={{ parcelas.next_page_number }}">Próxima</a>
+                        {% else %}
+                        <span class="page-link">Próxima</span>
+                        {% endif %}
+                    </li>
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+        {% endif %}
     </div>
 </div>
-
-<script>
-function toggleDateFilters() {
-    const vencimento = document.getElementById('vencimento').value;
-    const dateFilters = document.getElementById('dateFilters');
-    
-    if (vencimento === 'PERSONALIZADO') {
-        dateFilters.style.display = 'block';
-    } else {
-        dateFilters.style.display = 'none';
-    }
-}
-</script>
 
 <style>
 .card {
@@ -255,4 +300,38 @@ function toggleDateFilters() {
     padding: 0.25rem 0.5rem;
 }
 </style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleDateFilters() {
+    const vencimento = document.getElementById('vencimento').value;
+    const dateFilters = document.getElementById('dateFilters');
+
+    if (vencimento === 'PERSONALIZADO') {
+        dateFilters.style.display = 'block';
+    } else {
+        dateFilters.style.display = 'none';
+    }
+}
+
+function mudarPorPagina(valor) {
+    const params = new URLSearchParams(window.location.search);
+    params.set('por_pagina', valor);
+    params.delete('page');
+    window.location.search = params.toString();
+}
+
+$(document).ready(function() {
+    $('#status, #cliente, #vencimento, #projeto').select2({
+        theme: 'bootstrap-5',
+        allowClear: false,
+        width: '100%',
+        language: {
+            noResults: function() { return 'Nenhum resultado encontrado'; },
+            searching: function() { return 'Buscando...'; }
+        }
+    });
+});
+</script>
 {% endblock %}

@@ -5,10 +5,11 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Q, Sum
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.utils import timezone
 from django.http import HttpResponse
 from datetime import date, timedelta
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 import io
 
 from reportlab.lib import colors
@@ -280,6 +281,9 @@ def listar_parcelas(request, tipo='RECEBER'):
     data_fim = request.GET.get('data_fim', '')
     cliente_id = request.GET.get('cliente', '')
     projeto_id = request.GET.get('projeto', '')
+    titulo_busca = request.GET.get('titulo', '')
+    valor_min = request.GET.get('valor_min', '')
+    valor_max = request.GET.get('valor_max', '')
 
     parcelas = ParcelaFinanceira.objects.select_related(
         'titulo', 'titulo__pessoa', 'titulo__projeto'
@@ -323,6 +327,25 @@ def listar_parcelas(request, tipo='RECEBER'):
     if projeto_id:
         parcelas = parcelas.filter(titulo__projeto_id=projeto_id)
 
+    # Filtro de título (número do documento ou descrição)
+    if titulo_busca:
+        parcelas = parcelas.filter(
+            Q(titulo__numero_documento__icontains=titulo_busca) |
+            Q(titulo__descricao__icontains=titulo_busca)
+        )
+
+    # Filtro de valor (faixa)
+    if valor_min:
+        try:
+            parcelas = parcelas.filter(valor_original__gte=Decimal(valor_min.replace(',', '.')))
+        except InvalidOperation:
+            pass
+    if valor_max:
+        try:
+            parcelas = parcelas.filter(valor_original__lte=Decimal(valor_max.replace(',', '.')))
+        except InvalidOperation:
+            pass
+
     # Opções para os selects de filtro
     if tipo == 'PAGAR':
         pessoas_filtro = Pessoa.objects.filter(empresa=request.empresa, fornecedor=True, ativo=True).order_by('nome')
@@ -332,8 +355,29 @@ def listar_parcelas(request, tipo='RECEBER'):
     from projetos.models import Projeto
     projetos_filtro = Projeto.objects.filter(empresa=request.empresa).order_by('codigo')
 
+    # Paginação
+    try:
+        por_pagina = int(request.GET.get('por_pagina', 25))
+    except (TypeError, ValueError):
+        por_pagina = 25
+    if por_pagina not in (10, 25, 50, 100):
+        por_pagina = 25
+
+    paginator = Paginator(parcelas.order_by('data_vencimento'), por_pagina)
+    pagina_num = request.GET.get('page', 1)
+    try:
+        parcelas_pagina = paginator.page(pagina_num)
+    except PageNotAnInteger:
+        parcelas_pagina = paginator.page(1)
+    except EmptyPage:
+        parcelas_pagina = paginator.page(paginator.num_pages) if paginator.num_pages > 0 else paginator.page(1)
+
+    # Querystring sem o parâmetro 'page', para usar nos links de paginação
+    querystring = request.GET.copy()
+    querystring.pop('page', None)
+
     context = {
-        'parcelas': parcelas.order_by('data_vencimento'),
+        'parcelas': parcelas_pagina,
         'tipo': tipo,
         'status': status,
         'vencimento': vencimento,
@@ -341,8 +385,13 @@ def listar_parcelas(request, tipo='RECEBER'):
         'data_fim': data_fim,
         'cliente_id': cliente_id,
         'projeto_id': projeto_id,
+        'titulo_busca': titulo_busca,
+        'valor_min': valor_min,
+        'valor_max': valor_max,
         'pessoas_filtro': pessoas_filtro,
         'projetos_filtro': projetos_filtro,
+        'por_pagina': por_pagina,
+        'querystring': querystring.urlencode(),
         'hoje': hoje,
     }
 
