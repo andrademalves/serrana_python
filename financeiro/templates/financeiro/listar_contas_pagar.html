@@ -33,6 +33,15 @@
                     </select>
                 </div>
                 <div class="col-md-3">
+                    <label for="cliente" class="form-label">Fornecedor</label>
+                    <select name="cliente" id="cliente" class="form-select">
+                        <option value="">Todos</option>
+                        {% for pessoa in pessoas_filtro %}
+                        <option value="{{ pessoa.id }}" {% if cliente_id == pessoa.id|stringformat:"s" %}selected{% endif %}>{{ pessoa.nome }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
                     <label for="vencimento" class="form-label">Vencimento</label>
                     <select name="vencimento" id="vencimento" class="form-select" onchange="toggleDateFilters()">
                         <option value="TODOS" {% if vencimento == 'TODOS' %}selected{% endif %}>Todos</option>
@@ -43,15 +52,24 @@
                         <option value="PERSONALIZADO" {% if vencimento == 'PERSONALIZADO' %}selected{% endif %}>Data Específica</option>
                     </select>
                 </div>
+                <div class="col-md-3">
+                    <label for="projeto" class="form-label">Projeto</label>
+                    <select name="projeto" id="projeto" class="form-select">
+                        <option value="">Todos</option>
+                        {% for projeto in projetos_filtro %}
+                        <option value="{{ projeto.id }}" {% if projeto_id == projeto.id|stringformat:"s" %}selected{% endif %}>{{ projeto.codigo }} - {{ projeto.descricao }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
                 <div class="col-md-3" id="dateFilters" style="{% if vencimento != 'PERSONALIZADO' %}display: none;{% endif %}">
                     <label class="form-label">Período</label>
                     <div class="row g-2">
                         <div class="col-6">
-                            <input type="date" name="data_inicio" class="form-control form-control-sm" 
+                            <input type="date" name="data_inicio" class="form-control form-control-sm"
                                    value="{{ data_inicio }}" placeholder="Data Inicial">
                         </div>
                         <div class="col-6">
-                            <input type="date" name="data_fim" class="form-control form-control-sm" 
+                            <input type="date" name="data_fim" class="form-control form-control-sm"
                                    value="{{ data_fim }}" placeholder="Data Final">
                         </div>
                     </div>

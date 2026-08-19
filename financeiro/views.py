@@ -278,20 +278,22 @@ def listar_parcelas(request, tipo='RECEBER'):
     vencimento = request.GET.get('vencimento', 'TODOS')
     data_inicio = request.GET.get('data_inicio', '')
     data_fim = request.GET.get('data_fim', '')
-    
+    cliente_id = request.GET.get('cliente', '')
+    projeto_id = request.GET.get('projeto', '')
+
     parcelas = ParcelaFinanceira.objects.select_related(
-        'titulo', 'titulo__pessoa'
+        'titulo', 'titulo__pessoa', 'titulo__projeto'
     ).filter(
         titulo__tipo=tipo,
         titulo__empresa=request.empresa  # Filtrar por empresa
     )
-    
+
     # Filtro de status
     if status == 'ABERTO':
         parcelas = parcelas.filter(status__in=['ABERTO', 'PARCIAL'])
     elif status != 'TODOS':
         parcelas = parcelas.filter(status=status)
-    
+
     # Filtro de vencimento
     hoje = date.today()
     if vencimento == 'VENCIDAS':
@@ -312,7 +314,24 @@ def listar_parcelas(request, tipo='RECEBER'):
             from datetime import datetime
             data_fim_obj = datetime.strptime(data_fim, '%Y-%m-%d').date()
             parcelas = parcelas.filter(data_vencimento__lte=data_fim_obj)
-    
+
+    # Filtro de cliente/fornecedor
+    if cliente_id:
+        parcelas = parcelas.filter(titulo__pessoa_id=cliente_id)
+
+    # Filtro de projeto
+    if projeto_id:
+        parcelas = parcelas.filter(titulo__projeto_id=projeto_id)
+
+    # Opções para os selects de filtro
+    if tipo == 'PAGAR':
+        pessoas_filtro = Pessoa.objects.filter(empresa=request.empresa, fornecedor=True, ativo=True).order_by('nome')
+    else:
+        pessoas_filtro = Pessoa.objects.filter(empresa=request.empresa, cliente=True, ativo=True).order_by('nome')
+
+    from projetos.models import Projeto
+    projetos_filtro = Projeto.objects.filter(empresa=request.empresa).order_by('codigo')
+
     context = {
         'parcelas': parcelas.order_by('data_vencimento'),
         'tipo': tipo,
@@ -320,9 +339,13 @@ def listar_parcelas(request, tipo='RECEBER'):
         'vencimento': vencimento,
         'data_inicio': data_inicio,
         'data_fim': data_fim,
+        'cliente_id': cliente_id,
+        'projeto_id': projeto_id,
+        'pessoas_filtro': pessoas_filtro,
+        'projetos_filtro': projetos_filtro,
         'hoje': hoje,
     }
-    
+
     template = 'financeiro/listar_contas_pagar.html' if tipo == 'PAGAR' else 'financeiro/listar_contas_receber.html'
     return render(request, template, context)
 
