@@ -157,6 +157,10 @@
                     <label class="form-label">E-mail</label>
                     <input type="email" class="form-control" name="email">
                 </div>
+                <div class="col-md-3">
+                    <label class="form-label">E-mail 2</label>
+                    <input type="email" class="form-control" name="email2" value="{{ pessoa.email2|default: }}">
+                </div>
             </div>
 
             <hr>
@@ -301,7 +305,46 @@
                         <input type="date" class="form-control" name="data_demissao">
                     </div>
                 </div>
+                <!-- Dados PIX e Bancários -->
+                <h6 class="mb-2 mt-4">Dados PIX e Bancários</h6>
+                <div class="row mb-3">
+                    <div class="col-md-3">
+                        <label class="form-label">Tipo PIX</label>
+                        <select class="form-select" name="tipo_pix">
+                            <option value="">Selecione...</option>
+                            <option value="CPF" {% if pessoa.tipo_pix == "CPF" %}selected{% endif %}>CPF</option>
+                            <option value="CNPJ" {% if pessoa.tipo_pix == "CNPJ" %}selected{% endif %}>CNPJ</option>
+                            <option value="EMAIL" {% if pessoa.tipo_pix == "EMAIL" %}selected{% endif %}>E-mail</option>
+                            <option value="TELEFONE" {% if pessoa.tipo_pix == "TELEFONE" %}selected{% endif %}>Telefone</option>
+                            <option value="ALEATORIA" {% if pessoa.tipo_pix == "ALEATORIA" %}selected{% endif %}>Chave Aleatória</option>
+                        </select>
+                    </div>
+                    <div class="col-md-9">
+                        <label class="form-label">Chave PIX</label>
+                        <input type="text" class="form-control" name="chave_pix" value="{{ pessoa.chave_pix|default: }}">
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class"col-md-4">
+                        <label class="form-label">Banco</label>
+                        <select class="form-select" name="banco">
+                            <option value="">Selecione...</option>
+                            {% for banco in bancos %}
+                            <option value="{{ banco.id }}" {% if pessoa.banco_id == banco.id %}selected{% endif %}>{{ banco.codigo_compe }} - {{ banco.nome }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Agência</label>
+                        <input type="text" class="form-control" name="agencia" value="{{ pessoa.agencia|default: }}">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Conta</label>
+                        <input type="text" class="form-control" name="conta" value="{{ pessoa.conta|default: }}">
+                    </div>
+                </div>
             </div>
+
 
             <hr>
 
@@ -1377,7 +1420,45 @@ document.addEventListener('DOMContentLoaded', function() {
                         <input type="date" class="form-control" name="data_demissao">
                     </div>
                 </div>
-            </div>
+                <!-- Dados PIX e Bancários -->
+                <h6 class="mb-2 mt-4">Dados PIX e Bancários</h6>
+                <div class="row mb-3">
+                    <div class="col-md-3">
+                        <label class="form-label">Tipo PIX</label>
+                        <select class="form-select" name="tipo_pix">
+                            <option value="">Selecione...</option>
+                            <option value="CPF" {% if pessoa.tipo_pix == "CPF" %}selected{% endif %}>CPF</option>
+                            <option value="CNPJ" {% if pessoa.tipo_pix == "CNPJ" %}selected{% endif %}>CNPJ</option>
+                            <option value="EMAIL" {% if pessoa.tipo_pix == "EMAIL" %}selected{% endif %}>E-mail</option>
+                            <option value="TELEFONE" {% if pessoa.tipo_pix == "TELEFONE" %}selected{% endif %}>Telefone</option>
+                            <option value="ALEATORIA" {% if pessoa.tipo_pix == "ALEATORIA" %}selected{% endif %}>Chave Aleatória</option>
+                        </select>
+                    </div>
+                    <div class="col-md-9">
+                        <label class="form-label">Chave PIX</label>
+                        <input type="text" class="form-control" name="chave_pix" value="{{ pessoa.chave_pix|default: }}">
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class"col-md-4">
+                        <label class="form-label">Banco</label>
+                        <select class="form-select" name="banco">
+                            <option value="">Selecione...</option>
+                            {% for banco in bancos %}
+                            <option value="{{ banco.id }}" {% if pessoa.banco_id == banco.id %}selected{% endif %}>{{ banco.codigo_compe }} - {{ banco.nome }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Agência</label>
+                        <input type="text" class="form-control" name="agencia" value="{{ pessoa.agencia|default: }}">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Conta</label>
+                        <input type="text" class="form-control" name="conta" value="{{ pessoa.conta|default: }}">
+                    </div>
+                </div>
+
 
             <hr>
 

@@ -533,3 +533,67 @@ def relatorio_materiais_obra_analitico(request):
     }
     
     return render(request, 'estoque/relatorio_materiais_obra_analitico.html', context)
+
+
+# ============================================================
+# CRUD de Locais de Estoque
+# ============================================================
+
+@login_required
+def listar_locais(request):
+    """Lista os locais de estoque cadastrados"""
+    locais = LocalEstoque.objects.all().order_by('codigo')
+    
+    context = {
+        'locais': locais,
+    }
+    
+    return render(request, 'estoque/listar_locais.html', context)
+
+
+@login_required
+def criar_local(request):
+    """Cria um novo local de estoque"""
+    if request.method == 'POST':
+        try:
+            local = LocalEstoque(
+                codigo=request.POST.get('codigo'),
+                descricao=request.POST.get('descricao'),
+                endereco=request.POST.get('endereco', ''),
+                permite_saldo_negativo=request.POST.get('permite_saldo_negativo') == 'on',
+                ativo=request.POST.get('ativo') == 'on',
+                criado_por=request.user
+            )
+            local.save()
+            messages.success(request, 'Local de estoque cadastrado com sucesso!')
+            return redirect('estoque:listar_locais')
+        except Exception as e:
+            messages.error(request, f'Erro ao cadastrar local: {str(e)}')
+    
+    return render(request, 'estoque/form_local.html', {'acao': 'Cadastrar'})
+
+
+@login_required
+def editar_local(request, id):
+    """Edita um local de estoque existente"""
+    local = get_object_or_404(LocalEstoque, id=id)
+    
+    if request.method == 'POST':
+        try:
+            local.codigo = request.POST.get('codigo')
+            local.descricao = request.POST.get('descricao')
+            local.endereco = request.POST.get('endereco', '')
+            local.permite_saldo_negativo = request.POST.get('permite_saldo_negativo') == 'on'
+            local.ativo = request.POST.get('ativo') == 'on'
+            local.save()
+            messages.success(request, 'Local de estoque atualizado com sucesso!')
+            return redirect('estoque:listar_locais')
+        except Exception as e:
+            messages.error(request, f'Erro ao atualizar local: {str(e)}')
+    
+    context = {
+        'local': local,
+        'acao': 'Editar'
+    }
+    
+    return render(request, 'estoque/form_local.html', context)

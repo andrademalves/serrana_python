@@ -29,7 +29,7 @@
 
 <div class="card">
     <div class="card-body">
-        <form method="post" id="formPessoa">
+        <form method="post" id="formPessoa" enctype="multipart/form-data">
             {% csrf_token %}
             
             <!-- Informações Básicas -->
@@ -157,6 +157,10 @@
                     <label class="form-label">E-mail</label>
                     <input type="email" class="form-control" name="email">
                 </div>
+                <div class="col-md-3">
+                    <label class="form-label">E-mail 2</label>
+                    <input type="email" class="form-control" name="email2">
+                </div>
             </div>
 
             <hr>
@@ -208,7 +212,17 @@
             <div id="divFuncionario" style="display:none;">
                 <hr>
                 <h5 class="mb-3">Dados de Funcionário</h5>
-                
+
+                <!-- Foto do Funcionário -->
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Foto do Funcionário (3x4)</label>
+                        <input type="file" class="form-control" name="foto_funcionario" id="fotoFuncionario" accept="image/*">
+                        <small class="text-muted">A foto será automaticamente ajustada para o formato 3x4</small>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
                 <!-- Documentos -->
                 <h6 class="mb-2">Documentos</h6>
                 <div class="row mb-3">
@@ -301,6 +315,45 @@
                         <input type="date" class="form-control" name="data_demissao">
                     </div>
                 </div>
+                <!-- Dados PIX e Bancários -->
+                <h6 class="mb-2 mt-4">Dados PIX e Bancários</h6>
+                <div class="row mb-3">
+                    <div class="col-md-3">
+                        <label class="form-label">Tipo PIX</label>
+                        <select class="form-select" name="tipo_pix">
+                            <option value="">Selecione...</option>
+                            <option value="CPF">CPF</option>
+                            <option value="CNPJ">CNPJ</option>
+                            <option value="EMAIL">E-mail</option>
+                            <option value="TELEFONE">Telefone</option>
+                            <option value="ALEATORIA">Chave Aleatória</option>
+                        </select>
+                    </div>
+                    <div class="col-md-9">
+                        <label class="form-label">Chave PIX</label>
+                        <input type="text" class="form-control" name="chave_pix">
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Banco</label>
+                        <select class="form-select" name="banco">
+                            <option value="">Selecione...</option>
+                            {% for banco in bancos %}
+                            <option value="{{ banco.id }}">{{ banco.codigo_compe }} - {{ banco.nome }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Agência</label>
+                        <input type="text" class="form-control" name="agencia">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Conta</label>
+                        <input type="text" class="form-control" name="conta">
+                    </div>
+                </div>
+            </div>
             </div>
 
             <hr>

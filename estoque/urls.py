@@ -10,6 +10,11 @@ urlpatterns = [
     path('', views.dashboard, name='dashboard'),
     
     # Itens
+
+    # Locais de Estoque
+    path('locais/', views.listar_locais, name='listar_locais'),
+    path('locais/criar/', views.criar_local, name='criar_local'),
+    path('locais/editar/<int:id>/', views.editar_local, name='editar_local'),
     path('itens/', views.listar_itens, name='listar_itens'),
     path('itens/pdf/', listar_itens_pdf, name='listar_itens_pdf'),
     path('itens/criar/', views.criar_item, name='criar_item'),

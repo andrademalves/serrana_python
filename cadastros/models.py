@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
+from financeiro.models import Banco
 
 # Create your models here.
 
@@ -74,6 +75,14 @@ class Pessoa(models.Model):
         ('E', 'E'),
     ]
     
+    TIPO_PIX_CHOICES = [
+        ('CPF', 'CPF'),
+        ('CNPJ', 'CNPJ'),
+        ('EMAIL', 'E-mail'),
+        ('TELEFONE', 'Telefone'),
+        ('ALEATORIA', 'Chave Aleatória'),
+    ]
+    
     # Empresa (Multiempresa)
     empresa = models.ForeignKey(
         'usuarios.Empresa',
@@ -109,6 +118,7 @@ class Pessoa(models.Model):
     celular1 = models.CharField(max_length=20, blank=True, null=True, verbose_name='Celular 1')
     celular2 = models.CharField(max_length=20, blank=True, null=True, verbose_name='Celular 2')
     email = models.EmailField(blank=True, null=True, verbose_name='E-mail')
+    email2 = models.EmailField(blank=True, null=True, verbose_name='E-mail 2')
     
     # Classificação
     cliente = models.BooleanField(default=False, verbose_name='É Cliente')
@@ -136,6 +146,14 @@ class Pessoa(models.Model):
     cargo = models.CharField(max_length=50, blank=True, null=True, verbose_name='Cargo')
     data_admissao = models.DateField(blank=True, null=True, verbose_name='Data Admissão')
     data_demissao = models.DateField(blank=True, null=True, verbose_name='Data Demissão')
+    foto_funcionario = models.ImageField(upload_to='funcionarios/fotos/', blank=True, null=True, verbose_name='Foto do Funcionário')
+    tipo_pix = models.CharField(max_length=10, choices=TIPO_PIX_CHOICES, blank=True, null=True, verbose_name='Tipo de Chave PIX')
+    chave_pix = models.CharField(max_length=100, blank=True, null=True, verbose_name='Chave PIX')
+    # Dados Bancários (Funcionário)
+    banco = models.ForeignKey(Banco, on_delete=models.SET_NULL, blank=True, null=True, verbose_name='Banco')
+    agencia = models.CharField(max_length=10, blank=True, null=True, verbose_name='Agência')
+    conta = models.CharField(max_length=20, blank=True, null=True, verbose_name='Conta')
+    
     
     # Observações
     observacoes = models.TextField(blank=True, null=True, verbose_name='Observações')

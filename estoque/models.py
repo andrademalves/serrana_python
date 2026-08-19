@@ -179,6 +179,23 @@ class Item(models.Model):
             models.Index(fields=['ativo']),
         ]
     
+    def save(self, *args, **kwargs):
+        """Gera código único automaticamente se for AUTO"""
+        # Se for um novo registro e o código é AUTO, gera temporariamente um código único
+        is_new = self.pk is None
+        if is_new and self.codigo == 'AUTO':
+            # Gera um código temporário único com timestamp para evitar duplicata
+            import time
+            self.codigo = f'TEMP-{int(time.time() * 1000000)}'
+        
+        # Salva o registro
+        super().save(*args, **kwargs)
+        
+        # Se era AUTO, agora atualiza com o código definitivo baseado no ID
+        if is_new and self.codigo.startswith('TEMP-'):
+            self.codigo = f'ITEM-{self.id:05d}'
+            super().save(update_fields=['codigo'])
+
     def __str__(self):
         return f"{self.codigo} - {self.descricao}"
     
