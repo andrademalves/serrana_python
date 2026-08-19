@@ -29,6 +29,7 @@ media/
 .env
 .venv
 staticfiles/
+logs/
 .DS_Store
 *.swp
 *.swo

@@ -142,12 +142,13 @@ def empresa_context_processor(request):
     Context processor que adiciona empresa ao template context.
     Permite usar {{ empresa_ativa }} em todos os templates.
     """
-    if hasattr(request, 'empresa'):
+    empresa = getattr(request, 'empresa', None)
+    if empresa:
         return {
-            'empresa_ativa': request.empresa,
-            'empresa_nome': request.empresa.nome_fantasia,
-            'empresa_logo': request.empresa.logo.url if request.empresa.logo else None,
-            'empresa_slug': request.empresa.slug,
+            'empresa_ativa': empresa,
+            'empresa_nome': empresa.nome_fantasia,
+            'empresa_logo': empresa.logo.url if empresa.logo else None,
+            'empresa_slug': empresa.slug,
         }
     return {
         'empresa_ativa': None,
